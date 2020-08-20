@@ -1,0 +1,21 @@
+{
+  "1": {
+    "wdl": "tests/standard_library/basic_stdout.wdl",
+    "json": "",
+    "inputs": [
+       {
+         "type": "String",
+         "value": "nonsense"
+       }
+    ],
+    "outputs": [
+       {
+         "type": "File",
+         "checksum": "",
+         "size": ""
+       }
+    ],
+    "description": "",
+    "versions_supported": ["1.0"]
+  }
+}
