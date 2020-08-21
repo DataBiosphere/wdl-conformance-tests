@@ -1,21 +1,32 @@
 {
-  "1": {
+  "0": {
     "wdl": "tests/standard_library/basic_stdout.wdl",
-    "json": "",
-    "inputs": [
-       {
-         "type": "String",
-         "value": "nonsense"
-       }
-    ],
+    "json": "tests/standard_library/basic_stdout.json",
+    "args": [""],
     "outputs": [
        {
          "type": "File",
-         "checksum": "",
-         "size": ""
+         "identifier": "stdoutWorkflow.get_stdout.check_this",
+         "md5sum": "91d69f7c47b6e7d5e4d81fab67f7f304",
+         "size": "19"
        }
     ],
-    "description": "",
+    "description": "Standard Lib: basic stdout() test",
+    "versions_supported": ["1.0"]
+  },
+  "1": {
+    "wdl": "tests/standard_library/basic_stderr.wdl",
+    "json": "tests/standard_library/basic_stderr.json",
+    "args": [""],
+    "outputs": [
+       {
+         "type": "File",
+         "identifier": "stderrWorkflow.get_stderr.check_this",
+         "md5sum": "2332021c3feef276abe077f34276abfe",
+         "size": "29"
+       }
+    ],
+    "description": "Standard Lib: basic stderr() test",
     "versions_supported": ["1.0"]
   }
 }

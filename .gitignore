@@ -1,0 +1,17 @@
+*.pyc
+/src/*.egg-info
+/build
+/dist
+/docs/_build
+__pycache__
+.eggs/
+.cache/
+.pytest_cache/
+.idea/
+/test-report.xml
+/test-report-*.xml
+venv/
+v3nv/
+tmp/
+.coverage*
+.mypy_cache
