@@ -28,5 +28,19 @@
     ],
     "description": "Standard Lib: basic stderr() test",
     "versions_supported": ["1.0"]
+  },
+  "2": {
+    "wdl": "tests/standard_library/basic_ceil.wdl",
+    "json": "tests/standard_library/basic_ceil.json",
+    "args": [""],
+    "outputs": [
+       {
+         "type": "Int",
+         "identifier": "ceilWorkflow.get_ceil.the_ceiling",
+         "value": 12
+       }
+    ],
+    "description": "Standard Lib: basic ceil() test",
+    "versions_supported": ["1.0"]
   }
 }
