@@ -4,7 +4,9 @@ import sys
 import hashlib
 import argparse
 import subprocess
+import threading
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from shutil import which
 from uuid import uuid4
 
@@ -24,18 +26,24 @@ class CromwellStyleWDLRunner(WDLRunner):
         return f'{self.runner} {wdl_file} -i {json_file} -m {results_file} {" ".join(args)}'
         
 class CromwellWDLRunner(CromwellStyleWDLRunner):
+    
+    download_lock = threading.Lock()
+
     def __init__(self):
         super().__init__('cromwell')
     
     def format_command(self, wdl_file, json_file, results_file, args, quiet):
         if self.runner == 'cromwell' and not which('cromwell'):
-             # if there is no cromwell binary seen on the path, download our pinned version and use that instead
-            log_level = '-DLOG_LEVEL=OFF' if quiet else ''
-            cromwell = os.path.abspath('build/cromwell.jar')
-            if not os.path.exists(cromwell):
-                print('Cromwell not seen in the path, now downloading cromwell to run tests... ')
-                run_cmd(cmd='make cromwell', cwd=os.getcwd(), quiet=quiet)
-            self.runner = f'java {log_level} -jar {cromwell} run'
+            with CromwellWDLRunner.download_lock:
+                if self.runner == 'cromwell':
+                    # if there is no cromwell binary seen on the path, download
+                    # our pinned version and use that instead
+                    log_level = '-DLOG_LEVEL=OFF' if quiet else ''
+                    cromwell = os.path.abspath('build/cromwell.jar')
+                    if not os.path.exists(cromwell):
+                        print('Cromwell not seen in the path, now downloading cromwell to run tests... ')
+                        run_cmd(cmd='make cromwell', cwd=os.getcwd(), quiet=quiet)
+                    self.runner = f'java {log_level} -jar {cromwell} run'
         
         return super().format_command(wdl_file, json_file, results_file, args, quiet)
 
@@ -57,21 +65,21 @@ RUNNERS = {
 def run_cmd(cmd, cwd, quiet):
     p = subprocess.Popen(cmd, stdout=-1, stderr=-1, shell=True, cwd=cwd)
     stdout, stderr = p.communicate()
+   
+    result = {}
+    if p.returncode:
+        result['status'] = 'FAILED'
+        result['reason'] = f'Runner exited with code {p.returncode}'
+    else:
+        result['status'] = 'SUCCEEDED'
+    
     if not quiet or p.returncode:
-        print(f'\nstdout: {stdout.decode("utf-8", errors="ignore")}\n')
-        print(f'\nstderr: {stderr.decode("utf-8", errors="ignore")}\n\n')
-        return {'status': 'FAILED', 'reason': f'Runner exited with code {p.returncode}'}
-    return {'status': 'SUCCEEDED'}
+        result['stdout'] = stdout.decode("utf-8", errors="ignore")
+        result['stderr'] = stderr.decode("utf-8", errors="ignore")
 
-
-def quiet_print(msg, quiet):
-    if not quiet:
-        print(msg)
-
+    return result
 
 def verify_outputs(expected_outputs, results_file, quiet):
-    quiet_print("Checking outputs... ", quiet=quiet)
-    
     try:
         with open(results_file, 'r') as f:
             test_results = json.load(f)
@@ -128,39 +136,6 @@ def verify_outputs(expected_outputs, results_file, quiet):
 def announce_test(test_number, total_tests, test):
     description = test['description']
     print(f'\n[{test_number + 1}/{total_tests}] TEST {test_number}: {description}')
-
-def print_response(test_number, total_tests, response):
-    """
-    Log a test response that has a status and maybe a reason.
-    """
-    print(f'[{test_number + 1}/{total_tests}] TEST {test_number}: {response["status"]}!')
-    if response["reason"]:
-        print(f'    REASON: {response["reason"]}')
-
-def run_test(test_number, total_tests, test, runner, quiet):
-    """
-    Run a test and log success or failure.
-    
-    Return true if the test succeeded or false if it failed.
-    """
-    
-    wdl_file = os.path.abspath(test['wdl'])
-    json_file = os.path.abspath(test['json'])
-    args = test.get('args', [])
-    outputs = test['outputs']
-    results_file = os.path.abspath(f'results-{uuid4()}.json')
-    
-    cmd = runner.format_command(wdl_file, json_file, results_file, args, quiet)
-    print(f'    RUNNING: {cmd}')
-    
-    response = run_cmd(cmd=cmd, cwd=os.path.dirname(wdl_file), quiet=quiet)
-    if response['status'] != 'SUCCEEDED':
-        print_response(test_number, total_tests, response)
-        return False
-
-    response = verify_outputs(outputs, results_file, quiet=quiet)
-    print_response(test_number, total_tests, response)
-    return response['status'] == 'SUCCEEDED'
     
 def check_test(test, versions_to_test):
     """
@@ -181,23 +156,66 @@ def check_test(test, versions_to_test):
         return {'status': 'SKIPPED', 'reason': f'Test only applies to versions: {",".join(test["versions_supported"])}'}
         
     return {'status': 'SUCCEEDED', 'reason': None}
-    
-def skip_test(test_number, total_tests, test, versions_to_test):
+
+# Make sure output groups don't clobber each other.
+LOG_LOCK = threading.Lock()
+
+def print_response(test_number, total_tests, response):
     """
-    Return True if a test should be skipped.
+    Log a test response that has a status and maybe a reason.
+    """
     
-    If a test is skipped, logs why.
+    print(f'[{test_number + 1}/{total_tests}] TEST {test_number}: {response["status"]}!')
+    if response["reason"]:
+        print(f'    REASON: {response["reason"]}')
+    if 'stdout' in response:
+        print(f'\nstdout: {response["stdout"]}\n')
+    if 'stderr' in response:
+        print(f'\nstderr: {response["stderr"]}\n\n')
+
+def run_test(test_number, total_tests, test, runner, quiet):
+    """
+    Run a test and log success or failure.
+    
+    Return the response dict.
+    """
+    
+    wdl_file = os.path.abspath(test['wdl'])
+    json_file = os.path.abspath(test['json'])
+    args = test.get('args', [])
+    outputs = test['outputs']
+    results_file = os.path.abspath(f'results-{uuid4()}.json')
+    
+    cmd = runner.format_command(wdl_file, json_file, results_file, args, quiet)
+    
+    with LOG_LOCK:
+        announce_test(test_number, total_tests, test)
+        print(f'    RUNNING: {cmd}')
+    
+    response = run_cmd(cmd=cmd, cwd=os.path.dirname(wdl_file), quiet=quiet)
+    if response['status'] == 'SUCCEEDED':
+        response.update(verify_outputs(outputs, results_file, quiet=quiet))
+    
+    with LOG_LOCK:
+        print_response(test_number, total_tests, response)
+    return response
+    
+def handle_test(test_number, total_tests, test, runner, versions_to_test, quiet):
+    """
+    Decide if the test should be skipped. If not, run it.
+    
+    Returns a result that can have status SKIPPED, SUCCEEDED, or FAILED.
     """
     
     response = check_test(test, versions_to_test)
+    if response['status'] != 'SUCCEEDED':
+        with LOG_LOCK:
+            announce_test(test_number, total_tests, test)
+            print_response(test_number, total_tests, response)
+        return response
     
-    if response['status'] == 'SKIPPED':
-        print_response(test_number, total_tests, response)
-        return True
-    
-    return False
-    
-
+    return run_test(test_number, total_tests, test, runner, quiet)
+            
 def get_test_numbers(number_argument):
     ranges = [i for i in number_argument.split(',') if i]
     split_ranges = [i.split('-') if '-' in i else [i, i] for i in ranges]
@@ -210,7 +228,7 @@ def get_test_numbers(number_argument):
 
 def main(argv=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Run WDL conformance tests.')
-    parser.add_argument("--quiet", "-q", default=True,
+    parser.add_argument("--quiet", "-q", default=False, action='store_true',
                         help='Suppress printing run messages.')
     parser.add_argument("--versions", "-v", default="1.0",
                         help='Select the WDL versions you wish to test against.')
@@ -218,6 +236,8 @@ def main(argv=sys.argv[1:]):
                         help='Select the WDL test numbers you wish to run.')
     parser.add_argument("--runner", "-r", default='cromwell',
                         help='Select the WDL runner to use.')
+    parser.add_argument("--threads", "-t", type=int, default=None,
+                        help='Number of tests to run in parallel.')
     args = parser.parse_args(argv)
     
     # Get all the versions to test.
@@ -237,7 +257,7 @@ def main(argv=sys.argv[1:]):
         sys.exit(1)
     
     runner = RUNNERS[args.runner]
-   
+    
     print(f'Testing runner {args.runner} on WDL versions: {",".join(versions_to_test)}\n') 
    
     successes = 0
@@ -246,25 +266,27 @@ def main(argv=sys.argv[1:]):
     test_numbers = get_test_numbers(args.numbers) if args.numbers else range(total_tests)
     selected_tests = len(test_numbers)
     
-    for test_number in test_numbers:
-        test = tests[str(test_number)]
-        
-        announce_test(test_number, total_tests, test)
-        
-        if skip_test(test_number=test_number,
-                     total_tests=total_tests,
-                     test=test,
-                     versions_to_test=versions_to_test):
-            skips += 1
-            continue
-        
-        success = run_test(test_number=test_number,
-                           total_tests=total_tests,
-                           test=test,
-                           runner=runner,
-                           quiet=args.quiet)
-        if success:
-            successes += 1
+    with ThreadPoolExecutor(max_workers=args.threads) as executor:
+        pending_futures = []
+        for test_number in test_numbers:
+            test = tests[str(test_number)]
+            
+            # Handle each test as a concurrent job
+            result_future = executor.submit(handle_test,
+                                            test_number,
+                                            total_tests,
+                                            test,
+                                            runner,
+                                            versions_to_test,
+                                            args.quiet)
+            pending_futures.append(result_future)
+        for result_future in as_completed(pending_futures):
+            # Go get each result or reraise the relevant exception
+            result = result_future.result()
+            if result['status'] == 'SUCCEEDED':
+                successes += 1
+            elif result['status'] == 'SKIPPED':
+                skips += 1
     
     print(f'{selected_tests - skips} tests run, {successes} succeeded, {selected_tests - skips - successes} failed, {skips} skiped')
     if successes < selected_tests - skips:
