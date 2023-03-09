@@ -8,17 +8,60 @@ import subprocess
 from shutil import which
 from uuid import uuid4
 
+class WDLRunner:
+    """
+    A class describing how to invoke a WDL runner to run a workflow.
+    """
+    
+    def format_command(self, wdl_file, json_file, results_file, args, quiet):
+        raise NotImplementedError
+        
+class CromwellStyleWDLRunner(WDLRunner):
+    def __init__(self, runner):
+        self.runner = runner
+    
+    def format_command(self, wdl_file, json_file, results_file, args, quiet):
+        return f'{self.runner} {wdl_file} -i {json_file} -m {results_file} {" ".join(args)}'
+        
+class CromwellWDLRunner(CromwellStyleWDLRunner):
+    def __init__(self):
+        super().__init__('cromwell')
+    
+    def format_command(self, wdl_file, json_file, results_file, args, quiet):
+        if self.runner == 'cromwell' and not which('cromwell'):
+             # if there is no cromwell binary seen on the path, download our pinned version and use that instead
+            log_level = '-DLOG_LEVEL=OFF' if quiet else ''
+            cromwell = os.path.abspath('build/cromwell.jar')
+            if not os.path.exists(cromwell):
+                print('Cromwell not seen in the path, now downloading cromwell to run tests... ')
+                run_cmd(cmd='make cromwell', cwd=os.getcwd(), quiet=quiet)
+            self.runner = f'java {log_level} -jar {cromwell} run'
+        
+        return super().format_command(wdl_file, json_file, results_file, args, quiet)
+
+class MiniWDLStyleWDLRunner(WDLRunner):
+    def __init__(self, runner):
+        self.runner = runner
+    
+    def format_command(self, wdl_file, json_file, results_file, args, quiet):
+        return f'{self.runner} {wdl_file} -i {json_file} -o {results_file} {" ".join(args)}'
+        
+RUNNERS = {
+    'cromwell': CromwellWDLRunner(),
+    'toil': CromwellStyleWDLRunner('toil-wdl-runner'),
+    'toil2': CromwellStyleWDLRunner('python -m toil.wdl.wdltoil'),
+    'miniwdl': MiniWDLStyleWDLRunner('miniwdl run')
+}
+        
 
 def run_cmd(cmd, cwd, quiet):
     p = subprocess.Popen(cmd, stdout=-1, stderr=-1, shell=True, cwd=cwd)
     stdout, stderr = p.communicate()
-    if not quiet:
-        print(f'\nstdout: {stdout}\n')
-        print(f'\nstderr: {stderr}\n\n')
-    if p.returncode:
-        print(f'\nstdout: {stdout}\n')
-        print(f'\nstderr: {stderr}\n\n')
-        raise subprocess.CalledProcessError(p.returncode, cmd, stdout, stderr)
+    if not quiet or p.returncode:
+        print(f'\nstdout: {stdout.decode("utf-8", errors="ignore")}\n')
+        print(f'\nstderr: {stderr.decode("utf-8", errors="ignore")}\n\n')
+        return {'status': 'FAILED', 'reason': f'Runner exited with code {p.returncode}'}
+    return {'status': 'SUCCEEDED'}
 
 
 def quiet_print(msg, quiet):
@@ -28,9 +71,14 @@ def quiet_print(msg, quiet):
 
 def verify_outputs(expected_outputs, results_file, quiet):
     quiet_print("Checking outputs... ", quiet=quiet)
-
-    with open(results_file, 'r') as f:
-        test_results = json.load(f)
+    
+    try:
+        with open(results_file, 'r') as f:
+            test_results = json.load(f)
+    except OSError:
+        return {'status': 'FAILED', 'reason': f'Results file at {results_file} cannot be opened'}
+    except json.JSONDecodeError:
+        return {'status': 'FAILED', 'reason': f'Results file at {results_file} is not JSON'}
     # print(json.dumps(test_results, indent=4))
 
     for expected_output in expected_outputs:
@@ -69,24 +117,40 @@ def verify_outputs(expected_outputs, results_file, quiet):
 
 
 def run_test(test_number, total_tests, test, runner, quiet):
+    """
+    Run a test and log success or failure.
+    
+    Return true if the test succeeded or false if it failed.
+    """
+    
     wdl_file = os.path.abspath(test['wdl'])
     json_file = os.path.abspath(test['json'])
-    args = " ".join(test['args'])
+    args = test['args']
     description = test['description']
     outputs = test['outputs']
     results_file = os.path.abspath(f'results-{uuid4()}.json')
-    cmd = f'{runner} {wdl_file} -i {json_file} -m {results_file} {args}'
-
+    
+    cmd = runner.format_command(wdl_file, json_file, results_file, args, quiet)
+    
     print(f'\n[{test_number + 1}/{total_tests}] TEST {test_number}: {description}')
     print(f'    RUNNING: {cmd}')
+    
+    def print_response(response):
+        """
+        Log a test success or failure.
+        """
+        print(f'[{test_number + 1}/{total_tests}] TEST {test_number}: {response["status"]}!')
+        if response["reason"]:
+            print(f'    REASON: {response["reason"]}')
 
-    run_cmd(cmd=cmd, cwd=os.path.dirname(wdl_file), quiet=quiet)
+    response = run_cmd(cmd=cmd, cwd=os.path.dirname(wdl_file), quiet=quiet)
+    if response['status'] != 'SUCCEEDED':
+        print_response(response)
+        return False
 
     response = verify_outputs(outputs, results_file, quiet=quiet)
-    print(f'[{test_number + 1}/{total_tests}] TEST {test_number}: {response["status"]}!')
-    if response["reason"]:
-        print(f'    REASON: {response["reason"]}')
-
+    print_response(response)
+    return response['status'] == 'SUCCEEDED'
 
 def get_test_numbers(number_argument):
     ranges = [i for i in number_argument.split(',') if i]
@@ -115,25 +179,29 @@ def main(argv=sys.argv[1:]):
 
     total_tests = len(tests)
 
-    # if there is no cromwell binary seen on the path, download our pinned version and use that instead
-    if args.runner == 'cromwell' and not which('cromwell'):
-        log_level = '-DLOG_LEVEL=OFF' if args.quiet else ''
-        cromwell = os.path.abspath('build/cromwell.jar')
-        if not os.path.exists(cromwell):
-            print('Cromwell not seen in the path, now downloading cromwell to run tests... ')
-            run_cmd(cmd='make cromwell', cwd=os.getcwd(), quiet=args.quiet)
-        runner = f'java {log_level} -jar {cromwell} run'
-
-    if args.runner == 'toil':
-        runner = 'toil-wdl-runner'
+   
+    if args.runner not in RUNNERS:
+        print(f'Unsupported runner: {args.runner}')
+        sys.exit(1)
+    
+    runner = RUNNERS[args.runner]
+    
+    successes = 0
 
     test_numbers = get_test_numbers(args.numbers) if args.numbers else range(total_tests)
     for test_number in test_numbers:
-        run_test(test_number=test_number,
-                 total_tests=total_tests,
-                 test=tests[str(test_number)],
-                 runner=runner,
-                 quiet=args.quiet)
+        success = run_test(test_number=test_number,
+                           total_tests=total_tests,
+                           test=tests[str(test_number)],
+                           runner=runner,
+                           quiet=args.quiet)
+        if success:
+            successes += 1
+    
+    print(f'{successes}/{total_tests} tests passed')
+    if successes < total_tests:
+        # Fail the program overall if tests failed.
+        sys.exit(1)
 
 
 if __name__ == '__main__':
