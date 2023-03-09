@@ -56,8 +56,8 @@ class MiniWDLStyleWDLRunner(WDLRunner):
         
 RUNNERS = {
     'cromwell': CromwellWDLRunner(),
-    'toil': CromwellStyleWDLRunner('toil-wdl-runner'),
-    'toil2': CromwellStyleWDLRunner('python -m toil.wdl.wdltoil --outputDialect miniwdl'),
+    'toil-wdl-runner-old': CromwellStyleWDLRunner('toil-wdl-runner-old'),
+    'toil-wdl-runner': CromwellStyleWDLRunner('toil-wdl-runner --outputDialect miniwdl'),
     'miniwdl': MiniWDLStyleWDLRunner('miniwdl run')
 }
         
