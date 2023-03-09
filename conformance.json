@@ -2,7 +2,6 @@
   "0": {
     "wdl": "tests/standard_library/basic_stdout.wdl",
     "json": "tests/standard_library/basic_stdout.json",
-    "args": [""],
     "outputs": [
        {
          "type": "File",
@@ -11,13 +10,12 @@
          "size": "19"
        }
     ],
-    "description": "Standard Lib: basic stdout() test",
+    "description": "Standard Lib: basic stdout() test in draft-2",
     "versions_supported": ["draft-2"]
   },
   "1": {
     "wdl": "tests/standard_library/basic_stderr.wdl",
     "json": "tests/standard_library/basic_stderr.json",
-    "args": [""],
     "outputs": [
        {
          "type": "File",
@@ -26,13 +24,12 @@
          "size": "29"
        }
     ],
-    "description": "Standard Lib: basic stderr() test",
+    "description": "Standard Lib: basic stderr() test in draft-2",
     "versions_supported": ["draft-2"]
   },
   "2": {
     "wdl": "tests/standard_library/basic_ceil.wdl",
     "json": "tests/standard_library/basic_ceil.json",
-    "args": [""],
     "outputs": [
        {
          "type": "Int",
@@ -40,7 +37,48 @@
          "value": 12
        }
     ],
-    "description": "Standard Lib: basic ceil() test",
+    "description": "Standard Lib: basic ceil() test in draft-2",
     "versions_supported": ["draft-2"]
+  },
+  "3": {
+    "wdl": "tests/standard_library/basic_stdout_1.0.wdl",
+    "json": "tests/standard_library/basic_stdout.json",
+    "outputs": [
+       {
+         "type": "File",
+         "identifier": "stdoutWorkflow.check_this",
+         "md5sum": "91d69f7c47b6e7d5e4d81fab67f7f304",
+         "size": "19"
+       }
+    ],
+    "description": "Standard Lib: basic stdout() test",
+    "versions_supported": ["1.0"]
+  },
+  "4": {
+    "wdl": "tests/standard_library/basic_stderr_1.0.wdl",
+    "json": "tests/standard_library/basic_stderr.json",
+    "outputs": [
+       {
+         "type": "File",
+         "identifier": "stderrWorkflow.check_this",
+         "md5sum": "2332021c3feef276abe077f34276abfe",
+         "size": "29"
+       }
+    ],
+    "description": "Standard Lib: basic stderr() test",
+    "versions_supported": ["1.0"]
+  },
+  "5": {
+    "wdl": "tests/standard_library/basic_ceil_1.0.wdl",
+    "json": "tests/standard_library/basic_ceil.json",
+    "outputs": [
+       {
+         "type": "Int",
+         "identifier": "ceilWorkflow.the_ceiling",
+         "value": 12
+       }
+    ],
+    "description": "Standard Lib: basic ceil() test",
+    "versions_supported": ["1.0"]
   }
 }

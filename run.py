@@ -49,7 +49,7 @@ class MiniWDLStyleWDLRunner(WDLRunner):
 RUNNERS = {
     'cromwell': CromwellWDLRunner(),
     'toil': CromwellStyleWDLRunner('toil-wdl-runner'),
-    'toil2': CromwellStyleWDLRunner('python -m toil.wdl.wdltoil'),
+    'toil2': CromwellStyleWDLRunner('python -m toil.wdl.wdltoil --outputDialect miniwdl'),
     'miniwdl': MiniWDLStyleWDLRunner('miniwdl run')
 }
         
@@ -82,6 +82,13 @@ def verify_outputs(expected_outputs, results_file, quiet):
     # print(json.dumps(test_results, indent=4))
 
     for expected_output in expected_outputs:
+        if 'outputs' not in test_results:
+            return {'status': 'FAILED', 'reason': f"'outputs' section not found in workflow output JSON!"}
+        if not isinstance(test_results['outputs'], dict):
+            return {'status': 'FAILED', 'reason': f"'outputs' in workflow JSON is not an object!"}
+        if expected_output['identifier'] not in test_results['outputs']:
+            return {'status': 'FAILED', 'reason': f"'outputs' in workflow JSON does not contain expected key '{expected_output['identifier']}'!"}
+
         if expected_output['type'] == 'File':
             file_path = test_results['outputs'][expected_output['identifier']]
 
@@ -106,6 +113,9 @@ def verify_outputs(expected_outputs, results_file, quiet):
 
         elif expected_output['type'] == 'Int':
             number = test_results['outputs'][expected_output['identifier']]
+            if not isinstance(number, int):
+                reason = f"Item {number} of type {type(number)} was returned, but integer {expected_output['value']} was expected!"
+                return {'status': 'FAILED', 'reason': reason}
 
             # check the integer value returned
             if number != expected_output['value']:
@@ -136,7 +146,7 @@ def run_test(test_number, total_tests, test, runner, quiet):
     
     wdl_file = os.path.abspath(test['wdl'])
     json_file = os.path.abspath(test['json'])
-    args = test['args']
+    args = test.get('args', [])
     outputs = test['outputs']
     results_file = os.path.abspath(f'results-{uuid4()}.json')
     
@@ -234,6 +244,8 @@ def main(argv=sys.argv[1:]):
     skips = 0
 
     test_numbers = get_test_numbers(args.numbers) if args.numbers else range(total_tests)
+    selected_tests = len(test_numbers)
+    
     for test_number in test_numbers:
         test = tests[str(test_number)]
         
@@ -254,8 +266,8 @@ def main(argv=sys.argv[1:]):
         if success:
             successes += 1
     
-    print(f'{total_tests - skips} tests run, {successes} succeeded, {total_tests - skips - successes} failed, {skips} skiped')
-    if successes < total_tests - skips:
+    print(f'{selected_tests - skips} tests run, {successes} succeeded, {selected_tests - skips - successes} failed, {skips} skiped')
+    if successes < selected_tests - skips:
         # Fail the program overall if tests failed.
         sys.exit(1)
 
