@@ -12,7 +12,7 @@
        }
     ],
     "description": "Standard Lib: basic stdout() test",
-    "versions_supported": ["1.0"]
+    "versions_supported": ["draft-2"]
   },
   "1": {
     "wdl": "tests/standard_library/basic_stderr.wdl",
@@ -27,7 +27,7 @@
        }
     ],
     "description": "Standard Lib: basic stderr() test",
-    "versions_supported": ["1.0"]
+    "versions_supported": ["draft-2"]
   },
   "2": {
     "wdl": "tests/standard_library/basic_ceil.wdl",
@@ -41,6 +41,6 @@
        }
     ],
     "description": "Standard Lib: basic ceil() test",
-    "versions_supported": ["1.0"]
+    "versions_supported": ["draft-2"]
   }
 }
