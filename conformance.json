@@ -82,20 +82,20 @@
     "versions_supported": ["1.0"]
   },
   "6": {
-    "wdl": "tests/parser/string_placeholders.wdl",
+    "wdl": "tests/parser/string_placeholders_1.1.wdl",
     "json": "tests/parser/empty.json",
     "outputs": [
        {
          "type": "Array[String]",
          "identifier": "placeholderWorkflow.ones",
-         "value": ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"]
+         "value": ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"]
        }
     ],
-    "description": "Parser: expression placeholders in strings",
+    "description": "Parser: expression placeholders in strings in 1.1",
     "versions_supported": ["1.1"]
   },
   "7": {
-    "wdl": "tests/parser/string_placeholders_in_conditionals.wdl",
+    "wdl": "tests/parser/string_placeholders_in_conditionals_1.1.wdl",
     "json": "tests/parser/empty.json",
     "outputs": [
        {
@@ -104,7 +104,20 @@
          "value": "yep"
        }
     ],
-    "description": "Parser: expression placeholders in strings in conditional expressions",
+    "description": "Parser: expression placeholders in strings in conditional expressions in 1.1",
     "versions_supported": ["1.1"]
+  },
+  "8": {
+    "wdl": "tests/parser/string_placeholders_in_conditionals_1.0.wdl",
+    "json": "tests/parser/empty.json",
+    "outputs": [
+       {
+         "type": "String",
+         "identifier": "placeholderWorkflow.result",
+         "value": "[\"cromwell\"]"
+       }
+    ],
+    "description": "Parser: expression placeholders in strings in conditional expressions in 1.0, Cromwell style",
+    "versions_supported": ["1.0-cromwell-bugs"]
   }
 }
