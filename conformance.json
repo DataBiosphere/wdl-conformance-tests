@@ -80,5 +80,18 @@
     ],
     "description": "Standard Lib: basic ceil() test",
     "versions_supported": ["1.0"]
+  },
+  "6": {
+    "wdl": "tests/parser/string_placeholders.wdl",
+    "json": "tests/parser/empty.json",
+    "outputs": [
+       {
+         "type": "Array[String]",
+         "identifier": "placeholderWorkflow.ones",
+         "value": ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"]
+       }
+    ],
+    "description": "Parser: expression placeholders in strings",
+    "versions_supported": ["1.1"]
   }
 }

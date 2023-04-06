@@ -79,6 +79,39 @@ def run_cmd(cmd, cwd, quiet):
 
     return result
 
+def wdl_type_to_python_type(wdl_type):
+    """
+    Given a WDL type name without generics, like "Array", return a Python type like list.
+    """
+    
+    if wdl_type == 'File':
+        # This is a string but it represents a file.
+        return str
+    elif wdl_type == 'Integer':
+        return int
+    elif wdl_type == 'String':
+        return str
+    elif wdl_type == 'Array':
+        return list
+    else:
+        return None
+        
+def wdl_outer_type(wdl_type):
+    """
+    Get the outermost type of a WDL type. So "Array[String]" gives "Array".
+    """
+
+    return wdl_type.split('[')[0]
+    
+def wdl_inner_type(wdl_type):
+    """
+    Get the interior type of a WDL type. So "Array[String]" gives "String".
+    """
+    if '[' in wdl_type:
+        return '['.join(wdl_type.split('[')[1:])[:-1]
+    else:
+        return wdl_type
+
 def verify_outputs(expected_outputs, results_file, quiet):
     try:
         with open(results_file, 'r') as f:
@@ -96,41 +129,70 @@ def verify_outputs(expected_outputs, results_file, quiet):
             return {'status': 'FAILED', 'reason': f"'outputs' in workflow JSON is not an object!"}
         if expected_output['identifier'] not in test_results['outputs']:
             return {'status': 'FAILED', 'reason': f"'outputs' in workflow JSON does not contain expected key '{expected_output['identifier']}'!"}
+        
+        expected_outer_type = wdl_outer_type(expected_output['type'])
+        expected_python_type = wdl_type_to_python_type(expected_outer_type)
+        
+        if expected_python_type is None:
+            # We don't support this type yet.
+            raise NotImplementedError(f"Type '{expected_outer_type}' is not supported by the test harness!")
+        
+        got_value = test_results['outputs'][expected_output['identifier']]
+        if not isinstance(got_value, expected_python_type):
+            # Make sure we got the right type
+            reason = f"For {expected_output['identifier']}, item {got_value} of type {type(got_value)} was returned, but {expected_outer_type} {expected_output['value']} was expected!"
+            return {'status': 'FAILED', 'reason': reason}
 
-        if expected_output['type'] == 'File':
-            file_path = test_results['outputs'][expected_output['identifier']]
-
+        if expected_outer_type == 'File':
             # check file path exists
-            if not os.path.exists(file_path):
-                return {'status': 'FAILED', 'reason': f"{file_path} not found!"}
+            if not os.path.exists(got_value):
+                return {'status': 'FAILED', 'reason': f"{got_value} not found!"}
 
             # check md5sum
-            with open(file_path, 'rb') as f:
+            with open(got_value, 'rb') as f:
                 md5sum = hashlib.md5(f.read()).hexdigest()
             if md5sum != expected_output['md5sum']:
-                reason = f"md5sum does not match for {file_path}!\n" \
+                reason = f"For {expected_output['identifier']}, md5sum does not match for {got_value}!\n" \
                          f"Expected: {expected_output['md5sum']}\n" \
                          f"Actual: {md5sum}"
                 return {'status': 'FAILED', 'reason': reason}
 
             # check file size
-            if str(os.path.getsize(file_path)) != expected_output['size']:
-                reason = f"{file_path} is {os.path.getsize(file_path)} bytes " \
+            if str(os.path.getsize(got_value)) != expected_output['size']:
+                reason = f"For {expected_output['identifier']}, {got_value} is {os.path.getsize(got_value)} bytes " \
                          f"(expected: {expected_output['size']} bytes)!"
                 return {'status': 'FAILED', 'reason': reason}
 
-        elif expected_output['type'] == 'Int':
-            number = test_results['outputs'][expected_output['identifier']]
-            if not isinstance(number, int):
-                reason = f"Item {number} of type {type(number)} was returned, but integer {expected_output['value']} was expected!"
+        elif expected_outer_type == 'Array':
+            if len(got_value)!= len(expected_output['value']):
+                # Check array length
+                reason = f"For {expected_output['identifier']}, array {repr(got_value)} of length {len(expected_output['value'])} was returned, but {expected_output['type']} {repr(expected_output['value'])} of length {len(expected_output['value'])} was expected!"
                 return {'status': 'FAILED', 'reason': reason}
-
-            # check the integer value returned
-            if number != expected_output['value']:
-                reason = f"Integer {number} was returned, but {expected_output['value']} was expected!"
-                return {'status': 'FAILED', 'reason': reason}
+        
+            expected_inner_type = wdl_inner_type(expected_output['type'])
+            expected_inner_python_type = wdl_type_to_python_type(expected_inner_type)
+            if expected_inner_python_type is None or expected_inner_type == 'File':
+                # We don't support this type as an array item yet.
+                raise NotImplementedError(f"Array item type '{expected_inner_type}' is not supported by the test harness!")
+            
+            for i, item in enumerate(got_value):
+                if not isinstance(item, expected_inner_python_type):
+                    # Check the type of each item
+                    reason = f"For {expected_output['identifier']}, at index {i}, item {item} of type {type(item)} was returned, but {expected_inner_type} {expected_output['value'][i]} was expected!"
+                    return {'status': 'FAILED', 'reason': reason}
+                
+                if item != expected_output['value'][i]:
+                    # And its value
+                    reason = f"For {expected_output['identifier']}, at index {i}, {expected_inner_type} {repr(item)} was returned, but {repr(expected_output['value'][i])} was expected!"
+                    return {'status': 'FAILED', 'reason': reason}
+        
+                    
         else:
-            raise NotImplementedError('This output type has not been implemented yet.')
+            # check the single value returned
+            if got_value != expected_output['value']:
+                reason = f"For {expected_output['identifier']}, {expected_outer_type} {repr(got_value)} was returned, but {repr(expected_output['value'])} was expected!"
+                return {'status': 'FAILED', 'reason': reason}
+            
     return {'status': 'SUCCEEDED', 'reason': None}
 
 def announce_test(test_number, total_tests, test):
