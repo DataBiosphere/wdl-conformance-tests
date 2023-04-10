@@ -87,8 +87,10 @@ def wdl_type_to_python_type(wdl_type):
     if wdl_type == 'File':
         # This is a string but it represents a file.
         return str
-    elif wdl_type == 'Integer':
+    elif wdl_type == 'Int':
         return int
+    elif wdl_type == 'Boolean':
+        return bool
     elif wdl_type == 'String':
         return str
     elif wdl_type == 'Array':

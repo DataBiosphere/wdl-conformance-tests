@@ -119,5 +119,18 @@
     ],
     "description": "Parser: expression placeholders in strings in conditional expressions in 1.0, Cromwell style",
     "versions_supported": ["1.0-cromwell-bugs"]
+  },
+  "9": {
+    "wdl": "tests/semantics/null_optional_vs_default_1.0.wdl",
+    "json": "tests/semantics/empty.json",
+    "outputs": [
+       {
+         "type": "Int",
+         "identifier": "overrideWorkflow.result",
+         "value": 1
+       }
+    ],
+    "description": "Semantics: passing a null optional value as an input does not override a default value with null",
+    "versions_supported": ["1.0"]
   }
 }

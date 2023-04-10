@@ -13,7 +13,7 @@ workflow placeholderWorkflow {
   
   Array[String] one_one = ["1"]
   
-  Array[String] ones_inside = ["1", "${one_in}", "~{one_in}", '${"1"}', '~{"1"}', "${'1'}", "~{'1'}", "${"1"}", "~{"1"}", '${'1'}', '~{'1'}', '${sep="" one_one}', "${sep="" one_one}"]
+  Array[String] ones_inside = ["1", "${one_in}", "~{one_in}", '${"1"}', '~{"1"}', "${'1'}", "~{'1'}", "${"1"}", "~{"1"}", '${'1'}', '~{'1'}', "${sep="" one_one}", '${sep="" one_one}']
   
   output {
     Array[String] ones = ones_inside
