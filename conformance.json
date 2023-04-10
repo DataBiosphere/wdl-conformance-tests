@@ -130,7 +130,33 @@
          "value": 1
        }
     ],
-    "description": "Semantics: passing a null optional value as an input does not override a default value with null",
+    "description": "Semantics: passing a null optional value as an input to a task does not override a default value with null",
+    "versions_supported": ["1.0"]
+  },
+  "10": {
+    "wdl": "tests/semantics/null_input_through_workflows_1.0.wdl",
+    "json": "tests/semantics/empty.json",
+    "outputs": [
+       {
+         "type": "Int",
+         "identifier": "nullInput.result",
+         "value": 1
+       }
+    ],
+    "description": "Semantics: passing a null optional value as an input to a workflow that calls subworkflows does not override a default value with null",
+    "versions_supported": ["1.0"]
+  },
+  "11": {
+    "wdl": "tests/semantics/null_input_through_workflows_1.0.wdl",
+    "json": "tests/semantics/nonnull_input.json",
+    "outputs": [
+       {
+         "type": "Int",
+         "identifier": "nullInput.result",
+         "value": 10
+       }
+    ],
+    "description": "Semantics: passing a non-null optional value as an input to a workflow that calls subworkflows brings it through",
     "versions_supported": ["1.0"]
   }
 }
