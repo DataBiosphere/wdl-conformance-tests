@@ -1,8 +1,8 @@
 include common.mk
 
 MODULES=wdl-1.0 tests
-CROMWELL_VERSION=52
-WOMTOOL_VERSION=52
+CROMWELL_VERSION=85
+WOMTOOL_VERSION=85
 
 lint:
 	flake8 $(MODULES) *.py
