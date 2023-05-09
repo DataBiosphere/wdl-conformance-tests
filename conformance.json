@@ -158,5 +158,226 @@
     ],
     "description": "Semantics: passing a non-null optional value as an input to a workflow that calls subworkflows brings it through",
     "versions_supported": ["1.0"]
+  },
+  "12": {
+    "wdl": "tests/standard_library/basic_sep.wdl",
+    "json": "tests/standard_library/basic_sep.json",
+    "outputs": [
+       {
+         "type": "String",
+         "identifier": "sepWorkflow.result",
+         "value": "a b c"
+       }
+    ],
+    "description": "Standard Lib: basic sep() test in 1.1",
+    "versions_supported": ["1.1"]
+  },
+  "13": {
+    "wdl": "tests/standard_library/basic_prefix.wdl",
+    "json": "tests/standard_library/basic_prefix.json",
+    "outputs": [
+       {
+         "type": "Array[String]",
+         "identifier": "prefixWorkflow.result",
+         "value": ["-e value1", "-e value2", "-e value3"]
+       }
+    ],
+    "description": "Standard Lib: basic prefix() test with strings in draft-2",
+    "versions_supported": ["draft-2"]
+  },
+  "14": {
+    "wdl": "tests/standard_library/basic_prefix_1.0.wdl",
+    "json": "tests/standard_library/basic_prefix.json",
+    "outputs": [
+       {
+         "type": "Array[String]",
+         "identifier": "prefixWorkflow.result",
+         "value": ["-e value1", "-e value2", "-e value3"]
+       }
+    ],
+    "description": "Standard Lib: basic prefix() test with strings in 1.0",
+    "versions_supported": ["1.0"]
+  },
+  "15": {
+    "wdl": "tests/standard_library/basic_quote.wdl",
+    "json": "tests/standard_library/basic_quote.json",
+    "outputs": [
+       {
+         "type": "Array[String]",
+         "identifier": "quoteWorkflow.result",
+         "value": ["\"value1\"", "\"value2\"", "\"value3\""]
+       }
+    ],
+    "description": "Standard Lib: basic quote() test with strings in 1.1",
+    "versions_supported": ["1.1"]
+  },
+  "16": {
+    "wdl": "tests/standard_library/basic_squote.wdl",
+    "json": "tests/standard_library/basic_squote.json",
+    "outputs": [
+       {
+         "type": "Array[String]",
+         "identifier": "squoteWorkflow.result",
+         "value": ["'value1'", "'value2'", "'value3'"]
+       }
+    ],
+    "description": "Standard Lib: basic squote() test with strings in 1.1",
+    "versions_supported": ["1.1"]
+  },
+  "17": {
+    "wdl": "tests/standard_library/basic_select_first.wdl",
+    "json": "tests/standard_library/basic_select_first.json",
+    "outputs": [
+       {
+         "type": "Int",
+         "identifier": "selectFirstWorkflow.result",
+         "value": 5
+       }
+    ],
+    "description": "Standard Lib: basic select_first() test in draft-2",
+    "versions_supported": ["draft-2"]
+  },
+  "18": {
+    "wdl": "tests/standard_library/basic_select_first_1.0.wdl",
+    "json": "tests/standard_library/basic_select_first.json",
+    "outputs": [
+       {
+         "type": "Int",
+         "identifier": "selectFirstWorkflow.result",
+         "value": 5
+       }
+    ],
+    "description": "Standard Lib: basic select_first() test in 1.0",
+    "versions_supported": ["1.0"]
+  },
+  "19": {
+    "wdl": "tests/standard_library/basic_basename.wdl",
+    "json": "tests/standard_library/basic_basename.json",
+    "outputs": [
+       {
+         "type": "String",
+         "identifier": "basenameWorkflow.result",
+         "value": "file.txt"
+       }
+    ],
+    "description": "Standard Lib: basic basename() test in draft-2",
+    "versions_supported": ["draft-2"]
+  },
+  "20": {
+    "wdl": "tests/standard_library/basic_basename_1.0.wdl",
+    "json": "tests/standard_library/basic_basename.json",
+    "outputs": [
+       {
+         "type": "String",
+         "identifier": "basenameWorkflow.result",
+         "value": "file.txt"
+       }
+    ],
+    "description": "Standard Lib: basic basename() test in 1.0",
+    "versions_supported": ["1.0"]
+  },
+  "21": {
+    "wdl": "tests/standard_library/basic_basename_opt.wdl",
+    "json": "tests/standard_library/basic_basename_opt.json",
+    "outputs": [
+       {
+         "type": "String",
+         "identifier": "basenameWorkflowOpt.result",
+         "value": "file"
+       }
+    ],
+    "description": "Standard Lib: basic basename() test with optional arguments in draft-2",
+    "versions_supported": ["draft-2"]
+  },
+  "22": {
+    "wdl": "tests/standard_library/basic_basename_opt_1.0.wdl",
+    "json": "tests/standard_library/basic_basename_opt.json",
+    "outputs": [
+       {
+         "type": "String",
+         "identifier": "basenameWorkflowOpt.result",
+         "value": "file"
+       }
+    ],
+    "description": "Standard Lib: basic basename() test with optional arguments in 1.0",
+    "versions_supported": ["1.0"]
+  },
+  "23": {
+    "wdl": "tests/standard_library/basic_defined.wdl",
+    "json": "tests/standard_library/basic_defined.json",
+    "outputs": [
+       {
+         "type": "Boolean",
+         "identifier": "definedWorkflow.result",
+         "value": true
+       }
+    ],
+    "description": "Standard Lib: basic defined() test in draft-2",
+    "versions_supported": ["draft-2"]
+  },
+  "24": {
+    "wdl": "tests/standard_library/basic_defined_1.0.wdl",
+    "json": "tests/standard_library/basic_defined.json",
+    "outputs": [
+       {
+         "type": "Boolean",
+         "identifier": "definedWorkflow.result",
+         "value": true
+       }
+    ],
+    "description": "Standard Lib: basic defined() test in 1.0",
+    "versions_supported": ["1.0"]
+  },
+  "25": {
+    "wdl": "tests/standard_library/basic_defined.wdl",
+    "json": "tests/standard_library/empty.json",
+    "outputs": [
+       {
+         "type": "Boolean",
+         "identifier": "definedWorkflow.result",
+         "value": false
+       }
+    ],
+    "description": "Standard Lib: basic defined() test with empty input in draft-2",
+    "versions_supported": ["draft-2"]
+  },
+  "26": {
+    "wdl": "tests/standard_library/basic_defined_1.0.wdl",
+    "json": "tests/standard_library/empty.json",
+    "outputs": [
+       {
+         "type": "Boolean",
+         "identifier": "definedWorkflow.result",
+         "value": false
+       }
+    ],
+    "description": "Standard Lib: basic defined() test with empty input in 1.0",
+    "versions_supported": ["1.0"]
+  },
+  "27": {
+    "wdl": "tests/standard_library/basic_select_all.wdl",
+    "json": "tests/standard_library/basic_select_all.json",
+    "outputs": [
+       {
+         "type": "Array[Int]",
+         "identifier": "selectAllWorkflow.result",
+         "value": [4, 5, 7]
+       }
+    ],
+    "description": "Standard Lib: basic select_all() test in draft-2",
+    "versions_supported": ["draft-2"]
+  },
+  "28": {
+    "wdl": "tests/standard_library/basic_select_all_1.0.wdl",
+    "json": "tests/standard_library/basic_select_all.json",
+    "outputs": [
+       {
+         "type": "Array[Int]",
+         "identifier": "selectAllWorkflow.result",
+         "value": [4, 5, 7]
+       }
+    ],
+    "description": "Standard Lib: basic select_all() test in 1.0",
+    "versions_supported": ["1.0"]
   }
 }
