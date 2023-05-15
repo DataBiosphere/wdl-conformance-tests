@@ -12,7 +12,7 @@ from shutil import which
 from uuid import uuid4
 
 from WDL.Type import Float as WDLFloat, String as WDLString, File as WDLFile, Int as WDLInt, Boolean as WDLBool, \
-    Array as WDLArray
+    Array as WDLArray, Map as WDLMap
 
 
 class WDLRunner:
@@ -117,6 +117,8 @@ def wdl_type_to_python_type(wdl_type):
         return WDLArray
     elif wdl_type == 'Float':
         return WDLFloat
+    elif wdl_type == 'Map':
+        return WDLMap
     else:
         # raise NotImplementedError
         return None
@@ -157,13 +159,16 @@ def expand_vars_in_json(json_obj):
                 if isinstance(value, str):
                     json_obj[name] = os.path.expandvars(value)
 
-    # return json_obj
-
 
 def validate(expected, result, typ):
     if isinstance(typ, WDLArray):
         for i in range(len(expected)):
             if not validate(expected[i], result[i], typ.item_type):
+                return False
+
+    if isinstance(typ, WDLMap):
+        for key in expected.keys():
+            if not validate(expected[key], result[key], typ.item_type):
                 return False
 
     if typ in (WDLInt, WDLFloat, WDLBool, WDLString):
@@ -190,13 +195,10 @@ def verify_outputs(expected, results_file, version, quiet):
         return {'status': 'FAILED', 'reason': f'Results file at {results_file} cannot be opened'}
     except json.JSONDecodeError:
         return {'status': 'FAILED', 'reason': f'Results file at {results_file} is not JSON'}
-    # print(json.dumps(test_results, indent=4))
 
     if len(test_results['outputs']) != len(expected):
         return {'status': 'FAILED',
                 'reason': f"'outputs' section expected {len(test_results['outputs'])} results, got {len(expected)} instead"}
-
-    # print(json.dumps(test_results, indent=4))
 
     result_outputs = test_results['outputs']
 
@@ -206,13 +208,15 @@ def verify_outputs(expected, results_file, version, quiet):
             python_type = convert_type(expected[identifier]['type'])
         except KeyError:
             return {'status': 'FAILED', 'reason': f"Output variable name '{identifier}' not found in expected results!"}
+
+        if not any(x in ['value', 'md5sum'] for x in expected[identifier]):
+            return {'status': 'FAILED', 'reason': f"Test has no expected output!"}
+
         if 'value' in expected[identifier]:
             same = expected[identifier]['value'] == output
             if not same:
                 return {'status': 'FAILED', 'reason': f"\nExpected output: {expected[identifier]['value']}\nActual "
                                                       f"result was: {output}!"}
-            # print(python_type)
-            # validate(expected[identifier]['value'], output, python_type)
 
         # file types may be represented as md5 hashes
         if 'md5sum' in expected[identifier]:
@@ -230,27 +234,20 @@ def announce_test(test_name, total_tests, test, version):
         print(f'{test_name}: RUNNING\t\tWDL version: {version}')
 
 
-def check_test(test, versions_to_test):
+def get_versions(test, versions_to_test):
     """
-    Determine if a test should be skipped.
-    
-    Returns a response, with SUCCEEDED status if the test should be run, and
-    SKIPPED otherwise.
-    """
+    Return all versions for a test to run with
 
-    # TODO: Tests have a versions_supported array for some reason but
-    # actually can only really be one version.
+    Returns a list of versions
+    """
     versions = []
-    # version_match = False
     for version in test['versions']:
         if version in versions_to_test:
             versions.append(version)
-            # version_match = True
 
     if len(versions) == 0:
         return None
 
-    # return {'status': 'SUCCEEDED', 'reason': None}
     return versions
 
 
@@ -318,27 +315,15 @@ def handle_test(test_name, total_tests, test, runner, versions_to_test, quiet):
     
     Returns a result that can have status SKIPPED, SUCCEEDED, or FAILED.
     """
-    versions = check_test(test, versions_to_test)
+    versions = get_versions(test, versions_to_test)
     if versions is None:
         response = {'status': 'SKIPPED', 'reason': f'Test only applies to versions: {",".join(test["versions"])}'}
         with LOG_LOCK:
             print_response(test_name, total_tests, response)
         return response
-    # if response['status'] != 'SUCCEEDED':
-    # if isinstance(response, dict):
-    #     with LOG_LOCK:
-    #         print("test")
-    #         announce_test(test_name, total_tests, test, version=None)
-    #         print_response(test_name, total_tests, response)
-    #     return response
     response = {}
     for version in versions:
         response = run_test(test_name, total_tests, test, runner, quiet, version)
-        # if response['status'] != 'SUCCEEDED':
-        # with LOG_LOCK:
-        # print("hello")
-        # announce_test(test_name, total_tests, test, version)
-        # print_response(test_name, total_tests, response)
     return response  # todo: multiple versions only returns last verison response
 
 
