@@ -1,21 +1,11 @@
+version 1.0
+
 workflow prefixWorkflow {
+  input {
     Array[String] str_arr
     String pre
-
-    call get_prefix {input: str_arr = str_arr, pre = pre}
-
-    output {
-        Array[String] result = get_prefix.the_prefix
-    }
-}
-
-task get_prefix {
-    Array[String] str_arr
-    String pre
-
-    command {}
-
-    output {
-        Array[String] the_prefix = prefix(pre, str_arr)
-    }
+  }
+  output {
+    Array[String] str_result = prefix(pre, str_arr)
+  }
 }

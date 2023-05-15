@@ -165,8 +165,8 @@
     "outputs": [
        {
          "type": "String",
-         "identifier": "sepWorkflow.result",
-         "value": "a b c"
+         "identifier": "sepWorkflow.str_result",
+         "value": "a - b - c"
        }
     ],
     "description": "Standard Lib: basic sep() test in 1.1",
@@ -205,7 +205,7 @@
        {
          "type": "Array[String]",
          "identifier": "quoteWorkflow.result",
-         "value": ["\"value1\"", "\"value2\"", "\"value3\""]
+         "value": [["\"value1\"", "\"value2\"", "\"value3\""], ["\"1\"", "\"2\"", "\"-3\""], ["\"1.234000\"", "\"-0.543000\"", "\"13.300000\""], ["\"True\"", "\"False\"", "\"True\""]]
        }
     ],
     "description": "Standard Lib: basic quote() test with strings in 1.1",
@@ -379,5 +379,18 @@
     ],
     "description": "Standard Lib: basic select_all() test in 1.0",
     "versions_supported": ["1.0"]
+  },
+  "29": {
+    "wdl": "tests/standard_library/basic_suffix.wdl",
+    "json": "tests/standard_library/basic_suffix.json",
+    "outputs": [
+       {
+         "type": "Array[String]",
+         "identifier": "suffixWorkflow.result",
+         "value": ["value1.txt", "value2.txt", "value3.txt"]
+       }
+    ],
+    "description": "Standard Lib: basic suffix() test in 1.1",
+    "versions_supported": ["1.1"]
   }
 }

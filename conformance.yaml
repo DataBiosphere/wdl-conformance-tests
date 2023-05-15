@@ -1,0 +1,193 @@
+stdout:
+  versions: [ "draft-2" ]
+  description: >
+    Standard Lib: Basic test for stdout()
+  inputs:
+    wdl: tests/standard_library/basic_stdout.wdl
+    json: tests/standard_library/basic_stdout.json
+  outputs:
+    stdoutWorkflow.get_stdout.check_this:
+      type: "File"
+      md5sum: "91d69f7c47b6e7d5e4d81fab67f7f304"
+
+stderr:
+  versions: [ "draft-2" ]
+  description: >
+    Standard Lib: Basic test for stderr()
+  inputs:
+    wdl: tests/standard_library/basic_stderr.wdl
+    json: tests/standard_library/basic_stderr.json
+  outputs:
+    stderrWorkflow.get_stderr.check_this:
+      type: "File"
+      md5sum: "2332021c3feef276abe077f34276abfe"
+
+quote:
+  versions: [ "1.1" ]
+  description: >
+    Standard Lib: Basic test for quote()
+  inputs:
+    wdl: tests/standard_library/basic_quote.wdl
+    json: tests/standard_library/basic_quote.json
+  outputs:
+    quoteWorkflow.str_output:
+      value: [ '"value1"', '"value2"', '"value3"' ]
+      type: "Array[String]"
+    quoteWorkflow.int_output:
+      value: [ '"1"', '"2"', '"-3"' ]
+      type: "Array[String]"
+    quoteWorkflow.float_output:
+      value: [ '"1.234000"', '"-0.543000"', '"-13.300000"' ]
+      type: "Array[String]"
+    quoteWorkflow.bool_output:
+      value: [ '"true"', '"false"', '"true"' ]
+      type: "Array[String]"
+    quoteWorkflow.file_output:
+      value: [ '"${WDL_DIR}/version_1.1/tests/standard_library/basic_quote.wdl"', '"${WDL_DIR}/version_1.1/tests/standard_library/basic_quote.json"', '"${WDL_DIR}/run.py"' ] # files are relative path to input files, cannot go up in subdir, ex with run.py
+      type: "Array[String]"
+
+squote:
+  versions: [ "1.1" ]
+  description: >
+    Standard Lib: Basic test for squote()
+  inputs:
+    wdl: tests/standard_library/basic_squote.wdl
+    json: tests/standard_library/basic_squote.json
+  outputs:
+    squoteWorkflow.str_output:
+      value: [ "'value1'", "'value2'", "'value3'" ]
+      type: "Array[String]"
+    squoteWorkflow.int_output:
+      value: [ "'1'", "'2'", "'-3'" ]
+      type: "Array[String]"
+    squoteWorkflow.float_output:
+      value: [ "'1.234000'", "'-0.543000'", "'-13.300000'" ]
+      type: "Array[String]"
+    squoteWorkflow.bool_output:
+      value: [ "'true'", "'false'", "'true'" ]
+      type: "Array[String]"
+    squoteWorkflow.file_output:
+      value: [ "'${WDL_DIR}/version_1.1/tests/standard_library/basic_quote.wdl'", "'${WDL_DIR}/version_1.1/tests/standard_library/basic_quote.json'", "'${WDL_DIR}/run.py'" ]
+      type: "Array[String]"
+
+sep:
+  versions: [ "1.1" ]
+  description: >
+    Standard Lib: Basic test for sep()
+  inputs:
+    wdl: tests/standard_library/basic_sep.wdl
+    json: tests/standard_library/basic_sep.json
+  outputs:
+    sepWorkflow.str_output:
+      value: "a - b - c"
+      type: "String"
+
+prefix:
+  versions: [ "1.0", "draft-2", "1.1" ]
+  description: >
+    Standard Lib: Basic test for prefix()
+  inputs:
+    wdl: tests/standard_library/basic_prefix.wdl
+    json: tests/standard_library/basic_prefix.json
+  outputs:
+    prefixWorkflow.str_output:
+      value: [ "-e value1", "-e value2", "-e value3" ]
+      type: "Array[String]"
+
+select_first:
+  versions: [ "draft-2", "1.0", "1.1" ]
+  description: >
+    Standard Lib: Basic test for select_first()
+  inputs:
+    wdl: tests/standard_library/basic_select_first.wdl
+    json: tests/standard_library/basic_select_first.json
+  outputs:
+    selectFirstWorkflow.int_output:
+      value: 5
+      type: "Int"
+    selectFirstWorkflow.str_output:
+      type: "String"
+      value: "value1"
+    selectFirstWorkflow.bool_output:
+      type: "Boolean"
+      value: true
+    selectFirstWorkflow.float_output:
+      type: "Float"
+      value: 999.9999999
+    selectFirstWorkflow.file_output:
+      md5sum: "f479f48a8e85389a4df4b7f87df2aa49"
+      size: "452"
+      type: "File"
+
+select_all:
+  versions: [ "draft-2", "1.0", "1.1" ]
+  description: >
+    Standard Lib: Basic test for select_all()
+  inputs:
+    wdl: tests/standard_library/basic_select_all.wdl
+    json: tests/standard_library/basic_select_all.json
+  outputs:
+    selectAllWorkflow.int_output:
+      type: "Array[Int]"
+      value: [ 4, 5 ]
+    selectAllWorkflow.float_output:
+      type: "Array[Float]"
+      value: [ 1.2345 ]
+    selectAllWorkflow.str_output:
+      type: "Array[String]"
+      value: [ "value1", "value3" ]
+    selectAllWorkflow.bool_output:
+      type: "Array[Boolean]"
+      value: [ true, false ]
+    selectAllWorkflow.file_output:
+      type: "Array[File]"
+      md5sum: [ "c4b90e142a9ba0270f8137244caa246c" ]
+      size: [ "846" ]
+
+suffix:
+  versions: [ "1.1" ]
+  description: >
+    Standard Lib: Basic test for suffix()
+  inputs:
+    wdl: tests/standard_library/basic_suffix.wdl
+    json: tests/standard_library/basic_suffix.json
+  outputs:
+    suffixWorkflow.str_output:
+      value: [ "value1.txt", "value2.txt", "value3.txt" ]
+      type: "Array[String]"
+
+defined:
+  versions: [ "draft-2", "1.0", "1.1" ]
+  description: >
+    Standard Lib: Basic test for defined()
+  inputs:
+    wdl: tests/standard_library/basic_defined.wdl
+    json: tests/standard_library/basic_defined.json
+  outputs:
+    definedWorkflow.bool_output:
+      value: true
+      type: "Boolean"
+    definedWorkflow.bool_output_none:
+      value: false
+      type: "Boolean"
+
+basename:
+  versions: [ "draft-2", "1.0", "1.1" ]
+  description: >
+    Standard Lib: Basic test for basename()
+  inputs:
+    wdl: tests/standard_library/basic_basename.wdl
+    json: tests/standard_library/basic_basename.json
+  outputs:
+    basenameWorkflow.str_output:
+      type: "String"
+      value: "file.txt"
+    basenameWorkflow.str_output_removed:
+      type: "String"
+      value: "file"
+    basenameWorkflow.str_output_file:
+      type: "String"
+      value: "basic_basename.json"
+    basenameWorkflow.str_output_file_removed:
+      type: "String"
+      value: "basic_basename"

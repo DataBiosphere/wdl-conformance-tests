@@ -14,6 +14,9 @@ build: cromwell womtool
 
 clean:
 	rm -rf build
+#	rm results*.json
+#	rm miniwdl-logs/*
+#	rm -r cromwell-executions/*
 
 cromwell:
 	mkdir -p build

@@ -3,17 +3,28 @@ workflow selectFirstWorkflow{
     Int? maybe_five
     Int? maybe_six
 
-    call get_select_first {input: maybe_int_arr = [maybe_four, maybe_five, maybe_six]}
-    
-    output {
-        Int result = get_select_first.first
-    }
-}
+    String? maybe_string1
+    String? maybe_string2
+    String? maybe_string3
 
-task get_select_first {
-    Array[Int?] maybe_int_arr
-    command {}
+    Float? maybe_int1
+    Float? maybe_int2
+    Float? maybe_int3
+
+    Boolean? maybe_true1
+    Boolean? maybe_true2
+    Boolean? maybe_true3
+
+    File? maybe_file1
+    File? maybe_file2
+    File? maybe_file3
+
     output {
-        Int first = select_first(maybe_int_arr)
+        # Int int_result = select_first([maybe_four, maybe_five, maybe_six])
+        # String str_result = select_first([maybe_string1, maybe_string2, maybe_string3])
+        # Float float_result = select_first([maybe_int1, maybe_int2, maybe_int3])
+        # Boolean bool_result = select_first([maybe_true1, maybe_true2, maybe_true3])
+        File file_result = select_first([maybe_file1, maybe_file2, maybe_file3])
+
     }
 }

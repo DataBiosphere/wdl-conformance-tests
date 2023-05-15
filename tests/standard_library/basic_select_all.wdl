@@ -1,27 +1,29 @@
 workflow selectAllWorkflow {
-    Int? maybe_four
-    Int? maybe_five
-    Int? maybe_six
-    Int? maybe_seven
-    Int? maybe_eight
+    Int? maybe_int1
+    Int? maybe_int2
+    Int? maybe_int3
 
-    call get_select_all {
-        input: arr_int = [maybe_four, maybe_five, maybe_six, maybe_seven, maybe_eight]
-    }
+    String? maybe_string1
+    String? maybe_string2
+    String? maybe_string3
 
-    output {
-        Array[Int] result = get_select_all.all_defined
-    }
-}
+    Float? maybe_float1
+    Float? maybe_float2
+    Float? maybe_float3
 
-task get_select_all {
-    Array[Int?] arr_int
+    Boolean? maybe_bool1
+    Boolean? maybe_bool2
+    Boolean? maybe_bool3
 
-    command {
-
-    }
+    File? maybe_file1
+    File? maybe_file2
+    File? maybe_file3
 
     output {
-        Array[Int] all_defined = select_all(arr_int)
+        Array[Int] int_result = select_all([maybe_int1, maybe_int2, maybe_int3])
+        Array[String] str_result = select_all([maybe_string1, maybe_string2, maybe_string3])
+        Array[Float] float_result = select_all([maybe_float1, maybe_float2, maybe_float3])
+        Array[Boolean] bool_result = select_all([maybe_bool1, maybe_bool2, maybe_bool3])
+        Array[File] file_result = select_all([maybe_file1, maybe_file2, maybe_file3])
     }
 }

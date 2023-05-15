@@ -1,13 +1,12 @@
 version 1.1
 
-workflow sepWorkflow{
+workflow sepWorkflow {
 
     input {
         String delimiter
         Array[String] to_sep
     }
-    
     output {
-        String result = sep(delimiter, to_sep)
+        String str_result = sep(delimiter, to_sep)
     }
 }
