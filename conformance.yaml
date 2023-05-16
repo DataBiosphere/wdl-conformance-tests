@@ -1,6 +1,6 @@
 stdout:
   versions: [ "draft-2" ]
-  description: >
+  description: |
     Standard Lib: Basic test for stdout()
   inputs:
     wdl: tests/standard_library/basic_stdout.wdl
@@ -12,7 +12,7 @@ stdout:
 
 stderr:
   versions: [ "draft-2" ]
-  description: >
+  description: |
     Standard Lib: Basic test for stderr()
   inputs:
     wdl: tests/standard_library/basic_stderr.wdl
@@ -24,7 +24,7 @@ stderr:
 
 quote:
   versions: [ "1.1" ]
-  description: >
+  description: |
     Standard Lib: Basic test for quote()
   inputs:
     wdl: tests/standard_library/basic_quote.wdl
@@ -48,7 +48,7 @@ quote:
 
 squote:
   versions: [ "1.1" ]
-  description: >
+  description: |
     Standard Lib: Basic test for squote()
   inputs:
     wdl: tests/standard_library/basic_squote.wdl
@@ -72,7 +72,7 @@ squote:
 
 sep:
   versions: [ "1.1" ]
-  description: >
+  description: |
     Standard Lib: Basic test for sep()
   inputs:
     wdl: tests/standard_library/basic_sep.wdl
@@ -84,7 +84,7 @@ sep:
 
 prefix:
   versions: [ "1.0", "draft-2", "1.1" ]
-  description: >
+  description: |
     Standard Lib: Basic test for prefix()
   inputs:
     wdl: tests/standard_library/basic_prefix.wdl
@@ -96,7 +96,7 @@ prefix:
 
 select_first:
   versions: [ "draft-2", "1.0", "1.1" ]
-  description: >
+  description: |
     Standard Lib: Basic test for select_first()
   inputs:
     wdl: tests/standard_library/basic_select_first.wdl
@@ -121,7 +121,7 @@ select_first:
 
 select_all:
   versions: [ "draft-2", "1.0", "1.1" ]
-  description: >
+  description: |
     Standard Lib: Basic test for select_all()
   inputs:
     wdl: tests/standard_library/basic_select_all.wdl
@@ -146,7 +146,7 @@ select_all:
 
 suffix:
   versions: [ "1.1" ]
-  description: >
+  description: |
     Standard Lib: Basic test for suffix()
   inputs:
     wdl: tests/standard_library/basic_suffix.wdl
@@ -158,7 +158,7 @@ suffix:
 
 defined:
   versions: [ "draft-2", "1.0", "1.1" ]
-  description: >
+  description: |
     Standard Lib: Basic test for defined()
   inputs:
     wdl: tests/standard_library/basic_defined.wdl
@@ -173,7 +173,7 @@ defined:
 
 basename:
   versions: [ "draft-2", "1.0", "1.1" ]
-  description: >
+  description: |
     Standard Lib: Basic test for basename()
   inputs:
     wdl: tests/standard_library/basic_basename.wdl
@@ -191,3 +191,26 @@ basename:
     basenameWorkflow.str_output_file_removed:
       type: "String"
       value: "basic_basename"
+
+fail:
+  versions: [ "1.1", "1.0" ]
+  description: |
+    Basic failure test, with invalid arguments
+  inputs:
+    wdl: tests/standard_library/basic_fail.wdl
+    json: tests/standard_library/basic_fail.json
+  outputs:
+    fail: 2
+
+fake_fail:
+  versions: [ "1.1", "1.0" ]
+  description: |
+    test case, wdl workflow fail but expected output is not
+    this test should fail
+  inputs:
+    wdl: tests/standard_library/basic_fake_fail.wdl
+    json: tests/standard_library/basic_fake_fail.json
+  outputs:
+    fakeFailWorkflow.str_output:
+      type: "Array[String]"
+      value: [ "'2'" ]

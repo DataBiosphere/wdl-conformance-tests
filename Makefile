@@ -17,6 +17,7 @@ clean:
 	rm -f results*.json
 	rm -rf miniwdl-logs/*
 	rm -rf cromwell-executions/*
+	rm -rf wdl-out-*
 
 cromwell:
 	mkdir -p build

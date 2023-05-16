@@ -12,7 +12,7 @@ from shutil import which
 from uuid import uuid4
 
 from WDL.Type import Float as WDLFloat, String as WDLString, File as WDLFile, Int as WDLInt, Boolean as WDLBool, \
-    Array as WDLArray, Map as WDLMap
+    Array as WDLArray, Map as WDLMap, Pair as WDLPair
 
 
 class WDLRunner:
@@ -48,7 +48,7 @@ class CromwellWDLRunner(CromwellStyleWDLRunner):
                     cromwell = os.path.abspath('build/cromwell.jar')
                     if not os.path.exists(cromwell):
                         print('Cromwell not seen in the path, now downloading cromwell to run tests... ')
-                        run_cmd(cmd='make cromwell', cwd=os.getcwd(), quiet=quiet)
+                        run_cmd(cmd='make cromwell', cwd=os.getcwd())
                     self.runner = f'java {log_level} -jar {cromwell} run'
 
         return super().format_command(wdl_file, json_file, results_file, args, quiet)
@@ -71,22 +71,11 @@ RUNNERS = {
 }
 
 
-def run_cmd(cmd, cwd, quiet):
+def run_cmd(cmd, cwd):
     p = subprocess.Popen(cmd, stdout=-1, stderr=-1, shell=True, cwd=cwd)
     stdout, stderr = p.communicate()
 
-    result = {}
-    if p.returncode:
-        result['status'] = 'FAILED'
-        result['reason'] = f'Runner exited with code {p.returncode}'
-    else:
-        result['status'] = 'SUCCEEDED'
-
-    if not quiet or p.returncode:
-        result['stdout'] = stdout.decode("utf-8", errors="ignore")
-        result['stderr'] = stderr.decode("utf-8", errors="ignore")
-
-    return result
+    return p.returncode, stdout, stderr
 
 
 def convert_type(wdl_type):
@@ -102,7 +91,9 @@ def convert_type(wdl_type):
 
 def wdl_type_to_python_type(wdl_type):
     """
-    Given a WDL type name without generics, like "Array", return a Python type like list.
+    Given a WDL type name, return a Python type.
+
+    Currently supports File, Int, Boolean, String, Float, Array, and Map
     """
 
     if wdl_type == 'File':
@@ -120,8 +111,8 @@ def wdl_type_to_python_type(wdl_type):
     elif wdl_type == 'Map':
         return WDLMap
     else:
-        # raise NotImplementedError
-        return None
+        raise NotImplementedError
+        # return None
 
 
 def wdl_outer_type(wdl_type):
@@ -161,6 +152,9 @@ def expand_vars_in_json(json_obj):
 
 
 def validate(expected, result, typ):
+    """
+    Recursively ensure that the expected output is the same as the resulting output
+    """
     if isinstance(typ, WDLArray):
         for i in range(len(expected)):
             if not validate(expected[i], result[i], typ.item_type):
@@ -174,6 +168,7 @@ def validate(expected, result, typ):
     if typ in (WDLInt, WDLFloat, WDLBool, WDLString):
         if expected != result:
             return False
+
     if typ is WDLFile:
         # check file path exists
         if not os.path.exists(result):
@@ -187,7 +182,27 @@ def validate(expected, result, typ):
     return True
 
 
-def verify_outputs(expected, results_file, version, quiet):
+def verify(expected, results_file, version, ret_code):
+    if 'fail' in expected.keys():
+        # workflow is expected to fail
+        response = verify_failure(expected, version, ret_code)
+    else:
+        # workflow is expected to run
+        response = verify_outputs(expected, results_file, version, ret_code)
+    return response
+
+
+def verify_outputs(expected, results_file, version, ret_code):
+    """
+    Verify that the test result outputs are the same as the expected output from the configuration file
+
+    File types can be represented by both an md5hash and its filepath. However, MiniWDL returns new output files in a
+    new timestamped directory each time, so comparing by filepath will not work. toil-wdl-runner seems to be the same.
+    Cromwell seems to return the original filepath, so it should work for that?
+    """
+    if ret_code:
+        return {'status': 'FAILED', 'reason': f"Workflow failed to run!"}
+
     try:
         with open(results_file, 'r') as f:
             test_results = json.load(f)
@@ -213,18 +228,47 @@ def verify_outputs(expected, results_file, version, quiet):
             return {'status': 'FAILED', 'reason': f"Test has no expected output!"}
 
         if 'value' in expected[identifier]:
+            # easier to directly compare the result to the output rather than recursively comparing each item
             same = expected[identifier]['value'] == output
             if not same:
                 return {'status': 'FAILED', 'reason': f"\nExpected output: {expected[identifier]['value']}\nActual "
                                                       f"result was: {output}!"}
 
         # file types may be represented as md5 hashes
+        # they can also be compared via filepath, but for miniwdl (and toil-wdl-runner),
+        # output files seem to be written to a timestamped directory each time
+        # should work fine for cromwell though
         if 'md5sum' in expected[identifier]:
+            print(output)
             if not validate(expected[identifier]['md5sum'], output, python_type):
                 reason = f"For {expected[identifier]}, md5sum does not match for {output}!\n"
                 return {'status': 'FAILED', 'reason': reason}
 
     return {'status': f'SUCCEEDED\t\tWDL version: {version}', 'reason': None}
+
+
+def verify_failure(expected, version, error_code):
+    """
+    Verify that the workflow did fail
+
+    This currently only tests if the workflow simply failed to run or not. It cannot differentiate
+    between different error codes. Cromwell and MiniWDL (and toil-wdl-runner) return different error codes for the
+    same WDL error and the results file that they write to do not look very similar
+    toil-wdl-runner doesn't seem to write to the results file at all?
+    There might be a better method
+    """
+
+    # expected_err_code = expected['fail']
+    # if expected_err_code != error_code:
+    #     return {'status': 'FAILED',
+    #             'reason': f"Expected error code ({expected_err_code}) does not match resulting error code ({error_code})"}
+
+    if not error_code:
+        return {'status': 'FAILED',
+                'reason': f"Workflow did not fail!"}
+
+    # proper failure, return success
+    return {'status': f'SUCCEEDED\t\tWDL version: {version}'}
 
 
 def announce_test(test_name, total_tests, test, version):
@@ -260,8 +304,10 @@ def print_response(test_name, total_tests, response):
     Log a test response that has a status and maybe a reason.
     """
     print(f'{test_name}: {response["status"]}')
-    if response["reason"]:
+    if 'reason' in response and response['reason']:
         print(f'    REASON: {response["reason"]}')
+    if 'return' in response:
+        print(f'Runner exited with code {response["return"]}')
     if 'stdout' in response:
         print(f'\nstdout: {response["stdout"]}\n')
     if 'stderr' in response:
@@ -288,7 +334,7 @@ def run_test(test_name, total_tests, test, runner, quiet, version):
             wdl_input = f'version_1.1/{wdl_input}'
             json_input = f'version_1.1/{json_input}'
         case _:
-            return  # should never reach here
+            return {'status': 'FAILED', 'reason': f'WDL version {version} is not supported!'}
 
     wdl_file = os.path.abspath(wdl_input)
     json_file = os.path.abspath(json_input)
@@ -300,9 +346,16 @@ def run_test(test_name, total_tests, test, runner, quiet, version):
     with LOG_LOCK:
         announce_test(test_name, total_tests, test, version)
 
-    response = run_cmd(cmd=cmd, cwd=os.path.dirname(os.path.abspath(__file__)), quiet=quiet)
-    if response['status'] == 'SUCCEEDED':
-        response.update(verify_outputs(outputs, results_file, version, quiet=quiet))
+    (ret_code, stdout, stderr) = run_cmd(cmd=cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
+    response = {}
+
+    response.update(verify(outputs, results_file, version, ret_code))
+
+    if not quiet or response['status'] == 'FAILED':
+        response['stdout'] = stdout.decode("utf-8", errors="ignore")
+        response['stderr'] = stderr.decode("utf-8", errors="ignore")
+        response.update({'return': ret_code})
+
     with LOG_LOCK:
         print_response(test_name, total_tests, response)
 
@@ -324,16 +377,14 @@ def handle_test(test_name, total_tests, test, runner, versions_to_test, quiet):
     response = {}
     for version in versions:
         response = run_test(test_name, total_tests, test, runner, quiet, version)
-    return response  # todo: multiple versions only returns last verison response
+    return response
 
 
 def get_functions(functions):
     all_functions = [i for i in functions.split(',') if i]
-    # split_ranges = [i.split('-') if '-' in i else [i, i] for i in ranges]
     tests = set()
     for f in all_functions:
         tests.add(f)
-    # return sorted(list(tests))
     return tests
 
 
@@ -356,7 +407,7 @@ def main(argv=sys.argv[1:]):
     args = parser.parse_args(argv)
 
     # Get all the versions to test.
-    # Unlike with CWL, WDL requires a WDL file to declare a spacific version,
+    # Unlike with CWL, WDL requires a WDL file to declare a specific version,
     # and prohibits mixing file versions in a workflow, although some runners
     # might allow it.
     # But the tests all need to be for single WDL versions.
@@ -381,9 +432,7 @@ def main(argv=sys.argv[1:]):
 
     all_tests = get_functions(args.functions) if args.functions else tests.keys()
 
-    selected_tests_amt = total_tests  # temp, no impl for selection
-
-    # all_tests = tests  # temp, no impl for selection
+    selected_tests_amt = len(all_tests)
 
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
         pending_futures = []
@@ -407,13 +456,14 @@ def main(argv=sys.argv[1:]):
         for result_future in as_completed(pending_futures):
             # Go get each result or reraise the relevant exception
             result = result_future.result()
-            if result['status'] == 'SUCCEEDED':
+            if result['status'].startswith('SUCCEEDED'):
                 successes += 1
             elif result['status'] == 'SKIPPED':
                 skips += 1
 
-    # print(
-    #     f'{selected_tests - skips} tests run, {successes} succeeded, {selected_tests - skips - successes} failed, {skips} skiped')
+    print(
+        f'{selected_tests_amt - skips} tests run, {successes} succeeded, {selected_tests_amt - skips - successes} failed, {skips} skipped')
+
     if successes < selected_tests_amt - skips:
         # Fail the program overall if tests failed.
         sys.exit(1)
