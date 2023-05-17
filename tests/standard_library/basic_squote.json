@@ -1,7 +1,0 @@
-{
-    "squoteWorkflow.str_arr" : ["value1", "value2", "value3"],
-    "squoteWorkflow.int_arr" : [1, 2, -3],
-    "squoteWorkflow.float_arr" : [1.234, -0.543, -13.3],
-    "squoteWorkflow.bool_arr" : [true, false, true],
-    "squoteWorkflow.file_arr" : ["${WDL_DIR}/version_1.1/tests/standard_library/basic_squote.wdl", "${WDL_DIR}/version_1.1/tests/standard_library/basic_squote.json", "${WDL_DIR}/run.py"]
-}

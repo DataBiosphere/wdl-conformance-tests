@@ -1,0 +1,4 @@
+{
+    "basenameWorkflow.path" : "/path/to/file.txt",
+    "basenameWorkflow.f" : "tests/version_1.1/standard_library/basic_basename.json"
+}

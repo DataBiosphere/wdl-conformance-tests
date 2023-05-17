@@ -1,0 +1,4 @@
+{
+    "failWorkflow.in" : "something",
+    "failWorkflow.in_int" : 2
+}

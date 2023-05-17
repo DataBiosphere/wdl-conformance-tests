@@ -12,7 +12,7 @@ from shutil import which
 from uuid import uuid4
 
 from WDL.Type import Float as WDLFloat, String as WDLString, File as WDLFile, Int as WDLInt, Boolean as WDLBool, \
-    Array as WDLArray, Map as WDLMap, Pair as WDLPair
+    Array as WDLArray, Map as WDLMap, Pair as WDLPair, Object as WDLObject, StructInstance as WDLStruct
 
 
 class WDLRunner:
@@ -82,11 +82,57 @@ def convert_type(wdl_type):
     outer_type = wdl_outer_type(wdl_type)
     inner_type = wdl_inner_type(wdl_type)
 
-    # primitive type
-    if outer_type == inner_type:
-        return wdl_type_to_python_type(wdl_type)
+    py_typ = wdl_type_to_python_type(outer_type)
+    # deal with object and struct types, nested type may not be specified
+    # miniwdl treats objects as structs essentially
+    if py_typ is WDLStruct:
+        if outer_type == "Object":
+            return WDLStruct("Object")
+        else:
+            struct_type = WDLStruct("Struct")
+            members = wdl_struct_inner_type_to_python_type(inner_type)
 
-    return wdl_type_to_python_type(outer_type)(convert_type(inner_type))
+            struct_type.members = members
+
+            return struct_type
+
+    if py_typ is WDLPair:
+        left_and_right_types = wdl_map_or_pair_inner_type_to_python_type(inner_type)
+        left_type = left_and_right_types[0]
+        right_type = left_and_right_types[1]
+        return WDLPair(left_type, right_type)
+
+    if py_typ is WDLMap:
+        return WDLMap(wdl_map_or_pair_inner_type_to_python_type(inner_type))
+
+    # test for primitive types
+    if outer_type == inner_type:
+        return wdl_type_to_python_type(wdl_type)()
+
+    return py_typ(convert_type(inner_type))
+
+
+def wdl_struct_inner_type_to_python_type(inner_type):
+    if inner_type == 'Struct' or inner_type == 'Pair':
+        # maybe this should return an error?
+        return {}
+
+    members = {}
+    for each in inner_type.split(','):
+        name_and_type = [e.strip() for e in each.split(':')]
+        members[name_and_type[0]] = convert_type(name_and_type[1])
+    return members
+
+
+def wdl_map_or_pair_inner_type_to_python_type(inner_type):
+    if inner_type == 'Map':
+        # should probably return/raise an error in the future
+        return ()
+
+    key_and_value_type = inner_type.split(',')
+    key_type = key_and_value_type[0].strip()
+    value_type = key_and_value_type[1].strip()
+    return convert_type(key_type), convert_type(value_type)
 
 
 def wdl_type_to_python_type(wdl_type):
@@ -110,6 +156,10 @@ def wdl_type_to_python_type(wdl_type):
         return WDLFloat
     elif wdl_type == 'Map':
         return WDLMap
+    elif wdl_type == 'Pair':
+        return WDLPair
+    elif wdl_type == 'Struct' or wdl_type == 'Object':
+        return WDLStruct
     else:
         raise NotImplementedError
         # return None
@@ -120,15 +170,20 @@ def wdl_outer_type(wdl_type):
     Get the outermost type of a WDL type. So "Array[String]" gives "Array".
     """
 
-    return wdl_type.split('[')[0]
+    if wdl_type.find('[') > wdl_type.find('{'):
+        return wdl_type.split('[')[0]
+    else:
+        return wdl_type.split('{')[0]
 
 
 def wdl_inner_type(wdl_type):
     """
     Get the interior type of a WDL type. So "Array[String]" gives "String".
     """
-    if '[' in wdl_type:
+    if wdl_type.find('[') > wdl_type.find('{'):
         return '['.join(wdl_type.split('[')[1:])[:-1]
+    elif wdl_type.find('[') < wdl_type.find('{'):
+        return '{'.join(wdl_type.split('{')[1:])[:-1]
     else:
         return wdl_type
 
@@ -154,6 +209,8 @@ def expand_vars_in_json(json_obj):
 def validate(expected, result, typ):
     """
     Recursively ensure that the expected output is the same as the resulting output
+
+    In the future, make this return where it failed instead to give less generic error messages
     """
     if isinstance(typ, WDLArray):
         for i in range(len(expected)):
@@ -162,23 +219,59 @@ def validate(expected, result, typ):
 
     if isinstance(typ, WDLMap):
         for key in expected.keys():
-            if not validate(expected[key], result[key], typ.item_type):
+            try:
+                if not validate(expected[key], result[key], typ.item_type[1]):
+                    return False
+            except KeyError:
                 return False
 
-    if typ in (WDLInt, WDLFloat, WDLBool, WDLString):
+    # WDLStruct also represents WDLObject
+    if isinstance(typ, WDLStruct):
+        if str(typ) == 'Object':
+            # Object members are not typed, so there isn't really a way to recursively call validate() again
+            # For now, just do a simple comparison
+            # As a result, file types in Objects won't be able to have their md5sums compared
+            # but since Objects are only supported in Cromwell and MiniWDL dies if it sees an Object, then this
+            # in theory shouldn't be an issue?
+            # This should still work if in conformance.yaml, you specify the relative path respective to $(WDL_DIR)
+            # by doing:
+            #   {
+            #       file_thing = path/to/file
+            #   }
+            # instead of:
+            #   {
+            #       file_thing = {md5sum: some_hash}
+            #   }
+            return expected == result
+        else:
+            for key in expected.keys():
+                try:
+                    if not validate(expected[key], result[key], typ.members[key]):
+                        return False
+                except KeyError:
+                    return False
+
+    if isinstance(typ, (WDLInt, WDLFloat, WDLBool, WDLString)):
         if expected != result:
             return False
 
-    if typ is WDLFile:
+    if isinstance(typ, WDLFile):
         # check file path exists
         if not os.path.exists(result):
-            return {'status': 'FAILED', 'reason': f"{result} not found!"}
+            return False
 
         # check md5sum
         with open(result, 'rb') as f:
             md5sum = hashlib.md5(f.read()).hexdigest()
-        if md5sum != expected:
+        if md5sum != expected['md5sum']:
             return False
+
+    if isinstance(typ, WDLPair):
+        if len(expected) > 2:
+            return False
+        if expected['left'] != result['left'] or expected['right'] != result['right']:
+            return False
+
     return True
 
 
@@ -224,25 +317,47 @@ def verify_outputs(expected, results_file, version, ret_code):
         except KeyError:
             return {'status': 'FAILED', 'reason': f"Output variable name '{identifier}' not found in expected results!"}
 
-        if not any(x in ['value', 'md5sum'] for x in expected[identifier]):
-            return {'status': 'FAILED', 'reason': f"Test has no expected output!"}
+        if 'value' not in expected[identifier]:
+            return {'status': 'FAILED', 'reason': f"Test has no expected output of key 'value'!"}
 
-        if 'value' in expected[identifier]:
+        if isinstance(python_type, (WDLInt, WDLFloat, WDLString, WDLBool)):
             # easier to directly compare the result to the output rather than recursively comparing each item
             same = expected[identifier]['value'] == output
             if not same:
                 return {'status': 'FAILED', 'reason': f"\nExpected output: {expected[identifier]['value']}\nActual "
                                                       f"result was: {output}!"}
+        if isinstance(python_type, WDLArray):
+            # in case nested types in arrays are file types
+            same = validate(expected[identifier]['value'], output, python_type)
+            if not same:
+                return {'status': 'FAILED', 'reason': f"\nExpected output: {expected[identifier]['value']}\nActual "
+                                                      f"result was: {output}!"}
 
-        # file types may be represented as md5 hashes
-        # they can also be compared via filepath, but for miniwdl (and toil-wdl-runner),
-        # output files seem to be written to a timestamped directory each time
-        # should work fine for cromwell though
-        if 'md5sum' in expected[identifier]:
-            print(output)
-            if not validate(expected[identifier]['md5sum'], output, python_type):
+        if isinstance(python_type, WDLFile):
+            if not validate(expected[identifier]['value'], output, python_type):
                 reason = f"For {expected[identifier]}, md5sum does not match for {output}!\n"
                 return {'status': 'FAILED', 'reason': reason}
+
+        if isinstance(python_type, WDLPair):
+            same = validate(expected[identifier]['value'], output, python_type)
+
+            if not same:
+                return {'status': 'FAILED',
+                        'reason': f"Expected output of pair: {expected[identifier]['value']} is not the same as result: {output}"}
+
+        if isinstance(python_type, WDLMap):
+            same = validate(expected[identifier]['value'], output, python_type)
+            if not same:
+                return {'status': 'FAILED',
+                        'reason': f"Expected output of map: {expected[identifier]['value']} is not the same as result: {output}"}
+
+        # WDLStruct same as WDLObject
+        if isinstance(python_type, WDLStruct):
+            same = validate(expected[identifier]['value'], output, python_type)
+            if not same:
+                return {'status': 'FAILED',
+                        'reason': f"Expected output of Object: {expected[identifier]['value']} is not the same as "
+                                  f"result: {output}"}
 
     return {'status': f'SUCCEEDED\t\tWDL version: {version}', 'reason': None}
 
@@ -258,11 +373,6 @@ def verify_failure(expected, version, error_code):
     There might be a better method
     """
 
-    # expected_err_code = expected['fail']
-    # if expected_err_code != error_code:
-    #     return {'status': 'FAILED',
-    #             'reason': f"Expected error code ({expected_err_code}) does not match resulting error code ({error_code})"}
-
     if not error_code:
         return {'status': 'FAILED',
                 'reason': f"Workflow did not fail!"}
@@ -276,23 +386,6 @@ def announce_test(test_name, total_tests, test, version):
     print(f'\n{description}', end="")
     if version is not None:
         print(f'{test_name}: RUNNING\t\tWDL version: {version}')
-
-
-def get_versions(test, versions_to_test):
-    """
-    Return all versions for a test to run with
-
-    Returns a list of versions
-    """
-    versions = []
-    for version in test['versions']:
-        if version in versions_to_test:
-            versions.append(version)
-
-    if len(versions) == 0:
-        return None
-
-    return versions
 
 
 # Make sure output groups don't clobber each other.
@@ -325,14 +418,14 @@ def run_test(test_name, total_tests, test, runner, quiet, version):
     json_input = inputs['json']
     match version:
         case "draft-2":
-            wdl_input = f'draft-2/{wdl_input}'
-            json_input = f'draft-2/{json_input}'
+            wdl_input = f'tests/draft-2/{wdl_input}'
+            json_input = f'tests/draft-2/{json_input}'
         case "1.0":
-            wdl_input = f'version_1.0/{wdl_input}'
-            json_input = f'version_1.0/{json_input}'
+            wdl_input = f'tests/version_1.0/{wdl_input}'
+            json_input = f'tests/version_1.0/{json_input}'
         case "1.1":
-            wdl_input = f'version_1.1/{wdl_input}'
-            json_input = f'version_1.1/{json_input}'
+            wdl_input = f'tests/version_1.1/{wdl_input}'
+            json_input = f'tests/version_1.1/{json_input}'
         case _:
             return {'status': 'FAILED', 'reason': f'WDL version {version} is not supported!'}
 
@@ -362,21 +455,18 @@ def run_test(test_name, total_tests, test, runner, quiet, version):
     return response
 
 
-def handle_test(test_name, total_tests, test, runner, versions_to_test, quiet):
+def handle_test(test_name, total_tests, test, runner, version, quiet):
     """
     Decide if the test should be skipped. If not, run it.
-    
+
     Returns a result that can have status SKIPPED, SUCCEEDED, or FAILED.
     """
-    versions = get_versions(test, versions_to_test)
-    if versions is None:
+    if version not in test['versions']:
         response = {'status': 'SKIPPED', 'reason': f'Test only applies to versions: {",".join(test["versions"])}'}
         with LOG_LOCK:
             print_response(test_name, total_tests, response)
         return response
-    response = {}
-    for version in versions:
-        response = run_test(test_name, total_tests, test, runner, quiet, version)
+    response = run_test(test_name, total_tests, test, runner, quiet, version)
     return response
 
 
@@ -432,27 +522,27 @@ def main(argv=sys.argv[1:]):
 
     all_tests = get_functions(args.functions) if args.functions else tests.keys()
 
-    selected_tests_amt = len(all_tests)
+    selected_tests_amt = len(all_tests) * len(versions_to_test)
 
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
         pending_futures = []
         for test_name in all_tests:
-            # test = all_tests[test_name]
-            try:
-                test = tests[test_name]
-                expand_vars_in_json(test)
-            except KeyError:
-                print(f'ERROR: Provided tests [{", ".join(all_tests)}] do not exist.')
-                sys.exit(1)
-            # Handle each test as a concurrent job
-            result_future = executor.submit(handle_test,
-                                            test_name,
-                                            total_tests,
-                                            test,
-                                            runner,
-                                            versions_to_test,
-                                            args.quiet)
-            pending_futures.append(result_future)
+            for version in versions_to_test:
+                try:
+                    test = tests[test_name]
+                    expand_vars_in_json(test)
+                except KeyError:
+                    print(f'ERROR: Provided tests [{", ".join(all_tests)}] do not exist.')
+                    sys.exit(1)
+                # Handle each test as a concurrent job
+                result_future = executor.submit(handle_test,
+                                                test_name,
+                                                total_tests,
+                                                test,
+                                                runner,
+                                                version,
+                                                args.quiet)
+                pending_futures.append(result_future)
         for result_future in as_completed(pending_futures):
             # Go get each result or reraise the relevant exception
             result = result_future.result()
@@ -460,7 +550,6 @@ def main(argv=sys.argv[1:]):
                 successes += 1
             elif result['status'] == 'SKIPPED':
                 skips += 1
-
     print(
         f'{selected_tests_amt - skips} tests run, {successes} succeeded, {selected_tests_amt - skips - successes} failed, {skips} skipped')
 
