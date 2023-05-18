@@ -254,6 +254,7 @@ object:
   versions: [ "1.0" ]
   description: |
     Basic object test
+    MiniWDL does not support Objects, so this will fail if ran by MiniWDL
   inputs:
     wdl: semantics/basic_object.wdl
     json: semantics/basic_object.json
