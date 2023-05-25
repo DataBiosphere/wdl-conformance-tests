@@ -1,3 +1,7 @@
+"""
+
+"""
+
 import os
 import json
 import sys
@@ -79,82 +83,58 @@ def run_cmd(cmd, cwd):
 
 
 def convert_type(wdl_type):
-    outer_type = wdl_outer_type(wdl_type)
-    inner_type = wdl_inner_type(wdl_type)
+    outer_py_typ = wdl_type_to_miniwdl_class(wdl_outer_type(wdl_type))
 
-    py_typ = wdl_type_to_python_type(outer_type)
-    # deal with object and struct types, nested type may not be specified
-    # miniwdl treats objects as structs essentially
-    if py_typ is WDLStruct:
-        if outer_type == "Object":
-            return WDLStruct("Object")
-        else:
-            struct_type = WDLStruct("Struct")
-            members = wdl_struct_inner_type_to_python_type(inner_type)
+    if outer_py_typ is WDLStruct:
+        # objects currently forced to be typed just like structs
+        struct_type = WDLStruct("Struct")
+        members = {}
 
-            if members is None:
-                return None
+        for k, v in wdl_type.items():
+            members[k] = convert_type(v)
+        struct_type.members = members
 
-            struct_type.members = members
+        return struct_type
 
-            return struct_type
+    if outer_py_typ is WDLPair:
+        inner_type = wdl_inner_type(wdl_type)
 
-    if py_typ is WDLPair:
-        left_and_right_types = wdl_map_or_pair_inner_type_to_python_type(inner_type)
-        if left_and_right_types is None:
+        key_and_value_type = inner_type.split(',')
+        if len(key_and_value_type) < 2:
+            # either no inner type provided or not enough type provided for pair
             return None
-        left_type = left_and_right_types[0]
-        right_type = left_and_right_types[1]
+        key_type = key_and_value_type[0].strip()
+        value_type = key_and_value_type[1].strip()
+        left_type = convert_type(key_type)
+        right_type = convert_type(value_type)
         return WDLPair(left_type, right_type)
 
-    if py_typ is WDLMap:
-        key_value_type = wdl_map_or_pair_inner_type_to_python_type(inner_type)
-        if key_value_type is None:
-            return None
-        return WDLMap(key_value_type)
+    if outer_py_typ is WDLMap:
+        inner_type = wdl_inner_type(wdl_type)
 
-    if py_typ is WDLArray:
+        key_and_value_type = inner_type.split(',')
+        if len(key_and_value_type) < 2:
+            # either no types or too few types provided for map
+            return None
+        key_type = key_and_value_type[0].strip()
+        value_type = key_and_value_type[1].strip()
+        return WDLMap((convert_type(key_type), convert_type(value_type)))
+
+    if outer_py_typ is WDLArray:
+        inner_type = wdl_inner_type(wdl_type)
         if inner_type == 'Array':
             # no given inner type
             return None
-        return py_typ(convert_type(inner_type))
-
-    return wdl_type_to_python_type(wdl_type)()
-
-
-def wdl_struct_inner_type_to_python_type(inner_type):
-    if inner_type == 'Struct' or inner_type == 'Pair':
-        # maybe this should return an error?
-        return None
-
-    all_name_and_types = inner_type.split(',')
-    if len(all_name_and_types) < 2:
-        return {}
-    members = {}
-    for each in all_name_and_types:
-        name_and_type = [e.strip() for e in each.split(':')]
-        members[name_and_type[0]] = convert_type(name_and_type[1])
-    return members
+        return outer_py_typ(convert_type(inner_type))
+    # primitives remaining
+    return wdl_type_to_miniwdl_class(wdl_type)()
 
 
-def wdl_map_or_pair_inner_type_to_python_type(inner_type):
-    if inner_type == 'Map':
-        # should probably return/raise an error in the future
-        return None
-
-    key_and_value_type = inner_type.split(',')
-    if len(key_and_value_type) < 2:
-        return None
-    key_type = key_and_value_type[0].strip()
-    value_type = key_and_value_type[1].strip()
-    return convert_type(key_type), convert_type(value_type)
-
-
-def wdl_type_to_python_type(wdl_type):
+def wdl_type_to_miniwdl_class(wdl_type):
     """
-    Given a WDL type name, return a Python type.
+    Given a WDL type name, return a MiniWDL class.
 
-    Currently supports File, Int, Boolean, String, Float, Array, and Map
+    Currently supports File, Int, Boolean, String, Float, Array, Map, Struct, Object (treated same as Struct)
     """
 
     if wdl_type == 'File':
@@ -173,7 +153,7 @@ def wdl_type_to_python_type(wdl_type):
         return WDLMap
     elif wdl_type == 'Pair':
         return WDLPair
-    elif wdl_type == 'Struct' or wdl_type == 'Object':
+    elif isinstance(wdl_type, dict):
         return WDLStruct
     else:
         raise NotImplementedError
@@ -184,87 +164,91 @@ def wdl_outer_type(wdl_type):
     """
     Get the outermost type of a WDL type. So "Array[String]" gives "Array".
     """
-
-    if wdl_type.find('[') > wdl_type.find('{'):
-        return wdl_type.split('[')[0]
-    else:
-        return wdl_type.split('{')[0]
+    # deal with structs
+    if isinstance(wdl_type, dict):
+        return wdl_type
+    return wdl_type.split('[')[0]
 
 
 def wdl_inner_type(wdl_type):
     """
     Get the interior type of a WDL type. So "Array[String]" gives "String".
     """
-    if wdl_type.find('[') > wdl_type.find('{'):
+    if wdl_type.find('['):
         return '['.join(wdl_type.split('[')[1:])[:-1]
-    elif wdl_type.find('[') < wdl_type.find('{'):
-        return '{'.join(wdl_type.split('{')[1:])[:-1]
     else:
         return wdl_type
 
 
-def expand_vars_in_json(json_obj):
-    if isinstance(json_obj, list):
-        for i, value in enumerate(json_obj):
-            if isinstance(value, list) or isinstance(value, dict):
-                expand_vars_in_json(value)
-            else:
-                if isinstance(value, str):
-                    json_obj[i] = os.path.expandvars(value)
-
-    if isinstance(json_obj, dict):
-        for name, value in json_obj.items():
-            if isinstance(value, list) or isinstance(value, dict):
-                expand_vars_in_json(value)
-            else:
-                if isinstance(value, str):
-                    json_obj[name] = os.path.expandvars(value)
-
-
-def validate(expected, result, typ):
+def expand_vars_in_expected(expected_value):
     """
-    Recursively ensure that the expected output is the same as the resulting output
+    For the expected value, expand all ${WDL_DIR} environmental variables
+
+    When WDL functions converts paths to strings, it uses the absolute path. ${WDL_DIR} specifies the path of the
+    conformance test folder to add before the string of the relative path
+    """
+    # ex: Functions such as quote() and squote() takes type File:
+    #   path/to/file.txt
+    # and turns it into type String:
+    #   "/home/user/wdl-conformance-tests/path/to/file.txt"
+    if isinstance(expected_value, list):
+        for i, value in enumerate(expected_value):
+            if isinstance(value, list) or isinstance(value, dict):
+                expand_vars_in_expected(value)
+            else:
+                if isinstance(value, str):
+                    expected_value[i] = os.path.expandvars(value)
+
+    if isinstance(expected_value, dict):
+        for name, value in expected_value.items():
+            if isinstance(value, list) or isinstance(value, dict):
+                expand_vars_in_expected(value)
+            else:
+                if isinstance(value, str):
+                    expected_value[name] = os.path.expandvars(value)
+
+
+def compare_outputs(expected, result, typ):
+    """
+    Recursively ensure that the expected output object is the same as the resulting output object
 
     In the future, make this return where it failed instead to give less generic error messages
+
+    :param expected: expected output object from conformance file
+    :param result: result ouput object from output file from WDL runner
+    :param typ: type of output from conformance file
     """
     if isinstance(typ, WDLArray):
-        for i in range(len(expected)):
-            if not validate(expected[i], result[i], typ.item_type):
+        try:
+            if len(expected) != len(result):
                 return False
+            for i in range(len(expected)):
+                if not compare_outputs(expected[i], result[i], typ.item_type):
+                    return False
+        except TypeError:
+            return False
 
     if isinstance(typ, WDLMap):
-        for key in expected.keys():
-            try:
-                if not validate(expected[key], result[key], typ.item_type[1]):
-                    return False
-            except KeyError:
+        try:
+            if len(expected) != len(result):
                 return False
+            for key in expected.keys():
+                if not compare_outputs(expected[key], result[key], typ.item_type[1]):
+                    return False
+        except (KeyError, TypeError):
+            return False
 
     # WDLStruct also represents WDLObject
+    # Objects in conformance will be forced to be typed, same as Structs
     if isinstance(typ, WDLStruct):
-        if str(typ) == 'Object':
-            # Object members are not typed, so there isn't really a way to recursively call validate() again
-            # For now, just do a simple comparison
-            # As a result, file types in Objects won't be able to have their md5sums compared
-            # but since Objects are only supported in Cromwell and MiniWDL dies if it sees an Object, then this
-            # in theory shouldn't be an issue?
-            # This should still work if in conformance.yaml, you specify the relative path respective to $(WDL_DIR)
-            # by doing:
-            #   {
-            #       file_thing = path/to/file
-            #   }
-            # instead of:
-            #   {
-            #       file_thing = {md5sum: some_hash}
-            #   }
-            return expected == result
-        else:
+        try:
+            if len(expected) != len(result):
+                return False
             for key in expected.keys():
-                try:
-                    if not validate(expected[key], result[key], typ.members[key]):
-                        return False
-                except KeyError:
+                if not compare_outputs(expected[key], result[key], typ.members[key]):
                     return False
+        except (KeyError, TypeError):
+            return False
 
     if isinstance(typ, (WDLInt, WDLFloat, WDLBool, WDLString)):
         if expected != result:
@@ -282,31 +266,38 @@ def validate(expected, result, typ):
             return False
 
     if isinstance(typ, WDLPair):
-        if len(expected) > 2:
-            return False
-        if expected['left'] != result['left'] or expected['right'] != result['right']:
+        try:
+            if len(expected) != 2:
+                return False
+            if expected['left'] != result['left'] or expected['right'] != result['right']:
+                return False
+        except (KeyError, TypeError):
             return False
 
     return True
 
 
-def verify(expected, results_file, version, ret_code):
+def run_verify(expected, results_file, ret_code):
+    """
+    Check either for proper output or proper success/failure of WDL program, depending on if 'fail' is included in the
+    conformance test
+    """
     if 'fail' in expected.keys():
         # workflow is expected to fail
-        response = verify_failure(version, ret_code)
+        response = verify_failure(ret_code)
     else:
         # workflow is expected to run
-        response = verify_outputs(expected, results_file, version, ret_code)
+        response = verify_outputs(expected, results_file, ret_code)
     return response
 
 
-def verify_outputs(expected, results_file, version, ret_code):
+def verify_outputs(expected, results_file, ret_code):
     """
-    Verify that the test result outputs are the same as the expected output from the configuration file
+    Verify that the test result outputs are the same as the expected output from the conformance file
 
-    File types can be represented by both an md5hash and its filepath. However, MiniWDL returns new output files in a
-    new timestamped directory each time, so comparing by filepath will not work. toil-wdl-runner seems to be the same.
-    Cromwell seems to return the original filepath, so it should work for that?
+    :param expected: dict of expected output from conformance file
+    :param results_file: filepath of resulting output file from the WDL runner
+    :param ret_code: return code from WDL runner
     """
     if ret_code:
         return {'status': 'FAILED', 'reason': f"Workflow failed to run!"}
@@ -337,66 +328,33 @@ def verify_outputs(expected, results_file, version, ret_code):
 
         if 'value' not in expected[identifier]:
             return {'status': 'FAILED', 'reason': f"Test has no expected output of key 'value'!"}
-
-        if isinstance(python_type, (WDLInt, WDLFloat, WDLString, WDLBool)):
-            # easier to directly compare the result to the output rather than recursively comparing each item
-            same = expected[identifier]['value'] == output
-            if not same:
-                return {'status': 'FAILED', 'reason': f"\nExpected output: {expected[identifier]['value']}\nActual "
-                                                      f"result was: {output}!"}
-        if isinstance(python_type, WDLArray):
-            # in case nested types in arrays are file types
-            same = validate(expected[identifier]['value'], output, python_type)
-            if not same:
-                return {'status': 'FAILED', 'reason': f"\nExpected output: {expected[identifier]['value']}\nActual "
-                                                      f"result was: {output}!"}
-
-        if isinstance(python_type, WDLFile):
-            if not validate(expected[identifier]['value'], output, python_type):
-                reason = f"For {expected[identifier]}, md5sum does not match for {output}!\n"
-                return {'status': 'FAILED', 'reason': reason}
-
-        if isinstance(python_type, WDLPair):
-            same = validate(expected[identifier]['value'], output, python_type)
-
-            if not same:
-                return {'status': 'FAILED',
-                        'reason': f"Expected output of pair: {expected[identifier]['value']} is not the same as result: {output}"}
-
-        if isinstance(python_type, WDLMap):
-            same = validate(expected[identifier]['value'], output, python_type)
-            if not same:
-                return {'status': 'FAILED',
-                        'reason': f"Expected output of map: {expected[identifier]['value']} is not the same as result: {output}"}
-
-        # WDLStruct same as WDLObject
-        if isinstance(python_type, WDLStruct):
-            same = validate(expected[identifier]['value'], output, python_type)
-            if not same:
-                return {'status': 'FAILED',
-                        'reason': f"Expected output of Object: {expected[identifier]['value']} is not the same as "
-                                  f"result: {output}"}
-
-    return {'status': f'SUCCEEDED\t\tWDL version: {version}', 'reason': None}
+        if not compare_outputs(expected[identifier]['value'], output, python_type):
+            return {'status': 'FAILED', 'reason': f"\nExpected output: {expected[identifier]['value']}\nActual "
+                                                  f"result was: {output}!"}
+    return {'status': f'SUCCEEDED', 'reason': None}
 
 
-def verify_failure(version, ret_code):
+def verify_failure(ret_code):
     """
     Verify that the workflow did fail
 
-    This currently only tests if the workflow simply failed to run or not. It cannot differentiate
-    between different error codes. Cromwell and MiniWDL (and toil-wdl-runner) return different error codes for the
-    same WDL error and the results file that they write to do not look very similar
-    toil-wdl-runner doesn't seem to write to the results file at all?
-    There might be a better method
-    """
+    ret_code should be what code WDL outputs when running the test
+    :param ret_code: return code from WDL runner
 
+    If ret_code is fail (>0 or True), then return success
+    If ret_code is success (0 or False), then return failure
+    """
+    # This currently only tests if the workflow simply failed to run or not. It cannot differentiate
+    # between different error codes. Cromwell and MiniWDL (and toil-wdl-runner) return different error codes for the
+    # same WDL error and the results file that they write to do not look very similar
+    # toil-wdl-runner doesn't seem to write to the results file at all?
+    # There might be a better method
     if not ret_code:
         return {'status': 'FAILED',
                 'reason': f"Workflow did not fail!"}
 
     # proper failure, return success
-    return {'status': f'SUCCEEDED\t\tWDL version: {version}'}
+    return {'status': f'SUCCEEDED'}
 
 
 def announce_test(test_name, total_tests, test, version):
@@ -460,7 +418,7 @@ def run_test(test_name, total_tests, test, runner, quiet, version):
     (ret_code, stdout, stderr) = run_cmd(cmd=cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
     response = {}
 
-    response.update(verify(outputs, results_file, version, ret_code))
+    response.update(run_verify(outputs, results_file, ret_code))
 
     if not quiet or response['status'] == 'FAILED':
         response['stdout'] = stdout.decode("utf-8", errors="ignore")
@@ -488,7 +446,9 @@ def handle_test(test_name, total_tests, test, runner, version, quiet):
     return response
 
 
-def get_functions(functions):
+def get_tags(functions):
+    if functions is None:
+        return []
     all_functions = [i for i in functions.split(',') if i]
     tests = set()
     for f in all_functions:
@@ -497,14 +457,16 @@ def get_functions(functions):
 
 
 def main(argv=sys.argv[1:]):
+    # get directory of conformance tests and store as environmental variable
+    #
     os.environ['WDL_DIR'] = os.path.dirname(os.path.abspath(__file__))
     parser = argparse.ArgumentParser(description='Run WDL conformance tests.')
     parser.add_argument("--quiet", "-q", default=False, action='store_true',
                         help='Suppress printing run messages.')
     parser.add_argument("--versions", "-v", default="1.0",
                         help='Select the WDL versions you wish to test against.')
-    parser.add_argument("--functions", "-f", default=None,
-                        help='Select the functions you wish to only run.')
+    parser.add_argument("--select", "-s", default=None,
+                        help='Select the tags to run specific tests')
     parser.add_argument("--runner", "-r", default='cromwell',
                         help='Select the WDL runner to use.')
     parser.add_argument("--threads", "-t", type=int, default=None,
@@ -535,23 +497,33 @@ def main(argv=sys.argv[1:]):
     successes = 0
     skips = 0
 
-    all_tests = get_functions(args.functions) if args.functions else tests.keys()
+    specific_tests = get_tags(args.select)
 
-    selected_tests_amt = len(all_tests) * len(versions_to_test)
+    # get all tests to run by index
+    selected_tests = []
+    if len(specific_tests) == 0:
+        selected_tests = [i for i in range(len(tests))]
+    else:
+        for i in range(len(tests)):
+            test = tests[i]
+            if any(func in test['tags'] for func in specific_tests):
+                selected_tests.append(i)
+
+    selected_tests_amt = len(selected_tests) * len(versions_to_test)
 
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
         pending_futures = []
-        for test_name in all_tests:
+        for test_index in selected_tests:
             for version in versions_to_test:
                 try:
-                    test = tests[test_name]
-                    expand_vars_in_json(test)
+                    test = tests[test_index]
+                    expand_vars_in_expected(test)
                 except KeyError:
-                    print(f'ERROR: Provided tests [{", ".join(all_tests)}] do not exist.')
+                    print(f'ERROR: Provided tests [{", ".join(specific_tests)}] do not exist.')
                     sys.exit(1)
                 # Handle each test as a concurrent job
                 result_future = executor.submit(handle_test,
-                                                test_name,
+                                                test_index,
                                                 total_tests,
                                                 test,
                                                 runner,
@@ -561,7 +533,7 @@ def main(argv=sys.argv[1:]):
         for result_future in as_completed(pending_futures):
             # Go get each result or reraise the relevant exception
             result = result_future.result()
-            if result['status'].startswith('SUCCEEDED'):
+            if result['status']=='SUCCEEDED':
                 successes += 1
             elif result['status'] == 'SKIPPED':
                 skips += 1

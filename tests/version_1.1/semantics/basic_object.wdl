@@ -6,7 +6,8 @@ workflow objectWorkflow {
     }
     Object f = object {
         a: 10,
-        b: "hello"
+        b: "hello",
+        f: "tests/version_1.0/semantics/basic_object.wdl"
     }
 
     output {

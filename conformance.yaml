@@ -1,5 +1,5 @@
-stdout:
-  versions: [ "draft-2" ]
+- versions: [ "draft-2" ]
+  tags: [ 0, "stdout" ]
   description: |
     Standard Lib: Basic test for stdout()
   inputs:
@@ -8,9 +8,8 @@ stdout:
   outputs:
     stdoutWorkflow.get_stdout.check_this:
       type: "File"
-      value: {md5sum: "91d69f7c47b6e7d5e4d81fab67f7f304"}
-
-stderr:
+      value: { md5sum: "91d69f7c47b6e7d5e4d81fab67f7f304" }
+- tags: [ "stderr" ]
   versions: [ "draft-2" ]
   description: |
     Standard Lib: Basic test for stderr()
@@ -20,9 +19,8 @@ stderr:
   outputs:
     stderrWorkflow.get_stderr.check_this:
       type: "File"
-      value: {md5sum: "2332021c3feef276abe077f34276abfe"}
-
-quote:
+      value: { md5sum: "2332021c3feef276abe077f34276abfe" }
+- tags: [ "quote" ]
   versions: [ "1.1" ]
   description: |
     Standard Lib: Basic test for quote()
@@ -45,9 +43,8 @@ quote:
     quoteWorkflow.file_output:
       value: [ '"${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.wdl"', '"${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.json"', '"${WDL_DIR}/run.py"' ] # files are relative path to input files, cannot go up in subdir, ex with run.py
       type: "Array[String]"
-
-squote:
-  versions: [ "1.1" ]
+- versions: [ "1.1" ]
+  tags: [ "squote" ]
   description: |
     Standard Lib: Basic test for squote()
   inputs:
@@ -69,9 +66,8 @@ squote:
     squoteWorkflow.file_output:
       value: [ "'${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.wdl'", "'${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.json'", "'${WDL_DIR}/run.py'" ]
       type: "Array[String]"
-
-sep:
-  versions: [ "1.1" ]
+- versions: [ "1.1" ]
+  tags: [ "sep" ]
   description: |
     Standard Lib: Basic test for sep()
   inputs:
@@ -81,9 +77,8 @@ sep:
     sepWorkflow.str_output:
       value: "a - b - c"
       type: "String"
-
-prefix:
-  versions: [ "1.0", "draft-2", "1.1" ]
+- versions: [ "1.0", "draft-2", "1.1" ]
+  tags: [ "prefix" ]
   description: |
     Standard Lib: Basic test for prefix()
   inputs:
@@ -93,9 +88,8 @@ prefix:
     prefixWorkflow.str_output:
       value: [ "-e value1", "-e value2", "-e value3" ]
       type: "Array[String]"
-
-select_first:
-  versions: [ "draft-2", "1.0", "1.1" ]
+- versions: [ "draft-2", "1.0", "1.1" ]
+  tags: [ "select_first" ]
   description: |
     Standard Lib: Basic test for select_first()
   inputs:
@@ -117,9 +111,8 @@ select_first:
     selectFirstWorkflow.file_output:
       value: { md5sum: "337cf995cbd86664d941095a45e5e75d" }
       type: "File"
-
-select_all:
-  versions: [ "draft-2", "1.0", "1.1" ]
+- versions: [ "draft-2", "1.0", "1.1" ]
+  tags: [ "select_all" ]
   description: |
     Standard Lib: Basic test for select_all()
   inputs:
@@ -140,10 +133,9 @@ select_all:
       value: [ true, false ]
     selectAllWorkflow.file_output:
       type: "Array[File]"
-      value: [ {md5sum: "c4b90e142a9ba0270f8137244caa246c"} ]
-
-suffix:
-  versions: [ "1.1" ]
+      value: [ { md5sum: "c4b90e142a9ba0270f8137244caa246c" } ]
+- versions: [ "1.1" ]
+  tags: [ "suffix" ]
   description: |
     Standard Lib: Basic test for suffix()
   inputs:
@@ -153,9 +145,8 @@ suffix:
     suffixWorkflow.str_output:
       value: [ "value1.txt", "value2.txt", "value3.txt" ]
       type: "Array[String]"
-
-defined:
-  versions: [ "draft-2", "1.0", "1.1" ]
+- versions: [ "draft-2", "1.0", "1.1" ]
+  tags: [ "defined" ]
   description: |
     Standard Lib: Basic test for defined()
   inputs:
@@ -168,9 +159,8 @@ defined:
     definedWorkflow.bool_output_none:
       value: false
       type: "Boolean"
-
-basename:
-  versions: [ "draft-2", "1.0", "1.1" ]
+- versions: [ "draft-2", "1.0", "1.1" ]
+  tags: [ "basename" ]
   description: |
     Standard Lib: Basic test for basename()
   inputs:
@@ -189,9 +179,8 @@ basename:
     basenameWorkflow.str_output_file_removed:
       type: "String"
       value: "basic_basename"
-
-fail:
-  versions: [ "1.1", "1.0" ]
+- versions: [ "1.1", "1.0" ]
+  tags: [ "fail" ]
   description: |
     Basic failure test, with invalid arguments
   inputs:
@@ -199,22 +188,8 @@ fail:
     json: standard_library/basic_fail.json
   outputs:
     fail: 2
-
-#fake_fail:
-#  versions: [ "1.1", "1.0" ]
-#  description: |
-#    test case, wdl workflow fail but expected output is not
-#    this test should fail
-#  inputs:
-#    wdl: standard_library/basic_fake_fail.wdl
-#    json: standard_library/basic_fake_fail.json
-#  outputs:
-#    fakeFailWorkflow.str_output:
-#      type: "Array[String]"
-#      value: [ "'2'" ]
-
-pair:
-  versions: [ "1.1" ]
+- versions: [ "1.1" ]
+  tags: [ "pair" ]
   description: |
     Basic test for compound type pair
   inputs:
@@ -224,9 +199,8 @@ pair:
     pairWorkflow.pair_output:
       type: "Pair[Int, Int]"
       value: { left: 2, right: 4 }
-
-map:
-  versions: [ "1.1" ]
+- versions: [ "1.1" ]
+  tags: [ "map" ]
   description: |
     Basic test for compound type map
   inputs:
@@ -236,10 +210,8 @@ map:
     mapWorkflow.map_output:
       type: "Map[Int, Int]"
       value: { "1": 2, "3": 4 } # keys must be string
-
-
-array_pair:
-  versions: [ "1.1" ]
+- versions: [ "1.1" ]
+  tags: [ "array_pair" ]
   description: |
     Basic test for compound type array of pair
   inputs:
@@ -249,9 +221,8 @@ array_pair:
     arrayPairWorkflow.pair_output:
       type: "Array[Pair[Int,Int]]"
       value: [ { left: 2, right: 4 } ]
-
-object:
-  versions: [ "1.0" ]
+- versions: [ "1.0" ]
+  tags: [ "object" ]
   description: |
     Basic object test
     MiniWDL does not support Objects, so this will fail if ran by MiniWDL
@@ -260,11 +231,13 @@ object:
     json: semantics/basic_object.json
   outputs:
     objectWorkflow.obj_output:
-      value: { "b": "hello", "a": 10 }
-      type: "Object"
-
-struct:
-  versions: [ "1.1", "1.0" ]
+      value: { "b": "hello", "a": 10, "f": { md5sum: "9eb48991c704af23036a7be959efd489" } }
+      type:
+        b: String
+        a: Int
+        f: File
+- versions: [ "1.1", "1.0" ]
+  tags: [ "struct" ]
   description: |
     Basic struct test
   inputs:
@@ -272,5 +245,99 @@ struct:
     json: semantics/basic_struct.json
   outputs:
     structWorkflow.struct_output:
-      type: "Struct{sample_string: String, sample_index: Int}"
+      type:
+        sample_string: String
+        sample_index: Int
       value: { "sample_string": "hello", "sample_index": 10 }
+- versions: [ "1.1" ]
+  tags: [ "nested_struct" ]
+  description: |
+    Basic nested struct test
+  inputs:
+    wdl: semantics/basic_nested_struct.wdl
+    json: semantics/basic_nested_struct.json
+  outputs:
+    structWorkflow.struct_output:
+      type:
+        sample_struct:
+          sample_int: Int
+          sample_string: String
+        sample_int: Int
+      value: { "sample_struct": { "sample_string": "Hello", "sample_int": 20 }, "sample_int": 10 }
+- versions: ["draft-2"]
+  tags: ["ceil"]
+  description: |
+    Basic ceil() test
+  inputs:
+    wdl: standard_library/basic_ceil.wdl
+    json: standard_library/basic_ceil.json
+  outputs:
+    ceilWorkflow.get_ceil.the_ceiling:
+      type: Int
+      value: 12
+- tags: ["string_placeholders"]
+  versions: ["1.1"]
+  description: |
+    Parser: expression placeholders in strings in 1.1
+  inputs:
+    "wdl": "parser/string_placeholders_1.1.wdl"
+    "json": "parser/empty.json"
+  "outputs":
+    placeholderWorkflow.ones:
+      "type": "Array[String]"
+      "value": [ "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" ]
+- tags: ["string_placeholders_in_conditionals_1.1"]
+  versions: ["1.1"]
+  description: |
+    Parser: expression placeholders in strings in conditional expressions in 1.1
+  inputs:
+    "wdl": "parser/string_placeholders_in_conditionals_1.1.wdl"
+    "json": "parser/empty.json"
+  "outputs":
+    placeholderWorkflow.result:
+      "type": "String"
+      "value": "yep"
+- tags: ["string_placeholders_in_conditionals_1.0"]
+  versions: ["1.0"]
+  description: |
+    Parser: expression placeholders in strings in conditional expressions in 1.0, Cromwell style
+  inputs:
+    "wdl": "parser/string_placeholders_in_conditionals_1.0.wdl"
+    "json": "parser/empty.json"
+  "outputs":
+    placeholderWorkflow.result:
+      "type": "String"
+      "value": "[\"cromwell\"]"
+- tags: ["null_optional_vs_default_1.0"]
+  versions: ["1.0"]
+  description: |
+    Semantics: passing a null optional value as an input to a task does not override a default value with null
+  inputs:
+    "wdl": "semantics/null_optional_vs_default_1.0.wdl"
+    "json": "semantics/empty.json"
+  "outputs":
+    overrideWorkflow.result:
+      "type": "Int"
+      "value": 1
+- tags: ["null_input_through_workflows_1.0"]
+  versions: ["1.0"]
+  description: |
+    Semantics: passing a null optional value as an input to a workflow that calls subworkflows does not override a default value with null
+  inputs:
+    "wdl": "semantics/null_input_through_workflows_1.0.wdl"
+    "json": "semantics/empty.json"
+  "outputs":
+    nullInput.result:
+      "type": "Int"
+      "value": 1
+- tags: ["non_null_input_through_workflows_1.0"]
+  versions: ["1.0"]
+  description: |
+    Semantics: passing a non-null optional value as an input to a workflow that calls subworkflows brings it through
+  inputs:
+    "wdl": "semantics/null_input_through_workflows_1.0.wdl"
+    "json": "semantics/nonnull_input.json"
+  "outputs":
+    nullInput.result:
+      "type": "Int"
+      "value": 10
