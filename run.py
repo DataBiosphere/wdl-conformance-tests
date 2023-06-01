@@ -1,7 +1,8 @@
+#!/usr/bin/env python3
 """
-
+run.py: Run conformance tests for WDL, grabbing the tests from the tests folder and expected values from
+conformance.yaml
 """
-
 import os
 import json
 import sys
@@ -83,10 +84,19 @@ def run_cmd(cmd, cwd):
 
 
 def convert_type(wdl_type):
+<<<<<<< HEAD
 """
 Given a string description of a type in WDL, return an instance
 of a MiniWDL WDL.Type class that represents the given type.
 """
+=======
+    """
+    Given a string description of a type in WDL, return an instance
+    of a MiniWDL WDL.Type class that represents the given type.
+
+    :param wdl_type: representation of wdl type
+    """
+>>>>>>> 82cdeb8 (update PR changes)
     outer_py_typ = wdl_type_to_miniwdl_class(wdl_outer_type(wdl_type))
 
     if outer_py_typ is WDLStruct:
@@ -139,6 +149,10 @@ def wdl_type_to_miniwdl_class(wdl_type):
     Given a WDL type name, return a MiniWDL class.
 
     Currently supports File, Int, Boolean, String, Float, Array, Map, Struct, Object (treated same as Struct)
+
+    Structs are inputted as dictionaries
+
+    :param wdl_type: representation of WDL type
     """
 
     if wdl_type == 'File':
@@ -190,11 +204,19 @@ def expand_vars_in_expected(expected_value):
 
     When WDL functions convert paths to strings, they use the absolute path. ${WDL_DIR} specifies the path of the
     conformance test folder to add before the string of the relative path
+
+    ex: Functions such as quote() and squote() take type File:
+      path/to/file.txt
+    and turn it into type String:
+      "/home/user/wdl-conformance-tests/path/to/file.txt"
     """
+<<<<<<< HEAD
     # ex: Functions such as quote() and squote() take type File:
     #   path/to/file.txt
     # and turn it into type String:
     #   "/home/user/wdl-conformance-tests/path/to/file.txt"
+=======
+>>>>>>> 82cdeb8 (update PR changes)
     if isinstance(expected_value, list):
         for i, value in enumerate(expected_value):
             if isinstance(value, list) or isinstance(value, dict):
@@ -342,7 +364,7 @@ def verify_failure(ret_code):
     """
     Verify that the workflow did fail
 
-    ret_code should be what code WDL outputs when running the test
+    ret_code should be the status code WDL runner outputs when running the test
     :param ret_code: return code from WDL runner
 
     If ret_code is fail (>0 or True), then return success
@@ -450,15 +472,50 @@ def handle_test(test_name, total_tests, test, runner, version, quiet):
     return response
 
 
-def get_tags(functions):
-    if functions is None:
-        return []
-    all_functions = [i for i in functions.split(',') if i]
+def get_tags(tags):
+    """
+    Parse the tag argument
+
+    Given the tag argument, return all tags as a set
+    """
+    if tags is None:
+        return None
+    all_tags = [i for i in tags.split(',') if i]
     tests = set()
-    for f in all_functions:
+    for f in all_tags:
         tests.add(f)
     return tests
 
+def get_test_indices(number_argument):
+    """
+    Parse the number argument
+
+    Given the number argument, return all selected test numbers/indices as a set
+    """
+    if number_argument is None:
+        return None
+    ranges = [i for i in number_argument.split(',') if i]
+    split_ranges = [i.split('-') if '-' in i else [i, i] for i in ranges]
+    tests = set()
+    for start, end in split_ranges:
+        for test_number in range(int(start), int(end) + 1):
+            tests.add(test_number)
+    return tests
+
+def get_specific_tests(conformance_tests, tag_argument, number_argument):
+    """
+    Given the expected tests, tag argument, and number argument, return a list of all test numbers/indices to run
+    """
+    given_indices = get_test_indices(number_argument)
+    given_tags = get_tags(tag_argument)
+    tests = set()
+    if given_indices is None:
+        given_indices = [i for i in range(len(conformance_tests))]
+    for test_number in given_indices:
+        test_tags = conformance_tests[test_number]['tags']
+        if given_tags is None or any(tag in given_tags for tag in test_tags):
+            tests.add(test_number)
+    return sorted(list(tests))
 
 def main(argv=sys.argv[1:]):
     # get directory of conformance tests and store as environmental variable
@@ -469,11 +526,13 @@ def main(argv=sys.argv[1:]):
                         help='Suppress printing run messages.')
     parser.add_argument("--versions", "-v", default="1.0",
                         help='Select the WDL versions you wish to test against.')
-    parser.add_argument("--select", "-s", default=None,
+    parser.add_argument("--tags", "-t", default=None,
                         help='Select the tags to run specific tests')
+    parser.add_argument("--numbers", "-n", default=None,
+                        help='Select the WDL test numbers you wish to run.')
     parser.add_argument("--runner", "-r", default='cromwell',
                         help='Select the WDL runner to use.')
-    parser.add_argument("--threads", "-t", type=int, default=None,
+    parser.add_argument("--threads", type=int, default=None,
                         help='Number of tests to run in parallel.')
     args = parser.parse_args(argv)
 
@@ -501,17 +560,7 @@ def main(argv=sys.argv[1:]):
     successes = 0
     skips = 0
 
-    specific_tests = get_tags(args.select)
-
-    # get all tests to run by index
-    selected_tests = []
-    if len(specific_tests) == 0:
-        selected_tests = [i for i in range(len(tests))]
-    else:
-        for i in range(len(tests)):
-            test = tests[i]
-            if any(func in test['tags'] for func in specific_tests):
-                selected_tests.append(i)
+    selected_tests = get_specific_tests(tests, args.tags, args.numbers)
 
     selected_tests_amt = len(selected_tests) * len(versions_to_test)
 
@@ -523,7 +572,7 @@ def main(argv=sys.argv[1:]):
                     test = tests[test_index]
                     expand_vars_in_expected(test)
                 except KeyError:
-                    print(f'ERROR: Provided tests [{", ".join(specific_tests)}] do not exist.')
+                    print(f'ERROR: Provided test [{test_index}] do not exist.')
                     sys.exit(1)
                 # Handle each test as a concurrent job
                 result_future = executor.submit(handle_test,
@@ -537,7 +586,7 @@ def main(argv=sys.argv[1:]):
         for result_future in as_completed(pending_futures):
             # Go get each result or reraise the relevant exception
             result = result_future.result()
-            if result['status']=='SUCCEEDED':
+            if result['status'] == 'SUCCEEDED':
                 successes += 1
             elif result['status'] == 'SKIPPED':
                 skips += 1
