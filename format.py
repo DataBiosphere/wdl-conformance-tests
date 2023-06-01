@@ -11,13 +11,30 @@ def ruamel_list(*lst):
     output.fa.set_flow_style()
     return output
 
+def sort_order(e):
+    # priority order, first to last
+    order = ["description", "tags", "versions", "inputs", "outputs", "wdl", "json", "type", "value"]
+    try:
+        i = order.index(e)
+    except ValueError:
+        i = 0
+    return i
+
+def sort_order_versions(e):
+    order = ["draft-2", "1.0", "1.1"]
+    i = order.index(e)
+    if i < 0:
+        return 0
+    else:
+        return i
+
 
 def yaml_sort(d):
     if isinstance(d, dict):
         result = ruamel.yaml.CommentedMap()
-        for k in sorted(d.keys()):
+        for k in sorted(d.keys(), key=sort_order):
             if k == 'versions':
-                result[k] = yaml_sort(ruamel_list(sorted(d[k])))
+                result[k] = yaml_sort(ruamel_list(sorted(d[k], key=sort_order_versions)))
             else:
                 result[k] = yaml_sort(d[k])
         return result
