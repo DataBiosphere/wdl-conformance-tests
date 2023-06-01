@@ -84,19 +84,12 @@ def run_cmd(cmd, cwd):
 
 
 def convert_type(wdl_type):
-<<<<<<< HEAD
-"""
-Given a string description of a type in WDL, return an instance
-of a MiniWDL WDL.Type class that represents the given type.
-"""
-=======
     """
     Given a string description of a type in WDL, return an instance
     of a MiniWDL WDL.Type class that represents the given type.
 
     :param wdl_type: representation of wdl type
     """
->>>>>>> 82cdeb8 (update PR changes)
     outer_py_typ = wdl_type_to_miniwdl_class(wdl_outer_type(wdl_type))
 
     if outer_py_typ is WDLStruct:
@@ -210,13 +203,6 @@ def expand_vars_in_expected(expected_value):
     and turn it into type String:
       "/home/user/wdl-conformance-tests/path/to/file.txt"
     """
-<<<<<<< HEAD
-    # ex: Functions such as quote() and squote() take type File:
-    #   path/to/file.txt
-    # and turn it into type String:
-    #   "/home/user/wdl-conformance-tests/path/to/file.txt"
-=======
->>>>>>> 82cdeb8 (update PR changes)
     if isinstance(expected_value, list):
         for i, value in enumerate(expected_value):
             if isinstance(value, list) or isinstance(value, dict):
