@@ -187,7 +187,7 @@
     wdl: standard_library/basic_fail.wdl
     json: standard_library/basic_fail.json
   outputs:
-    fail: 2
+    fail: {}
 - versions: [ "1.1" ]
   tags: [ "pair" ]
   description: |

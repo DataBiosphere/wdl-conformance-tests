@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+"""
+format.py: sort the tests in conformance.yaml into conformance_sorted.yaml,
+and format them consistently.
+"""
 import ruamel.yaml
 
 

@@ -83,6 +83,10 @@ def run_cmd(cmd, cwd):
 
 
 def convert_type(wdl_type):
+"""
+Given a string description of a type in WDL, return an instance
+of a MiniWDL WDL.Type class that represents the given type.
+"""
     outer_py_typ = wdl_type_to_miniwdl_class(wdl_outer_type(wdl_type))
 
     if outer_py_typ is WDLStruct:
@@ -174,7 +178,7 @@ def wdl_inner_type(wdl_type):
     """
     Get the interior type of a WDL type. So "Array[String]" gives "String".
     """
-    if wdl_type.find('['):
+    if '[' in wdl_type:
         return '['.join(wdl_type.split('[')[1:])[:-1]
     else:
         return wdl_type
@@ -184,12 +188,12 @@ def expand_vars_in_expected(expected_value):
     """
     For the expected value, expand all ${WDL_DIR} environmental variables
 
-    When WDL functions converts paths to strings, it uses the absolute path. ${WDL_DIR} specifies the path of the
+    When WDL functions convert paths to strings, they use the absolute path. ${WDL_DIR} specifies the path of the
     conformance test folder to add before the string of the relative path
     """
-    # ex: Functions such as quote() and squote() takes type File:
+    # ex: Functions such as quote() and squote() take type File:
     #   path/to/file.txt
-    # and turns it into type String:
+    # and turn it into type String:
     #   "/home/user/wdl-conformance-tests/path/to/file.txt"
     if isinstance(expected_value, list):
         for i, value in enumerate(expected_value):
