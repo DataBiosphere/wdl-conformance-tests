@@ -12,8 +12,15 @@ mypy:
 
 build: cromwell womtool
 
-clean:
+clean-build: clean
 	rm -rf build
+clean:
+	rm -f results*.json
+	rm -rf miniwdl-logs
+	rm -rf cromwell-executions
+	rm -rf cromwell-workflow-logs
+	rm -rf wdl-out-*
+	find -name "_LAST" -delete
 
 cromwell:
 	mkdir -p build

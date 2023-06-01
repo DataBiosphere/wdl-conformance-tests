@@ -15,6 +15,6 @@ workflow placeholderWorkflow {
   
   
   output {
-    String result = select_first(inside_result1, inside_result2)
+    String result = select_first([inside_result1, inside_result2])
   }
 }
