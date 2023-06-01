@@ -187,7 +187,7 @@
     wdl: standard_library/basic_fail.wdl
     json: standard_library/basic_fail.json
   outputs:
-    fail: {}
+    fail: { }
 - versions: [ "1.1" ]
   tags: [ "pair" ]
   description: |
@@ -264,8 +264,8 @@
           sample_string: String
         sample_int: Int
       value: { "sample_struct": { "sample_string": "Hello", "sample_int": 20 }, "sample_int": 10 }
-- versions: ["draft-2"]
-  tags: ["ceil"]
+- versions: [ "draft-2" ]
+  tags: [ "ceil" ]
   description: |
     Basic ceil() test
   inputs:
@@ -275,8 +275,8 @@
     ceilWorkflow.get_ceil.the_ceiling:
       type: Int
       value: 12
-- tags: ["string_placeholders"]
-  versions: ["1.1"]
+- tags: [ "string_placeholders" ]
+  versions: [ "1.1" ]
   description: |
     Parser: expression placeholders in strings in 1.1
   inputs:
@@ -286,8 +286,8 @@
     placeholderWorkflow.ones:
       "type": "Array[String]"
       "value": [ "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" ]
-- tags: ["string_placeholders_in_conditionals_1.1"]
-  versions: ["1.1"]
+- tags: [ "string_placeholders_in_conditionals_1.1" ]
+  versions: [ "1.1" ]
   description: |
     Parser: expression placeholders in strings in conditional expressions in 1.1
   inputs:
@@ -297,8 +297,8 @@
     placeholderWorkflow.result:
       "type": "String"
       "value": "yep"
-- tags: ["string_placeholders_in_conditionals_1.0"]
-  versions: ["1.0"]
+- tags: [ "string_placeholders_in_conditionals_1.0" ]
+  versions: [ "1.0" ]
   description: |
     Parser: expression placeholders in strings in conditional expressions in 1.0, Cromwell style
   inputs:
@@ -308,8 +308,8 @@
     placeholderWorkflow.result:
       "type": "String"
       "value": "[\"cromwell\"]"
-- tags: ["null_optional_vs_default_1.0"]
-  versions: ["1.0"]
+- tags: [ "null_optional_vs_default_1.0" ]
+  versions: [ "1.0" ]
   description: |
     Semantics: passing a null optional value as an input to a task does not override a default value with null
   inputs:
@@ -319,8 +319,8 @@
     overrideWorkflow.result:
       "type": "Int"
       "value": 1
-- tags: ["null_input_through_workflows_1.0"]
-  versions: ["1.0"]
+- tags: [ "null_input_through_workflows_1.0" ]
+  versions: [ "1.0" ]
   description: |
     Semantics: passing a null optional value as an input to a workflow that calls subworkflows does not override a default value with null
   inputs:
@@ -330,8 +330,8 @@
     nullInput.result:
       "type": "Int"
       "value": 1
-- tags: ["non_null_input_through_workflows_1.0"]
-  versions: ["1.0"]
+- tags: [ "non_null_input_through_workflows_1.0" ]
+  versions: [ "1.0" ]
   description: |
     Semantics: passing a non-null optional value as an input to a workflow that calls subworkflows brings it through
   inputs:
