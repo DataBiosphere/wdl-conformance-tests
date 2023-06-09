@@ -341,3 +341,14 @@
     nullInput.result:
       "type": "Int"
       "value": 10
+- description: |
+    Integration test for GATK tutorial 4 test, needs environmental variable MINIWDL__FILE_IO__ALLOW_ANY_INPUT=true
+  versions: ["1.0"]
+  tags: ["t04", "integration"]
+  inputs:
+    wdl: integration/jointCallingGenotypes.wdl
+    json: integration/jointCallingGenotypes_inputs.json
+  outputs:
+    jointCallingGenotypes.file_output:
+      type: Array[File]
+      value: [ { regex: "(20.*\n){411}" }, { regex: "(20.*\n){411}" }, { regex: "(20.*\n){411}" } ]

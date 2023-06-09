@@ -1,0 +1,15 @@
+{
+  "jointCallingGenotypes.inputSamplesFile": "data/inputsTSV.txt",
+  "jointCallingGenotypes.refFasta": "data/ref/human_g1k_b37_20.fasta",
+  "jointCallingGenotypes.gatk": "data/gatk-package-4.1.9.0-local.jar",
+  "jointCallingGenotypes.refDict": "data/ref/human_g1k_b37_20.dict",
+  "jointCallingGenotypes.refIndex": "data/ref/human_g1k_b37_20.fasta.fai"
+}
+
+
+
+
+
+
+
+
