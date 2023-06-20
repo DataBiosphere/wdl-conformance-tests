@@ -225,7 +225,7 @@
   tags: ["object"]
   description: |
     Basic object test
-    MiniWDL does not support Objects, so this will fail if ran by MiniWDL
+    MiniWDL and toil-wdl-runner do not support Objects, so this will fail if ran by them
   inputs:
     wdl: semantics/basic_object.wdl
     json: semantics/basic_object.json
@@ -301,13 +301,14 @@
   versions: ["1.0"]
   description: |
     Parser: expression placeholders in strings in conditional expressions in 1.0, Cromwell style
+    Fails with MiniWDL and toil-wdl-runner
   inputs:
     "wdl": "parser/string_placeholders_in_conditionals_1.0.wdl"
     "json": "parser/empty.json"
   "outputs":
     placeholderWorkflow.result:
       "type": "String"
-      "value": "[\"cromwell\"]"
+      "value": "cromwell"
 - tags: ["null_optional_vs_default_1.0"]
   versions: ["1.0"]
   description: |
@@ -342,7 +343,8 @@
       "type": "Int"
       "value": 10
 - description: |
-    Integration test for GATK tutorial 4 test, needs environmental variable MINIWDL__FILE_IO__ALLOW_ANY_INPUT=true
+    Integration test for GATK tutorial 4 test
+    Needs env MINIWDL__FILE_IO__ALLOW_ANY_INPUT=true and GATK_data.zip in main directory
   versions: ["1.0"]
   tags: ["t04", "integration"]
   inputs:
