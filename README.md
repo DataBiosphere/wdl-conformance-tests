@@ -57,19 +57,20 @@ Standard Lib: Basic test for prefix()
 
 ```
 (venv) quokka@qcore ~/$ python3 run.py --help
-usage: run.py [-h] [--quiet] [--versions VERSIONS] [--select SELECT] [--runner RUNNER] [--threads THREADS]
+usage: run.py [-h] [--verbose] [--versions VERSIONS] [--tags TAGS]
+              [--numbers NUMBERS] [--runner RUNNER] [--threads THREADS]
 
 Run WDL conformance tests.
 
 options:
   -h, --help            show this help message and exit
-  --quiet, -q           Suppress printing run messages.
+  --verbose             Print more information about a test
   --versions VERSIONS, -v VERSIONS
                         Select the WDL versions you wish to test against.
-  --select SELECT, -s SELECT
-                        Select the tags to run specific tests
+  --tags TAGS, -t TAGS  Select the tags to run specific tests
+  --numbers NUMBERS, -n NUMBERS
+                        Select the WDL test numbers you wish to run.
   --runner RUNNER, -r RUNNER
                         Select the WDL runner to use.
-  --threads THREADS, -t THREADS
-                        Number of tests to run in parallel.
+  --threads THREADS     Number of tests to run in parallel.
 ```
