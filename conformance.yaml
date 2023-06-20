@@ -1,5 +1,5 @@
-- versions: [ "draft-2" ]
-  tags: [ 0, "stdout" ]
+- versions: ["draft-2"]
+  tags: [0, "stdout"]
   description: |
     Standard Lib: Basic test for stdout()
   inputs:
@@ -8,9 +8,9 @@
   outputs:
     stdoutWorkflow.get_stdout.check_this:
       type: "File"
-      value: { md5sum: "91d69f7c47b6e7d5e4d81fab67f7f304" }
-- tags: [ "stderr" ]
-  versions: [ "draft-2" ]
+      value: {md5sum: "91d69f7c47b6e7d5e4d81fab67f7f304"}
+- tags: ["stderr"]
+  versions: ["draft-2"]
   description: |
     Standard Lib: Basic test for stderr()
   inputs:
@@ -19,9 +19,9 @@
   outputs:
     stderrWorkflow.get_stderr.check_this:
       type: "File"
-      value: { md5sum: "2332021c3feef276abe077f34276abfe" }
-- tags: [ "quote" ]
-  versions: [ "1.1" ]
+      value: {md5sum: "2332021c3feef276abe077f34276abfe"}
+- tags: ["quote"]
+  versions: ["1.1"]
   description: |
     Standard Lib: Basic test for quote()
   inputs:
@@ -29,22 +29,22 @@
     json: standard_library/basic_quote.json
   outputs:
     quoteWorkflow.str_output:
-      value: [ '"value1"', '"value2"', '"value3"' ]
+      value: ['"value1"', '"value2"', '"value3"']
       type: "Array[String]"
     quoteWorkflow.int_output:
-      value: [ '"1"', '"2"', '"-3"' ]
+      value: ['"1"', '"2"', '"-3"']
       type: "Array[String]"
     quoteWorkflow.float_output:
-      value: [ '"1.234000"', '"-0.543000"', '"-13.300000"' ]
+      value: ['"1.234000"', '"-0.543000"', '"-13.300000"']
       type: "Array[String]"
     quoteWorkflow.bool_output:
-      value: [ '"true"', '"false"', '"true"' ]
+      value: ['"true"', '"false"', '"true"']
       type: "Array[String]"
     quoteWorkflow.file_output:
-      value: [ '"${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.wdl"', '"${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.json"', '"${WDL_DIR}/run.py"' ] # files are relative path to input files, cannot go up in subdir, ex with run.py
+      value: ['"${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.wdl"', '"${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.json"', '"${WDL_DIR}/run.py"'] # files are relative path to input files, cannot go up in subdir, ex with run.py
       type: "Array[String]"
-- versions: [ "1.1" ]
-  tags: [ "squote" ]
+- versions: ["1.1"]
+  tags: ["squote"]
   description: |
     Standard Lib: Basic test for squote()
   inputs:
@@ -52,22 +52,22 @@
     json: standard_library/basic_squote.json
   outputs:
     squoteWorkflow.str_output:
-      value: [ "'value1'", "'value2'", "'value3'" ]
+      value: ["'value1'", "'value2'", "'value3'"]
       type: "Array[String]"
     squoteWorkflow.int_output:
-      value: [ "'1'", "'2'", "'-3'" ]
+      value: ["'1'", "'2'", "'-3'"]
       type: "Array[String]"
     squoteWorkflow.float_output:
-      value: [ "'1.234000'", "'-0.543000'", "'-13.300000'" ]
+      value: ["'1.234000'", "'-0.543000'", "'-13.300000'"]
       type: "Array[String]"
     squoteWorkflow.bool_output:
-      value: [ "'true'", "'false'", "'true'" ]
+      value: ["'true'", "'false'", "'true'"]
       type: "Array[String]"
     squoteWorkflow.file_output:
-      value: [ "'${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.wdl'", "'${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.json'", "'${WDL_DIR}/run.py'" ]
+      value: ["'${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.wdl'", "'${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.json'", "'${WDL_DIR}/run.py'"]
       type: "Array[String]"
-- versions: [ "1.1" ]
-  tags: [ "sep" ]
+- versions: ["1.1"]
+  tags: ["sep"]
   description: |
     Standard Lib: Basic test for sep()
   inputs:
@@ -77,8 +77,8 @@
     sepWorkflow.str_output:
       value: "a - b - c"
       type: "String"
-- versions: [ "1.0", "draft-2", "1.1" ]
-  tags: [ "prefix" ]
+- versions: ["1.0", "draft-2", "1.1"]
+  tags: ["prefix"]
   description: |
     Standard Lib: Basic test for prefix()
   inputs:
@@ -86,10 +86,10 @@
     json: standard_library/basic_prefix.json
   outputs:
     prefixWorkflow.str_output:
-      value: [ "-e value1", "-e value2", "-e value3" ]
+      value: ["-e value1", "-e value2", "-e value3"]
       type: "Array[String]"
-- versions: [ "draft-2", "1.0", "1.1" ]
-  tags: [ "select_first" ]
+- versions: ["draft-2", "1.0", "1.1"]
+  tags: ["select_first"]
   description: |
     Standard Lib: Basic test for select_first()
   inputs:
@@ -109,10 +109,10 @@
       type: "Float"
       value: 999.9999999
     selectFirstWorkflow.file_output:
-      value: { md5sum: "337cf995cbd86664d941095a45e5e75d" }
+      value: {md5sum: "337cf995cbd86664d941095a45e5e75d"}
       type: "File"
-- versions: [ "draft-2", "1.0", "1.1" ]
-  tags: [ "select_all" ]
+- versions: ["draft-2", "1.0", "1.1"]
+  tags: ["select_all"]
   description: |
     Standard Lib: Basic test for select_all()
   inputs:
@@ -121,21 +121,21 @@
   outputs:
     selectAllWorkflow.int_output:
       type: "Array[Int]"
-      value: [ 4, 5 ]
+      value: [4, 5]
     selectAllWorkflow.float_output:
       type: "Array[Float]"
-      value: [ 1.2345 ]
+      value: [1.2345]
     selectAllWorkflow.str_output:
       type: "Array[String]"
-      value: [ "value1", "value3" ]
+      value: ["value1", "value3"]
     selectAllWorkflow.bool_output:
       type: "Array[Boolean]"
-      value: [ true, false ]
+      value: [true, false]
     selectAllWorkflow.file_output:
       type: "Array[File]"
-      value: [ { md5sum: "c4b90e142a9ba0270f8137244caa246c" } ]
-- versions: [ "1.1" ]
-  tags: [ "suffix" ]
+      value: [{md5sum: "c4b90e142a9ba0270f8137244caa246c"}]
+- versions: ["1.1"]
+  tags: ["suffix"]
   description: |
     Standard Lib: Basic test for suffix()
   inputs:
@@ -143,10 +143,10 @@
     json: standard_library/basic_suffix.json
   outputs:
     suffixWorkflow.str_output:
-      value: [ "value1.txt", "value2.txt", "value3.txt" ]
+      value: ["value1.txt", "value2.txt", "value3.txt"]
       type: "Array[String]"
-- versions: [ "draft-2", "1.0", "1.1" ]
-  tags: [ "defined" ]
+- versions: ["draft-2", "1.0", "1.1"]
+  tags: ["defined"]
   description: |
     Standard Lib: Basic test for defined()
   inputs:
@@ -159,8 +159,8 @@
     definedWorkflow.bool_output_none:
       value: false
       type: "Boolean"
-- versions: [ "draft-2", "1.0", "1.1" ]
-  tags: [ "basename" ]
+- versions: ["draft-2", "1.0", "1.1"]
+  tags: ["basename"]
   description: |
     Standard Lib: Basic test for basename()
   inputs:
@@ -179,8 +179,8 @@
     basenameWorkflow.str_output_file_removed:
       type: "String"
       value: "basic_basename"
-- versions: [ "1.1", "1.0" ]
-  tags: [ "fail" ]
+- versions: ["1.1", "1.0"]
+  tags: ["fail"]
   description: |
     Basic failure test, with invalid arguments
   inputs:
@@ -188,8 +188,8 @@
     json: standard_library/basic_fail.json
   outputs:
     fail: {}
-- versions: [ "1.1" ]
-  tags: [ "pair" ]
+- versions: ["1.1"]
+  tags: ["pair"]
   description: |
     Basic test for compound type pair
   inputs:
@@ -198,9 +198,9 @@
   outputs:
     pairWorkflow.pair_output:
       type: "Pair[Int, Int]"
-      value: { left: 2, right: 4 }
-- versions: [ "1.1" ]
-  tags: [ "map" ]
+      value: {left: 2, right: 4}
+- versions: ["1.1"]
+  tags: ["map"]
   description: |
     Basic test for compound type map
   inputs:
@@ -209,9 +209,9 @@
   outputs:
     mapWorkflow.map_output:
       type: "Map[Int, Int]"
-      value: { "1": 2, "3": 4 } # keys must be string
-- versions: [ "1.1" ]
-  tags: [ "array_pair" ]
+      value: {"1": 2, "3": 4} # keys must be string
+- versions: ["1.1"]
+  tags: ["array_pair"]
   description: |
     Basic test for compound type array of pair
   inputs:
@@ -220,9 +220,9 @@
   outputs:
     arrayPairWorkflow.pair_output:
       type: "Array[Pair[Int,Int]]"
-      value: [ { left: 2, right: 4 } ]
-- versions: [ "1.0" ]
-  tags: [ "object" ]
+      value: [{left: 2, right: 4}]
+- versions: ["1.0"]
+  tags: ["object"]
   description: |
     Basic object test
     MiniWDL does not support Objects, so this will fail if ran by MiniWDL
@@ -231,13 +231,13 @@
     json: semantics/basic_object.json
   outputs:
     objectWorkflow.obj_output:
-      value: { "b": "hello", "a": 10, "f": { md5sum: "9eb48991c704af23036a7be959efd489" } }
+      value: {"b": "hello", "a": 10, "f": {md5sum: "9eb48991c704af23036a7be959efd489"}}
       type:
         b: String
         a: Int
         f: File
-- versions: [ "1.1", "1.0" ]
-  tags: [ "struct" ]
+- versions: ["1.1", "1.0"]
+  tags: ["struct"]
   description: |
     Basic struct test
   inputs:
@@ -248,9 +248,9 @@
       type:
         sample_string: String
         sample_index: Int
-      value: { "sample_string": "hello", "sample_index": 10 }
-- versions: [ "1.1" ]
-  tags: [ "nested_struct" ]
+      value: {"sample_string": "hello", "sample_index": 10}
+- versions: ["1.1"]
+  tags: ["nested_struct"]
   description: |
     Basic nested struct test
   inputs:
@@ -263,7 +263,7 @@
           sample_int: Int
           sample_string: String
         sample_int: Int
-      value: { "sample_struct": { "sample_string": "Hello", "sample_int": 20 }, "sample_int": 10 }
+      value: {"sample_struct": {"sample_string": "Hello", "sample_int": 20}, "sample_int": 10}
 - versions: ["draft-2"]
   tags: ["ceil"]
   description: |
@@ -285,7 +285,7 @@
   "outputs":
     placeholderWorkflow.ones:
       "type": "Array[String]"
-      "value": [ "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" ]
+      "value": ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"]
 - tags: ["string_placeholders_in_conditionals_1.1"]
   versions: ["1.1"]
   description: |
@@ -341,3 +341,14 @@
     nullInput.result:
       "type": "Int"
       "value": 10
+- description: |
+    Integration test for GATK tutorial 4 test, needs environmental variable MINIWDL__FILE_IO__ALLOW_ANY_INPUT=true
+  versions: ["1.0"]
+  tags: ["t04", "integration"]
+  inputs:
+    wdl: integration/jointCallingGenotypes.wdl
+    json: integration/jointCallingGenotypes_inputs.json
+  outputs:
+    jointCallingGenotypes.file_output:
+      type: Array[File]
+      value: [{regex: "(20.*\n){411}"}, {regex: "(20.*\n){411}"}, {regex: "(20.*\n){411}"}]

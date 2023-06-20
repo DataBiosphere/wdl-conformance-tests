@@ -1,2 +1,2 @@
 ruamel.yaml
-miniwdl==1.10.0
+miniwdl>=1.10.0,<2
