@@ -31,19 +31,12 @@ to help make these tests more complete, we gladly welcome PRs!
 (venv) quokka@qcore ~/$ python3 run.py --runner toil-wdl-runner --versions 1.1
 Testing runner toil-wdl-runner on WDL versions: 1.1
 
-0: SKIPPED
-    REASON: Test only applies to versions: draft-2
-1: SKIPPED
-    REASON: Test only applies to versions: draft-2
-
-Standard Lib: Basic test for quote()
-2: RUNNING		WDL version: 1.1
-
-Standard Lib: Basic test for squote()
-3: RUNNING		WDL version: 1.1
-
-Standard Lib: Basic test for prefix()
-5: RUNNING		WDL version: 1.1
+0: SKIPPED: Standard Lib: Basic test for stdout()
+1: SKIPPED: Standard Lib: Basic test for stderr()
+2: SUCCEEDED: Standard Lib: Basic test for quote()
+3: SUCCEEDED: Standard Lib: Basic test for squote()
+4: SUCCEEDED: Standard Lib: Basic test for sep()
+5: SUCCEEDED: Standard Lib: Basic test for prefix()
 
 ...
 
