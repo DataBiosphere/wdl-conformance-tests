@@ -1,0 +1,9 @@
+{
+  "SimpleVariantSelection.refIndex": "GATK_data/ref/human_g1k_b37_20.fasta.fai",
+  "SimpleVariantSelection.name": "WDL_tut2_output",
+  "SimpleVariantSelection.refDict": "GATK_data/ref/human_g1k_b37_20.dict",
+  "SimpleVariantSelection.haplotypeCaller.bamIndex": "GATK_data/inputs/NA12878_wgs_20.bai",
+  "SimpleVariantSelection.refFasta": "GATK_data/ref/human_g1k_b37_20.fasta",
+  "SimpleVariantSelection.gatk": "GATK_data/gatk-package-4.1.9.0-local.jar",
+  "SimpleVariantSelection.haplotypeCaller.inputBAM": "GATK_data/inputs/NA12878_wgs_20.bam"
+}

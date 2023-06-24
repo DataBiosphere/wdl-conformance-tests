@@ -1,0 +1,9 @@
+{
+  "helloHaplotypeCaller.haplotypeCaller.RefFasta": "GATK_data/ref/human_g1k_b37_20.fasta",
+  "helloHaplotypeCaller.haplotypeCaller.bamIndex": "GATK_data/inputs/NA12878_wgs_20.bai",
+  "helloHaplotypeCaller.haplotypeCaller.GATK": "GATK_data/gatk-package-4.1.9.0-local.jar",
+  "helloHaplotypeCaller.haplotypeCaller.RefIndex": "GATK_data/ref/human_g1k_b37_20.fasta.fai",
+  "helloHaplotypeCaller.haplotypeCaller.RefDict": "GATK_data/ref/human_g1k_b37_20.dict",
+  "helloHaplotypeCaller.haplotypeCaller.inputBAM": "GATK_data/inputs/NA12878_wgs_20.bam",
+  "helloHaplotypeCaller.haplotypeCaller.sampleName": "WDL_tut1_output"
+}

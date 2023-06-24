@@ -33,7 +33,7 @@ def yaml_sort(d):
         result = ruamel.yaml.CommentedMap()
         for k in sorted(d.keys(), key=sort_order):
             if k == 'versions':
-                result[k] = yaml_sort(ruamel_list(sorted(d[k], key=sort_order_versions)))
+                result[k] = yaml_sort(ruamel_list(*sorted(d[k], key=sort_order_versions)))
             else:
                 result[k] = yaml_sort(d[k])
         return result
