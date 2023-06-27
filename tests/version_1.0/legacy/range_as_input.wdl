@@ -1,11 +1,16 @@
+version 1.0
 workflow rangeWorkflow {
   # this workflow depends on write_lines()
-  Int num
+  input {
+    Int num
+  }
   call copy_output {input: in_array=range(num)}
 }
 
 task copy_output {
-  Array[Int] in_array
+  input {
+    Array[Int] in_array
+  }
 
   command {
     cp ${write_lines(in_array)} output.txt

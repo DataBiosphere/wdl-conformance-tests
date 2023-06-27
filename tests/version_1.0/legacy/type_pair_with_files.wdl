@@ -1,11 +1,14 @@
+version 1.0
 workflow typePairWorkflow {
   # test conformance with the WDL language specification - Pair Literals
 
-  # file import
-  Pair[String, File] test_pair_file
+  input {
+    # file import
+    Pair[String, File] test_pair_file
 
-  # file import with arrays
-  Array[Pair[String, File]] test_array_pair_file
+    # file import with arrays
+    Array[Pair[String, File]] test_array_pair_file
+  }
 
   call copy_output {
     input:
@@ -15,8 +18,10 @@ workflow typePairWorkflow {
 }
 
 task copy_output {
-  Pair[String, File] test_pair_file
-  Array[Pair[String, File]] test_array_pair_file
+  input {
+    Pair[String, File] test_pair_file
+    Array[Pair[String, File]] test_array_pair_file
+  }
 
   # pairs defined in WDL in task
   # miniwdl seems to have trouble using these files

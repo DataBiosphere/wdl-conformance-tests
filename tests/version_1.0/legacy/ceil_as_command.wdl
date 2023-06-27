@@ -1,10 +1,15 @@
+version 1.0
 workflow ceilWorkflow {
-  Float num
+  input {
+    Float num
+  }
   call get_ceil { input: num=num }
 }
 
 task get_ceil {
-  Float num
+  input {
+    Float num
+  }
 
   command {
     echo ${ceil(num)} > output.txt

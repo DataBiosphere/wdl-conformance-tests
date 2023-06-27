@@ -1,13 +1,18 @@
+version 1.0
 workflow readLinesWorkflow {
   # this workflow depends on stdout() and write_lines()
-  File in_file
+  input {
+    File in_file
+  }
 
   call read_lines {input: in_file=in_file}
   call copy_output {input: in_array=read_lines.out_array}
 }
 
 task read_lines {
-  File in_file
+  input {
+    File in_file
+  }
 
   command {
     cat ${in_file}
@@ -19,7 +24,9 @@ task read_lines {
 }
 
 task copy_output {
-  Array[String] in_array
+  input {
+    Array[String] in_array
+  }
 
   command {
     cp ${write_lines(in_array)} output.txt

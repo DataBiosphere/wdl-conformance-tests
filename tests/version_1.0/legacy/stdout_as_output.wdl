@@ -1,11 +1,16 @@
+version 1.0
 workflow stdoutWorkflow {
-  String message
+  input {
+    String message
+  }
   call get_stdout { input: message=message }
   call copy_output { input: in_file=get_stdout.check_this }
 }
 
 task get_stdout {
-  String message
+  input {
+    String message
+  }
 
   command {
     echo "${message}"
@@ -18,7 +23,9 @@ task get_stdout {
 
 # comply with builtinTest
 task copy_output {
-  File in_file
+  input {
+    File in_file
+  }
 
   command {
     cp ${in_file} output.txt

@@ -1,11 +1,16 @@
+version 1.0
 workflow stderrWorkflow {
-  String message
+  input {
+    String message
+  }
   call get_stderr { input: message=message }
   call copy_output { input: in_file=get_stderr.check_this }
 }
 
 task get_stderr {
-  String message
+  input {
+    String message
+  }
 
   command {
     >&2 echo "${message}"
@@ -18,7 +23,9 @@ task get_stderr {
 
 # comply with builtinTest
 task copy_output {
-  File in_file
+  input {
+    File in_file
+  }
 
   command {
     cp ${in_file} output.txt

@@ -1,10 +1,13 @@
+version 1.0
 workflow typePairWorkflow {
   # test conformance with the WDL language specification - Pair Literals
 
-  Pair[Int, String] test_pair
+  input {
+    Pair[Int, String] test_pair
 
-  # a pair inside a pair
-  Pair[String, Pair[String, String]] test_pair_pair
+    # a pair inside a pair
+    Pair[String, Pair[String, String]] test_pair_pair
+  }
 
   # a pair defined inside WDL
   Pair[Int, String] test_pair_from_wdl = (23, "twenty-three")
@@ -18,9 +21,11 @@ workflow typePairWorkflow {
 }
 
 task copy_output {
-  Pair[Int, String] test_pair
-  Pair[String, Pair[String, String]] test_pair_pair
-  Pair[Int, String] test_pair_from_wdl
+  input {
+    Pair[Int, String] test_pair
+    Pair[String, Pair[String, String]] test_pair_pair
+    Pair[Int, String] test_pair_from_wdl
+  }
 
   command {
     cp ${write_json([test_pair.left,

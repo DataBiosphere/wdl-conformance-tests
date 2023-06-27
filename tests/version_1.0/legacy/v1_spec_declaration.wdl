@@ -1,8 +1,7 @@
+version 1.0
 
 # Basic declaration example modified from the WDL 1.0 spec:
 # https://github.com/openwdl/wdl/blob/main/versions/1.0/SPEC.md#declarations
-
-version 1.0
 
 task test {
   input {

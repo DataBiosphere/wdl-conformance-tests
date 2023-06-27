@@ -1,13 +1,18 @@
+version 1.0
 workflow readTsvWorkflow {
   # this workflow depends on stdout() and write_lines()
-  File in_file
+  input {
+    File in_file
+  }
 
   call read_tsv {input: in_file=in_file}
   call copy_output {input: in_tsv=read_tsv.out_tsv}
 }
 
 task read_tsv {
-  File in_file
+  input {
+    File in_file
+  }
 
   command {
     cat ${in_file}
@@ -19,7 +24,9 @@ task read_tsv {
 }
 
 task copy_output {
-  Array[Array[String]] in_tsv
+  input {
+    Array[Array[String]] in_tsv
+  }
 
   command {
     cp ${write_tsv(in_tsv)} output.txt

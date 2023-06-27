@@ -1,10 +1,15 @@
+version 1.0
 workflow lengthWorkflow {
-  Array[Int] in_array
+  input {
+    Array[Int] in_array
+  }
   call copy_output {input: num=length(in_array)}
 }
 
 task copy_output {
-  Int num
+  input {
+    Int num
+  }
 
   command {
     echo ${num} > output.txt

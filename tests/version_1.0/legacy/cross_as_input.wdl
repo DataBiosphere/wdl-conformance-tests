@@ -1,3 +1,4 @@
+version 1.0
 workflow crossWorkflow {
   # this workflow depends on write_json()
   input {
@@ -9,7 +10,9 @@ workflow crossWorkflow {
 }
 
 task copy_output {
-  Array[Pair[Int, String]] in_array
+  input {
+    Array[Pair[Int, String]] in_array
+  }
 
   command {
     cp ${write_json(in_array)} output.txt

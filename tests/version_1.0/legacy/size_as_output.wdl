@@ -1,3 +1,4 @@
+version 1.0
 workflow sizeWorkflow {
   call get_size
   call copy_output {
@@ -22,9 +23,11 @@ task get_size {
 }
 
 task copy_output {
-  Float float_0
-  Float float_1
-  Float float_2
+  input {
+    Float float_0
+    Float float_1
+    Float float_2
+  }
 
   command {
     echo "${float_0} ${float_1} ${float_2}" > output.txt

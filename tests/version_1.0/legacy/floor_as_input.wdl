@@ -1,10 +1,15 @@
+version 1.0
 workflow floorWorkflow {
-  Float num
+  input {
+    Float num
+  }
   call get_floor { input: num=floor(num) }
 }
 
 task get_floor {
-  Float num
+  input {
+    Float num
+  }
 
   command {
     echo ${num} > output.txt

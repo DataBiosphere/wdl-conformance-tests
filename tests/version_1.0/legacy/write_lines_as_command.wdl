@@ -1,11 +1,16 @@
+version 1.0
 workflow writeLinesWorkflow {
-  Array[String] in_array
+  input {
+    Array[String] in_array
+  }
 
   call write_lines {input: in_array=in_array}
 }
 
 task write_lines {
-  Array[String] in_array
+  input {
+    Array[String] in_array
+  }
 
   command {
     cp ${write_lines(in_array)} output.txt

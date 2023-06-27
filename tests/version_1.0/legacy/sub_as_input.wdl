@@ -1,10 +1,16 @@
+version 1.0
 workflow subWorkflow {
-  String in_file
+  input {
+    String in_file
+  }
   call get_sub {input: in_file=in_file}
 }
 
 task get_sub {
-  String in_file
+  input {
+    String in_file
+  }
+
   String out_file_name = sub(in_file, "\\.tsv$", ".csv")
 
   command {

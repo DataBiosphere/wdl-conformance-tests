@@ -1,10 +1,15 @@
+version 1.0
 workflow roundWorkflow {
-  Float num
+  input {
+    Float num
+  }
   call get_round { input: num=round(num) }
 }
 
 task get_round {
-  Float num
+  input {
+    Float num
+  }
 
   command {
     echo ${num} > output.txt

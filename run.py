@@ -322,6 +322,9 @@ def compare_outputs(expected: Any, result: Any, typ: WDLBase):
             return {'status': 'FAILED', 'reason': f"Result file does not exist!\n"
                                                   f"Expected filepath: {result}!"}
 
+        if not isinstance(expected, dict):
+            return {'status': 'FAILED', 'reason': f"Expected value is not a regex or md5sum!\n"
+                                                  f"Expected result was: {expected}"}
         regex = expected.get('regex')
         if regex == "":
             return {'status': 'FAILED', 'reason': f"Expected regex is empty!"}
