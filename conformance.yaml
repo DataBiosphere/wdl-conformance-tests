@@ -204,7 +204,7 @@
 - description: |
     Basic test for compound type pair
   tags: ["pair", "semantics"]
-  versions: ["1.1"]
+  versions: ["1.0", "1.1"]
   inputs:
     wdl: semantics/basic_pair.wdl
     json: semantics/basic_pair.json
@@ -215,7 +215,7 @@
 - description: |
     Basic test for compound type map
   tags: ["map", "semantics"]
-  versions: ["1.1"]
+  versions: ["1.0", "1.1"]
   inputs:
     wdl: semantics/basic_map.wdl
     json: semantics/basic_map.json
@@ -226,7 +226,7 @@
 - description: |
     Basic test for compound type array of pair
   tags: ["array_pair", "semantics"]
-  versions: ["1.1"]
+  versions: ["1.0", "1.1"]
   inputs:
     wdl: semantics/basic_array_pair.wdl
     json: semantics/basic_array_pair.json

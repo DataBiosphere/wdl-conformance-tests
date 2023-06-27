@@ -1,6 +1,10 @@
 workflow stderrWorkflow {
   String message
   call get_stderr { input: message=message }
+
+  output {
+    File check_this = get_stderr.check_this
+  }
 }
 
 task get_stderr {
