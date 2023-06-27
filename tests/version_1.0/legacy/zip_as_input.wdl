@@ -7,6 +7,10 @@ workflow zipWorkflow {
   }
 
   call copy_output {input: in_array=zip(in_array_1, in_array_2)}
+
+  output {
+    File the_output = copy_output.the_output
+  }
 }
 
 task copy_output {

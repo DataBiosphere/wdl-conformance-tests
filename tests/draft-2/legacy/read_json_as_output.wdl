@@ -4,6 +4,11 @@ workflow readJsonWorkflow {
 
   call read_json {input: in_file=in_file}
   call copy_output {input: in_json=read_json.out_json}
+
+  output {
+    File the_output = copy_output.the_output
+    Map[String, String] out_json = read_json.out_json
+  }
 }
 
 task read_json {

@@ -11,6 +11,10 @@ workflow asMapWorkflow {
     input:
       in_map=a_map
   }
+
+  output {
+    File the_output = copy_output.the_output
+  }
 }
 
 task copy_output {

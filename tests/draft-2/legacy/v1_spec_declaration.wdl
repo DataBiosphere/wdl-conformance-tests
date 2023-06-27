@@ -36,4 +36,10 @@ workflow wf {
   call test as y {input: var="y"}
   Array[String] strs = [x.value, y.value]
   call test2 as z {input: array=strs}
+
+  output {
+    String x_value = x.value
+    String y_value = y.value
+    String z_the_output = z.the_output
+  }
 }

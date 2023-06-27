@@ -6,6 +6,10 @@ workflow transposeWorkflow {
   }
 
   call copy_output {input: in_array=transpose(in_array)}
+
+  output {
+    File the_output = copy_output.the_output
+  }
 }
 
 task copy_output {

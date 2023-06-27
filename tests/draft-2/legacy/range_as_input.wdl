@@ -2,6 +2,10 @@ workflow rangeWorkflow {
   # this workflow depends on write_lines()
   Int num
   call copy_output {input: in_array=range(num)}
+
+  output {
+    File the_output = copy_output.the_output
+  }
 }
 
 task copy_output {

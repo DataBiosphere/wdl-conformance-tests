@@ -6,6 +6,10 @@ workflow collectByKeyWorkflow {
   }
 
   call copy_output {input: in_map=collect_by_key(in_array)}
+
+  output {
+    File the_output = copy_output.the_output
+  }
 }
 
 task copy_output {

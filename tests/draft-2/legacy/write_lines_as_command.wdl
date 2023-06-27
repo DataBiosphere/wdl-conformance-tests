@@ -2,6 +2,10 @@ workflow writeLinesWorkflow {
   Array[String] in_array
 
   call write_lines {input: in_array=in_array}
+
+  output {
+    File the_output = write_lines.the_output
+  }
 }
 
 task write_lines {

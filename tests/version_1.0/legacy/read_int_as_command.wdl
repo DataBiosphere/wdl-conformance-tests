@@ -5,6 +5,10 @@ workflow readIntWorkflow {
   }
 
   call read_int {input: in_file=in_file}
+
+  output {
+    File the_output = read_int.the_output
+  }
 }
 
 task read_int {

@@ -6,6 +6,10 @@ workflow keysWorkflow {
   }
 
   call copy_output {input: in_array=keys(in_map)}
+
+  output {
+    File the_output = copy_output.the_output
+  }
 }
 
 task copy_output {

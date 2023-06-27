@@ -5,6 +5,10 @@ workflow readBooleanWorkflow {
   }
 
   call read_boolean {input: in_file=in_file}
+
+  output {
+    File the_output = read_boolean.the_output
+  }
 }
 
 task read_boolean {

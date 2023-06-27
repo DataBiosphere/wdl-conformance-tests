@@ -7,6 +7,13 @@ workflow sizeWorkflow {
       float_1 = get_size.created_file_size_in_KB,
       float_2 = get_size.created_file_size_in_KiB
   }
+
+  output {
+    File the_output = copy_output.the_output
+    Float created_file_size = get_size.created_file_size
+    Float created_file_size_in_KB = get_size.created_file_size_in_KB
+    Float created_file_size_in_KiB = get_size.created_file_size_in_KiB
+  }
 }
 
 task get_size {

@@ -5,6 +5,11 @@ workflow stderrWorkflow {
   }
   call get_stderr { input: message=message }
   call copy_output { input: in_file=get_stderr.check_this }
+
+  output {
+    File the_output = copy_output.the_output
+    File check_this = get_stderr.check_this
+  }
 }
 
 task get_stderr {

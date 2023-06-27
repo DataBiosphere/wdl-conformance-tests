@@ -12,6 +12,10 @@ workflow typePairWorkflow {
       test_pair_file=test_pair_file,
       test_array_pair_file=test_array_pair_file
   }
+
+  output {
+    File the_output = copy_output.the_output
+  }
 }
 
 task copy_output {

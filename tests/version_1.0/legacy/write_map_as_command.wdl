@@ -5,6 +5,10 @@ workflow writeMapWorkflow {
   }
 
   call write_map {input: in_map=in_map}
+
+  output {
+    File the_output = write_map.the_output
+  }
 }
 
 task write_map {

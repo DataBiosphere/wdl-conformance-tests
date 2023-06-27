@@ -18,6 +18,10 @@ workflow typePairWorkflow {
       test_pair_pair=test_pair_pair,
       test_pair_from_wdl=test_pair_from_wdl
   }
+
+  output {
+    File the_output = copy_output.the_output
+  }
 }
 
 task copy_output {

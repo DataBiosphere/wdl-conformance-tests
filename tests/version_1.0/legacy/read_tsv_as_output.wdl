@@ -7,6 +7,11 @@ workflow readTsvWorkflow {
 
   call read_tsv {input: in_file=in_file}
   call copy_output {input: in_tsv=read_tsv.out_tsv}
+  
+  output {
+    File the_output = copy_output.the_output
+    Array[Array[String]] out_tsv = read_tsv.out_tsv
+  }
 }
 
 task read_tsv {

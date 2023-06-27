@@ -4,6 +4,11 @@ workflow readMapWorkflow {
 
   call read_map {input: in_file=in_file}
   call copy_output {input: in_map=read_map.out_map}
+
+  output {
+    File the_output = copy_output.the_output
+    Map[String, String] out_map = read_map.out_map
+  }
 }
 
 task read_map {

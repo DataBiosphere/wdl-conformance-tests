@@ -5,6 +5,10 @@ workflow readFloatWorkflow {
   }
 
   call read_float {input: in_file=in_file}
+
+  output {
+    File the_output = read_float.the_output
+  }
 }
 
 task read_float {

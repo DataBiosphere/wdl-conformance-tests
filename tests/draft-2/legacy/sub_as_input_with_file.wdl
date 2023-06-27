@@ -1,6 +1,10 @@
 workflow subWorkflow {
   File in_file
   call get_sub {input: in_file=in_file}
+
+  output {
+    File the_output = get_sub.the_output
+  }
 }
 
 task get_sub {

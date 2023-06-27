@@ -2,6 +2,10 @@ workflow lengthWorkflow {
   # this workflow should throw an error. length() does not work with Map[X, Y].
   Map[String, String] in_map
   call copy_output {input: num=length(in_map)}
+
+  output {
+    File the_output = copy_output.the_output
+  }
 }
 
 task copy_output {

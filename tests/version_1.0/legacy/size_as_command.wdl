@@ -5,6 +5,10 @@ workflow sizeWorkflow {
   }
 
   call get_size {input: in_file=in_file}
+
+  output {
+    File the_output = get_size.the_output
+  }
 }
 
 task get_size {
