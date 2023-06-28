@@ -1,9 +1,13 @@
+version 1.0
+
 workflow SimpleVariantSelection {
-  File gatk
-  File refFasta
-  File refIndex
-  File refDict
-  String name
+  input {
+    File gatk
+    File refFasta
+    File refIndex
+    File refDict
+    String name
+  }
 
   call haplotypeCaller {
     input: 
@@ -14,7 +18,7 @@ workflow SimpleVariantSelection {
       RefDict=refDict
   }
   call select as selectSNPs {
-    input: 
+    input:
       sampleName=name, 
       RefFasta=refFasta, 
       GATK=gatk, 
@@ -33,16 +37,25 @@ workflow SimpleVariantSelection {
       type="INDEL", 
       rawVCF=haplotypeCaller.rawVCF
   }
+
+  output {
+    File selectSNPs_rawSubset = selectSNPs.rawSubset
+    File selectIndels_rawSubset = selectIndels.rawSubset
+    File haplotypeCaller_rawVCF = haplotypeCaller.rawVCF
+  }
 }
 
 task haplotypeCaller {
-  File GATK
-  File RefFasta
-  File RefIndex
-  File RefDict
-  String sampleName
-  File inputBAM
-  File bamIndex
+  input {
+    File GATK
+    File RefFasta
+    File RefIndex
+    File RefDict
+    String sampleName
+    File inputBAM
+    File bamIndex
+  }
+
   command {
     java -jar ${GATK} \
         HaplotypeCaller \
@@ -60,13 +73,15 @@ task haplotypeCaller {
 }
 
 task select {
-  File GATK
-  File RefFasta
-  File RefIndex
-  File RefDict
-  String sampleName
-  String type
-  File rawVCF
+  input {
+    File GATK
+    File RefFasta
+    File RefIndex
+    File RefDict
+    String sampleName
+    String type
+    File rawVCF
+  }
 
   command {
     java -jar ${GATK} \

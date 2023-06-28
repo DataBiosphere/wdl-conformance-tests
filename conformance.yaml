@@ -305,7 +305,7 @@
 - description: |
     Semantics: passing a null optional value as an input to a task does not override a default value with null
   tags: ["null_optional_vs_default_1.0", "semantics"]
-  versions: ["1.0"]
+  versions: ["1.0", "1.1"]
   inputs:
     "wdl": "semantics/null_optional_vs_default_1.0.wdl"
     "json": "semantics/empty.json"
@@ -316,7 +316,7 @@
 - description: |
     Semantics: passing a null optional value as an input to a workflow that calls subworkflows does not override a default value with null
   tags: ["null_input_through_workflows_1.0", "semantics"]
-  versions: ["1.0"]
+  versions: ["1.0", "1.1"]
   inputs:
     "wdl": "semantics/null_input_through_workflows_1.0.wdl"
     "json": "semantics/empty.json"
@@ -327,7 +327,7 @@
 - description: |
     Semantics: passing a non-null optional value as an input to a workflow that calls subworkflows brings it through
   tags: ["non_null_input_through_workflows_1.0", "semantics"]
-  versions: ["1.0"]
+  versions: ["1.0", "1.1"]
   inputs:
     "wdl": "semantics/null_input_through_workflows_1.0.wdl"
     "json": "semantics/nonnull_input.json"
@@ -343,7 +343,7 @@
     wdl: integration/helloHaplotypeCaller.wdl
     json: integration/helloHaplotypeCaller_inputs.json
   outputs:
-    helloHaplotypeCaller.haplotypeCaller.rawVCF:
+    helloHaplotypeCaller.rawVCF:
       type: File
       value: {regex: "(20.*\n){411}"}
 - description: |
@@ -354,13 +354,13 @@
     wdl: integration/simpleVariantSelection.wdl
     json: integration/simpleVariantSelection_inputs.json
   outputs:
-    SimpleVariantSelection.selectSNPs.rawSubset:
+    SimpleVariantSelection.selectSNPs_rawSubset:
       type: File
       value: {regex: "(20.*\n){326}"}
-    SimpleVariantSelection.selectIndels.rawSubset:
+    SimpleVariantSelection.selectIndels_rawSubset:
       type: File
       value: {regex: "(20.*\n){83}"}
-    SimpleVariantSelection.haplotypeCaller.rawVCF:
+    SimpleVariantSelection.haplotypeCaller_rawVCF:
       type: File
       value: {regex: "(20.*\n){411}"}
 - description: |
@@ -371,22 +371,22 @@
     wdl: integration/simpleVariantDiscovery.wdl
     json: integration/simpleVariantDiscovery_inputs.json
   outputs:
-    SimpleVariantDiscovery.combine.filteredVCF:
+    SimpleVariantDiscovery.combine_filteredVCF:
       type: File
       value: {regex: "(20.*\n){409}"}
-    SimpleVariantDiscovery.hardFilterSNP.filteredSNPs:
+    SimpleVariantDiscovery.hardFilterSNP_filteredSNPs:
       type: File
       value: {regex: "(20.*\n){326}"}
-    SimpleVariantDiscovery.selectIndels.rawSubset:
+    SimpleVariantDiscovery.selectIndels_rawSubset:
       type: File
       value: {regex: "(20.*\n){83}"}
-    SimpleVariantDiscovery.selectSNPs.rawSubset:
+    SimpleVariantDiscovery.selectSNPs_rawSubset:
       type: File
       value: {regex: "(20.*\n){326}"}
-    SimpleVariantDiscovery.haplotypeCaller.rawVCF:
+    SimpleVariantDiscovery.haplotypeCaller_rawVCF:
       type: File
       value: {regex: "(20.*\n){411}"}
-    SimpleVariantDiscovery.hardFilterIndel.filteredIndels:
+    SimpleVariantDiscovery.hardFilterIndel_filteredIndels:
       type: File
       value: {regex: "(20.*\n){83}"}
 - description: |

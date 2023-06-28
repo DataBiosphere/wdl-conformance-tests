@@ -1,9 +1,9 @@
 workflow helloHaplotypeCaller {
   call haplotypeCaller
 
-#  output {
-#    File rawVCF = haplotypeCaller.rawVCF
-#  }
+  output {
+    File rawVCF = haplotypeCaller.rawVCF
+  }
 }
 
 task haplotypeCaller {

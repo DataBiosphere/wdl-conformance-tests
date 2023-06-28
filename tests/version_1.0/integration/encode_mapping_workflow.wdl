@@ -15,11 +15,14 @@
 
 
 # TASK DEFINITIONS
+version 1.0
 
 task mapping {
-    Array[File] fastq_files
-    File reference_file
-    String trimming_length
+    input {
+        Array[File] fastq_files
+        File reference_file
+        String trimming_length
+    }
 
     command {
         python /image_software/pipeline-container/src/encode_map.py \
@@ -45,11 +48,13 @@ task mapping {
 
 
 task post_processing {
-    Array[File] initial_fastqs
-    File reference_file
-    Array[File] sai_files
-    String trimming_length
-    Array[File] unmapped_fastqs
+    input {
+        Array[File] initial_fastqs
+        File reference_file
+        Array[File] sai_files
+        String trimming_length
+        Array[File] unmapped_fastqs
+    }
 
     command {
 
@@ -78,8 +83,10 @@ task post_processing {
 
 
 task filter_qc {
-    File bam_file
-    Array[File] fastq_files
+    input {
+        File bam_file
+        Array[File] fastq_files
+    }
 
     command {
 
@@ -108,8 +115,10 @@ task filter_qc {
 
 
 task xcor {
-    File bam_file
-    Array[File] fastq_files
+    input {
+        File bam_file
+        Array[File] fastq_files
+    }
 
     command {
 
@@ -136,24 +145,26 @@ task xcor {
 
 
 task gather_the_outputs {
+    input {
+        File unfiltered_bam
+        File filtered_bam
+        File unfiltered_flagstat
+        File filtered_flagstat
+        File dup_qc
+        File pbc_qc
+        File mapping_log
+        File post_mapping_log
+        File filter_qc_log
+        File xcor_log
+        File mapping_results
+        File post_mapping_results
+        File filter_qc_results
+        File xcor_results
+        File cc
+        File cc_pdf
+        Array[File] tag_align
+    }
 
-    File unfiltered_bam
-    File filtered_bam
-    File unfiltered_flagstat
-    File filtered_flagstat
-    File dup_qc
-    File pbc_qc
-    File mapping_log
-    File post_mapping_log
-    File filter_qc_log
-    File xcor_log
-    File mapping_results
-    File post_mapping_results
-    File filter_qc_results
-    File xcor_results
-    File cc
-    File cc_pdf
-    Array[File] tag_align
 
 
     command {
@@ -180,9 +191,11 @@ task gather_the_outputs {
 # WORKFLOW DEFINITION
 
 workflow encode_mapping_workflow {
-    String trimming_parameter
-    Array[File] fastqs
-    File reference
+    input {
+        String trimming_parameter
+        Array[File] fastqs
+        File reference
+    }
 
 
     call mapping  {

@@ -1,9 +1,13 @@
+version 1.0
+
 workflow SimpleVariantDiscovery {
-  File gatk
-  File refFasta
-  File refIndex
-  File refDict
-  String name
+  input {
+    File gatk
+    File refFasta
+    File refIndex
+    File refDict
+    String name
+  }
 
   call haplotypeCaller {
     input: 
@@ -58,16 +62,27 @@ workflow SimpleVariantDiscovery {
       filteredSNPs=hardFilterSNP.filteredSNPs, 
       filteredIndels=hardFilterIndel.filteredIndels
   }
+  output {
+    File combine_filteredVCF = combine.filteredVCF
+    File hardFilterSNP_filteredSNPs = hardFilterSNP.filteredSNPs
+    File selectIndels_rawSubset = selectIndels.rawSubset
+    File selectSNPs_rawSubset = selectSNPs.rawSubset
+    File haplotypeCaller_rawVCF = haplotypeCaller.rawVCF
+    File hardFilterIndel_filteredIndels = hardFilterIndel.filteredIndels
+  }
 }
 
 task haplotypeCaller {
-  File GATK
-  File RefFasta
-  File RefIndex
-  File RefDict
-  String sampleName
-  File inputBAM
-  File bamIndex
+  input {
+    File GATK
+    File RefFasta
+    File RefIndex
+    File RefDict
+    String sampleName
+    File inputBAM
+    File bamIndex
+  }
+
   command {
     java -jar ${GATK} \
         HaplotypeCaller \
@@ -85,13 +100,15 @@ task haplotypeCaller {
 }
 
 task select {
-  File GATK
-  File RefFasta
-  File RefIndex
-  File RefDict
-  String sampleName
-  String type
-  File rawVCF
+  input {
+    File GATK
+    File RefFasta
+    File RefIndex
+    File RefDict
+    String sampleName
+    String type
+    File rawVCF
+  }
 
   command {
     java -jar ${GATK} \
@@ -111,12 +128,14 @@ task select {
 }
 
 task hardFilterSNP {
-  File GATK
-  File RefFasta
-  File RefIndex
-  File RefDict
-  String sampleName
-  File rawSNPs
+  input {
+    File GATK
+    File RefFasta
+    File RefIndex
+    File RefDict
+    String sampleName
+    File rawSNPs
+  }
 
   command {
     java -jar ${GATK} \
@@ -137,12 +156,14 @@ task hardFilterSNP {
 }
 
 task hardFilterIndel {
-  File GATK
-  File RefFasta
-  File RefIndex
-  File RefDict
-  String sampleName
-  File rawIndels
+  input {
+    File GATK
+    File RefFasta
+    File RefIndex
+    File RefDict
+    String sampleName
+    File rawIndels
+  }
 
   command {
     java -jar ${GATK} \
@@ -163,13 +184,15 @@ task hardFilterIndel {
 }
 
 task combine {
-  File GATK
-  File RefFasta
-  File RefIndex
-  File RefDict
-  String sampleName
-  File filteredSNPs
-  File filteredIndels
+  input {
+    File GATK
+    File RefFasta
+    File RefIndex
+    File RefDict
+    String sampleName
+    File filteredSNPs
+    File filteredIndels
+  }
 
   command {
     java -jar ${GATK} \
