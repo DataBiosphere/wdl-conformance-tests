@@ -7,7 +7,7 @@
     json: standard_library/basic_stdout.json
   outputs:
     stdoutWorkflow.check_this:
-      type: "File"
+      type: File
       value: {md5sum: "91d69f7c47b6e7d5e4d81fab67f7f304"}
 - description: |
     Standard Lib: Basic test for stderr()
@@ -18,7 +18,7 @@
     json: standard_library/basic_stderr.json
   outputs:
     stderrWorkflow.check_this:
-      type: "File"
+      type: File
       value: {md5sum: "2332021c3feef276abe077f34276abfe"}
 - description: |
     Standard Lib: Basic test for quote()
@@ -29,19 +29,19 @@
     json: standard_library/basic_quote.json
   outputs:
     quoteWorkflow.str_output:
-      type: "Array[String]"
+      type: Array[String]
       value: ['"value1"', '"value2"', '"value3"']
     quoteWorkflow.int_output:
-      type: "Array[String]"
+      type: Array[String]
       value: ['"1"', '"2"', '"-3"']
     quoteWorkflow.float_output:
-      type: "Array[String]"
+      type: Array[String]
       value: ['"1.234000"', '"-0.543000"', '"-13.300000"']
     quoteWorkflow.bool_output:
-      type: "Array[String]"
+      type: Array[String]
       value: ['"true"', '"false"', '"true"']
     quoteWorkflow.file_output:
-      type: "Array[String]"
+      type: Array[String]
       value: ['"${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.wdl"', '"${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.json"',
         '"${WDL_DIR}/run.py"']                                                                                                                                              # files are relative path to input files, cannot go up in subdir, ex with run.py
 - description: |
@@ -53,19 +53,19 @@
     json: standard_library/basic_squote.json
   outputs:
     squoteWorkflow.str_output:
-      type: "Array[String]"
+      type: Array[String]
       value: ["'value1'", "'value2'", "'value3'"]
     squoteWorkflow.int_output:
-      type: "Array[String]"
+      type: Array[String]
       value: ["'1'", "'2'", "'-3'"]
     squoteWorkflow.float_output:
-      type: "Array[String]"
+      type: Array[String]
       value: ["'1.234000'", "'-0.543000'", "'-13.300000'"]
     squoteWorkflow.bool_output:
-      type: "Array[String]"
+      type: Array[String]
       value: ["'true'", "'false'", "'true'"]
     squoteWorkflow.file_output:
-      type: "Array[String]"
+      type: Array[String]
       value: ["'${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.wdl'", "'${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.json'",
         "'${WDL_DIR}/run.py'"]
 - description: |
@@ -77,7 +77,7 @@
     json: standard_library/basic_sep.json
   outputs:
     sepWorkflow.str_output:
-      type: "String"
+      type: String
       value: "a - b - c"
 - description: |
     Standard Lib: Basic test for prefix()
@@ -88,7 +88,7 @@
     json: standard_library/basic_prefix.json
   outputs:
     prefixWorkflow.str_output:
-      type: "Array[String]"
+      type: Array[String]
       value: ["-e value1", "-e value2", "-e value3"]
 - description: |
     Standard Lib: Basic test for select_first()
@@ -99,10 +99,10 @@
     json: standard_library/basic_select_first.json
   outputs:
     selectFirstWorkflow.int_output:
-      type: "Int"
+      type: Int
       value: 5
     selectFirstWorkflow.str_output:
-      type: "String"
+      type: String
       value: "value1"
     selectFirstWorkflow.bool_output:
       type: "Boolean"
@@ -111,7 +111,7 @@
       type: "Float"
       value: 999.9999999
     selectFirstWorkflow.file_output:
-      type: "File"
+      type: File
       value: {md5sum: "337cf995cbd86664d941095a45e5e75d"}
 - description: |
     Standard Lib: Basic test for select_all()
@@ -128,7 +128,7 @@
       type: "Array[Float]"
       value: [1.2345]
     selectAllWorkflow.str_output:
-      type: "Array[String]"
+      type: Array[String]
       value: ["value1", "value3"]
     selectAllWorkflow.bool_output:
       type: "Array[Boolean]"
@@ -145,7 +145,7 @@
     json: standard_library/basic_suffix.json
   outputs:
     suffixWorkflow.str_output:
-      type: "Array[String]"
+      type: Array[String]
       value: ["value1.txt", "value2.txt", "value3.txt"]
 - description: |
     Standard Lib: Basic test for defined()
@@ -170,20 +170,20 @@
     json: standard_library/basic_basename.json
   outputs:
     basenameWorkflow.str_output:
-      type: "String"
+      type: String
       value: "file.txt"
     basenameWorkflow.str_output_removed:
-      type: "String"
+      type: String
       value: "file"
     basenameWorkflow.str_output_file:
-      type: "String"
+      type: String
       value: "basic_basename.json"
     basenameWorkflow.str_output_file_removed:
-      type: "String"
+      type: String
       value: "basic_basename"
 - description: |
     Basic failure test, with invalid arguments
-  tags: ["fail", "standard_library"]
+  tags: ["bad_args", "fail", "standard_library"]
   versions: ["1.0", "1.1"]
   inputs:
     wdl: standard_library/basic_fail.wdl
@@ -193,12 +193,12 @@
 - description: |
     Basic ceil() test
   tags: ["ceil", "standard_library"]
-  versions: ["draft-2"]
+  versions: ["draft-2", "1.0"]
   inputs:
     wdl: standard_library/basic_ceil.wdl
     json: standard_library/basic_ceil.json
   outputs:
-    ceilWorkflow.get_ceil.the_ceiling:
+    ceilWorkflow.int_output:
       type: Int
       value: 12
 - description: |
@@ -210,7 +210,7 @@
     json: semantics/basic_pair.json
   outputs:
     pairWorkflow.pair_output:
-      type: "Pair[Int, Int]"
+      type: Pair[Int, Int]
       value: {left: 2, right: 4}
 - description: |
     Basic test for compound type map
@@ -221,7 +221,7 @@
     json: semantics/basic_map.json
   outputs:
     mapWorkflow.map_output:
-      type: "Map[Int, Int]"
+      type: Map[Int, Int]
       value: {"1": 2, "3": 4}
 - description: |
     Basic test for compound type array of pair
@@ -232,12 +232,12 @@
     json: semantics/basic_array_pair.json
   outputs:
     arrayPairWorkflow.pair_output:
-      type: "Array[Pair[Int,Int]]"
+      type: Array[Pair[Int,Int]]
       value: [{left: 2, right: 4}]
 - description: |
     Basic object test (deprecated and removed in 1.1)
     MiniWDL and toil-wdl-runner do not support Objects, so this will fail if ran by them
-  tags: ["object"]
+  tags: ["object", "semantics"]
   versions: ["1.0"]
   inputs:
     wdl: semantics/basic_object.wdl
@@ -273,157 +273,79 @@
   tags: ["string_placeholders", "parser"]
   versions: ["1.1"]
   inputs:
-    "wdl": "parser/string_placeholders_1.1.wdl"
-    "json": "parser/empty.json"
+    wdl: parser/string_placeholders_1.1.wdl
+    json: parser/empty.json
   "outputs":
     placeholderWorkflow.ones:
-      "type": "Array[String]"
-      "value": ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"]
+      type: Array[String]
+      value: ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"]
 - description: |
     Parser: expression placeholders in strings in conditional expressions in 1.1
   tags: ["string_placeholders_in_conditionals_1.1", "parser"]
   versions: ["1.1"]
   inputs:
-    "wdl": "parser/string_placeholders_in_conditionals_1.1.wdl"
-    "json": "parser/empty.json"
+    wdl: parser/string_placeholders_in_conditionals_1.1.wdl
+    json: parser/empty.json
   "outputs":
     placeholderWorkflow.result:
-      "type": "String"
-      "value": "yep"
+      type: String
+      value: "yep"
 - description: |
     Parser: expression placeholders in strings in conditional expressions in 1.0, Cromwell style
     Fails with MiniWDL and toil-wdl-runner
   tags: ["string_placeholders_in_conditionals_1.0", "parser"]
   versions: ["1.0"]
   inputs:
-    "wdl": "parser/string_placeholders_in_conditionals_1.0.wdl"
-    "json": "parser/empty.json"
+    wdl: parser/string_placeholders_in_conditionals_1.0.wdl
+    json: parser/empty.json
   "outputs":
     placeholderWorkflow.result:
-      "type": "String"
-      "value": "cromwell"
+      type: String
+      value: "cromwell"
 - description: |
     Semantics: passing a null optional value as an input to a task does not override a default value with null
   tags: ["null_optional_vs_default_1.0", "semantics"]
   versions: ["1.0", "1.1"]
   inputs:
-    "wdl": "semantics/null_optional_vs_default_1.0.wdl"
-    "json": "semantics/empty.json"
+    wdl: semantics/null_optional_vs_default_1.0.wdl
+    json: semantics/empty.json
   "outputs":
     overrideWorkflow.result:
-      "type": "Int"
-      "value": 1
+      type: Int
+      value: 1
 - description: |
     Semantics: passing a null optional value as an input to a workflow that calls subworkflows does not override a default value with null
   tags: ["null_input_through_workflows_1.0", "semantics"]
   versions: ["1.0", "1.1"]
   inputs:
-    "wdl": "semantics/null_input_through_workflows_1.0.wdl"
-    "json": "semantics/empty.json"
+    wdl: semantics/null_input_through_workflows_1.0.wdl
+    json: semantics/empty.json
   "outputs":
     nullInput.result:
-      "type": "Int"
-      "value": 1
+      type: Int
+      value: 1
 - description: |
     Semantics: passing a non-null optional value as an input to a workflow that calls subworkflows brings it through
   tags: ["non_null_input_through_workflows_1.0", "semantics"]
   versions: ["1.0", "1.1"]
   inputs:
-    "wdl": "semantics/null_input_through_workflows_1.0.wdl"
-    "json": "semantics/nonnull_input.json"
+    wdl: semantics/null_input_through_workflows_1.0.wdl
+    json: semantics/nonnull_input.json
   "outputs":
     nullInput.result:
-      "type": "Int"
-      "value": 10
+      type: Int
+      value: 10
 - description: |
-    Integration test for GATK tutorial 1 test
-  tags: ["t01", "integration"]
+    Semantics: An empty output in the top-level workflow should output all called task outputs instead in WDL v1.0 only
+  tags: ["empty_output", "semantics"]
   versions: ["1.0"]
   inputs:
-    wdl: integration/helloHaplotypeCaller.wdl
-    json: integration/helloHaplotypeCaller_inputs.json
+    wdl: semantics/empty_output.wdl
+    json: semantics/empty_output_intput.json
   outputs:
-    helloHaplotypeCaller.rawVCF:
-      type: File
-      value: {regex: "(20.*\n){411}"}
-- description: |
-    Integration test for GATK tutorial 2 test
-  tags: ["t02", "integration"]
-  versions: ["1.0"]
-  inputs:
-    wdl: integration/simpleVariantSelection.wdl
-    json: integration/simpleVariantSelection_inputs.json
-  outputs:
-    SimpleVariantSelection.selectSNPs_rawSubset:
-      type: File
-      value: {regex: "(20.*\n){326}"}
-    SimpleVariantSelection.selectIndels_rawSubset:
-      type: File
-      value: {regex: "(20.*\n){83}"}
-    SimpleVariantSelection.haplotypeCaller_rawVCF:
-      type: File
-      value: {regex: "(20.*\n){411}"}
-- description: |
-    Integration test for GATK tutorial 3 test
-  tags: ["t03", "integration"]
-  versions: ["1.0"]
-  inputs:
-    wdl: integration/simpleVariantDiscovery.wdl
-    json: integration/simpleVariantDiscovery_inputs.json
-  outputs:
-    SimpleVariantDiscovery.combine_filteredVCF:
-      type: File
-      value: {regex: "(20.*\n){409}"}
-    SimpleVariantDiscovery.hardFilterSNP_filteredSNPs:
-      type: File
-      value: {regex: "(20.*\n){326}"}
-    SimpleVariantDiscovery.selectIndels_rawSubset:
-      type: File
-      value: {regex: "(20.*\n){83}"}
-    SimpleVariantDiscovery.selectSNPs_rawSubset:
-      type: File
-      value: {regex: "(20.*\n){326}"}
-    SimpleVariantDiscovery.haplotypeCaller_rawVCF:
-      type: File
-      value: {regex: "(20.*\n){411}"}
-    SimpleVariantDiscovery.hardFilterIndel_filteredIndels:
-      type: File
-      value: {regex: "(20.*\n){83}"}
-- description: |
-    Integration test for GATK tutorial 4 test
-    Needs env MINIWDL__FILE_IO__ALLOW_ANY_INPUT=true and GATK_data.zip in main directory
-  tags: ["t04", "integration"]
-  versions: ["1.0"]
-  inputs:
-    wdl: integration/jointCallingGenotypes.wdl
-    json: integration/jointCallingGenotypes_inputs.json
-  outputs:
-    jointCallingGenotypes.file_output:
-      type: Array[File]
-      value: [{regex: "(20.*\n){411}"}, {regex: "(20.*\n){411}"}, {regex: "(20.*\n){411}"}]
-- description: |
-    Integration test for ENCODE
-  tags: ["encode", "integration"]
-  versions: ["1.0"]
-  inputs:
-    wdl: integration/encode_mapping_workflow.wdl
-    json: integration/encode_mapping_workflow.wdl.json
-  outputs:
-    encode_mapping_workflow.dup_file_qc:
-      type: File
-      value: {regex: "(Unknown Library\t193182\t0\t0\t0\t8271\t0\t0\t0.042815\t)"}
-    encode_mapping_workflow.filtered_map_stats:
-      type: File
-      value: {md5sum: "addd37e357001cc3e3c0a3c46f3611e7"}
-    encode_mapping_workflow.pbc_file_qc:
-      type: File
-      value: {md5sum: "4da380fe67d5a4315428ecd1bab0040b"}
-    encode_mapping_workflow.cc_file:
-      type: File
-      value: {md5sum: "699ae26015929398f166ec218be071b8"}
-    encode_mapping_workflow.unfiltered_flagstats:
-      type: File
-      value: {md5sum: "090f33be43ed6324cc5d5059c5bbccc0"}
+    emptyOutputWorkflow.task_with_output:
+      type: Int
+      value: 1
 # tests from toil's original wdl tests
 # some of these tests depend on write_json(), and cromwell and miniwdl perform write_json() differently
 # miniwdl inserts whitespace in between elements when writing json and cromwell does not
@@ -436,9 +358,18 @@
     wdl: legacy/type_pair_basic.wdl
     json: legacy/type_pair_basic.json
   outputs:
-    typePairWorkflow.the_output:
-      type: File
-      value: {regex: '\[23,\s?"twenty-three",\s?"a\.bai",\s?{"left":\s?23,\s?"right":\s?"twenty-three"}\]'}
+    typePairWorkflow.left_pair_output:
+      type: Int
+      value: 23
+    typePairWorkflow.right_pair_output:
+      type: String
+      value: "twenty-three"
+    typePairWorkflow.nested_pair_output:
+      type: String
+      value: "a.bai"
+    typePairWorkflow.full_pair_output:
+      type: Pair[Int, String]
+      value: {left: 23, right: "twenty-three"}
 - description: |
     Legacy test for type_pair_with_files
     MiniWDL cannot run this as input files must be mounted before running, and the WDL calls a file by filename
@@ -911,7 +842,7 @@
       value: {md5sum: 'cf373525532455655c9bc226c91f5842'}
 - description: |
     MiniWDL self test
-  tags: ["legacy", "self_test"]
+  tags: ["self_test", "legacy"]
   versions: ["1.0", "1.1"]
   inputs:
     wdl: legacy/miniwdl_self_test.wdl
@@ -936,7 +867,7 @@
       value: {md5sum: '24b6378740d9662c8f464364b10a133a'}
 - description: |
     MD5 test with an empty file
-  tags: ["md5", "legacy"]
+  tags: ["md5_empty", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
     wdl: legacy/md5sum.wdl
