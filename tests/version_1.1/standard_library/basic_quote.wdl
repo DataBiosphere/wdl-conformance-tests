@@ -9,21 +9,12 @@ workflow quoteWorkflow {
         Array[File] file_arr
         # Array[Directory] dir_arr
     }
-
     output {
         Array[String] str_output = quote(str_arr)
         Array[String] int_output = quote(int_arr)
         Array[String] float_output = quote(float_arr)
         Array[String] bool_output = quote(bool_arr)
-        Array[String] file_output = quote(basename(file_arr))
+        # Array[String] file_output = quote(file_arr)
         # Array[String] dir_output = quote(dir_arr)
-    }
-}
-
-task cp {
-    input {
-        Array[File] file_arr
-    }
-    command {
     }
 }

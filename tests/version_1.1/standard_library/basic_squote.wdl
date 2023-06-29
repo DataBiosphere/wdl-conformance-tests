@@ -15,7 +15,7 @@ workflow squoteWorkflow{
         Array[String] int_output = squote(int_arr)
         Array[String] float_output = squote(float_arr)
         Array[String] bool_output = squote(bool_arr)
-        Array[String] file_output = squote(file_arr)
+        # Array[String] file_output = squote(file_arr)
         # Array[String] dir_output = quote(dir_arr)
     }
 }

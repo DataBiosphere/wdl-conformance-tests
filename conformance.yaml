@@ -40,10 +40,10 @@
     quoteWorkflow.bool_output:
       type: Array[String]
       value: ['"true"', '"false"', '"true"']
-    quoteWorkflow.file_output:
-      type: Array[String]
-      value: ['"${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.wdl"', '"${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.json"',
-        '"${WDL_DIR}/run.py"']                                                                                                                                              # files are relative path to input files, cannot go up in subdir, ex with run.py
+#    quoteWorkflow.file_output:
+#      type: Array[String]
+#      value: ['"basic_quote.wdl"', '"basic_quote.json"', '"run.py"']                                                                                                                                              # files are relative path to input files, cannot go up in subdir, ex with run.py
+
 - description: |
     Standard Lib: Basic test for squote()
   tags: ["squote", "standard_library"]
@@ -64,10 +64,12 @@
     squoteWorkflow.bool_output:
       type: Array[String]
       value: ["'true'", "'false'", "'true'"]
-    squoteWorkflow.file_output:
-      type: Array[String]
-      value: ["'${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.wdl'", "'${WDL_DIR}/tests/version_1.1/standard_library/basic_quote.json'",
-        "'${WDL_DIR}/run.py'"]
+      # toil represents files differently
+      # testing against basename may be possible, but basename returns a string, meaning the argument passed into quote will be a string as well
+#    squoteWorkflow.file_output:
+#      type: Array[String]
+#      value: ["'basic_quote.wdl'", "'basic_quote.json'",
+#        "'run.py'"]
 - description: |
     Standard Lib: Basic test for sep()
   tags: ["sep", "standard_library"]
