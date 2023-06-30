@@ -349,7 +349,6 @@
 # miniwdl inserts whitespace in between elements when writing json and cromwell does not
 - description: |
     Legacy test for type_pair_basic
-    Only cromwell passes this, others attempt to unify types
   tags: ["type_pair", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
@@ -370,7 +369,6 @@
       value: {left: 23, right: "twenty-three"}
 - description: |
     Legacy test for type_pair_with_files
-    MiniWDL cannot run this as input files must be mounted before running, and the WDL calls a file by filename
   tags: ["type_pair", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
@@ -379,7 +377,7 @@
   outputs:
     typePairWorkflow.the_output:
       type: File
-      value: {md5sum: 'a57c217bff53c247baabe3e910173a49'}
+      value: {regex: '\[\"A Whale of a Tale\.\"\],\s?\[\"true\"].\s?\[\"11\"\]\]'}
 - description: |
     Legacy test for v1_spec_declaration
   tags: ["declaration", "legacy"]

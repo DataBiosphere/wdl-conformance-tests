@@ -8,5 +8,7 @@
       "left": "test_A",
       "right": "tests/version_1.0/legacy/testfiles/test_boolean.txt"
     }
-  ]
+  ],
+  "typePairWorkflow.test_int":   "tests/version_1.0/legacy/testfiles/test_int.txt",
+  "typePairWorkflow.test_string": "tests/version_1.0/legacy/testfiles/test_string.txt"
 }
