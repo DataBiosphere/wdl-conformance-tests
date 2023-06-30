@@ -377,7 +377,7 @@
   outputs:
     typePairWorkflow.the_output:
       type: File
-      value: {regex: '\[\"A Whale of a Tale\.\"\],\s?\[\"true\"].\s?\[\"11\"\]\]'}
+      value: {regex: '\[\[\"A Whale of a Tale\.\"\],\s?\[\"true\"].\s?\[\"11\"\]\]'}
 - description: |
     Legacy test for v1_spec_declaration
   tags: ["declaration", "legacy"]
