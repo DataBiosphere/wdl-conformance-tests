@@ -352,3 +352,14 @@
     jointCallingGenotypes.file_output:
       type: Array[File]
       value: [{regex: "(20.*\n){411}"}, {regex: "(20.*\n){411}"}, {regex: "(20.*\n){411}"}]
+- description: |
+    Test that sibling files are kept in the same directory when downloaded
+  versions: ["1.0", "1.1"]
+  tags: ["sibling", "behavior"]
+  inputs:
+    wdl: behavior/sibling_files.wdl
+    json: behavior/sibling_files.json
+  outputs:
+    wf.equal:
+      type: Boolean
+      value: True
