@@ -75,7 +75,7 @@ class MiniWDLStyleWDLRunner(WDLRunner):
 RUNNERS = {
     'cromwell': CromwellWDLRunner(),
     'toil-wdl-runner-old': CromwellStyleWDLRunner('toil-wdl-runner-old'),
-    'toil-wdl-runner': CromwellStyleWDLRunner('toil-wdl-runner --outputDialect miniwdl'),
+    'toil-wdl-runner': CromwellStyleWDLRunner('toil-wdl-runner --outputDialect miniwdl --logDebug'),
     'miniwdl': MiniWDLStyleWDLRunner('miniwdl run')
 }
 
@@ -588,6 +588,8 @@ def main(argv=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Run WDL conformance tests.')
     parser.add_argument("--verbose", default=False, action='store_true',
                         help='Print more information about a test')
+    parser.add_argument("--collate", default=False, action='store_true',
+                        help='Defer printing test results until the end, in order.')
     parser.add_argument("--versions", "-v", default="1.0",
                         help='Select the WDL versions you wish to test against.')
     parser.add_argument("--tags", "-t", default=None,
@@ -650,12 +652,17 @@ def main(argv=sys.argv[1:]):
             # Go get each result or reraise the relevant exception
             result = result_future.result()
             test_responses.append(result)
+            if args.verbose:
+                # Also print result now since we printed RUNNING
+                print_response(result)
             if result['status'] == 'SUCCEEDED':
                 successes += 1
             elif result['status'] == 'SKIPPED':
                 skips += 1
 
-        # print tests in order to improve readability
+        print("=== REPORT ===")
+
+        # print tests in order at the end to improve readability
         test_responses.sort(key = lambda a: a['number'])
         for response in test_responses:
             print_response(response)
