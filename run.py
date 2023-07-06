@@ -588,8 +588,6 @@ def main(argv=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Run WDL conformance tests.')
     parser.add_argument("--verbose", default=False, action='store_true',
                         help='Print more information about a test')
-    parser.add_argument("--collate", default=False, action='store_true',
-                        help='Defer printing test results until the end, in order.')
     parser.add_argument("--versions", "-v", default="1.0",
                         help='Select the WDL versions you wish to test against.')
     parser.add_argument("--tags", "-t", default=None,
@@ -671,6 +669,9 @@ def main(argv=sys.argv[1:]):
         f'{selected_tests_amt - skips} tests run, {successes} succeeded, {selected_tests_amt - skips - successes} failed, {skips} skipped')
 
     if successes < selected_tests_amt - skips:
+        # identify the failing tests
+        failed_ids = [str(response['number']) for response in test_responses if response['status'] not in {'SUCCEEDED', 'SKIPPED'}]
+        print(f"\tFailures: {','.join(failed_ids)}")
         # Fail the program overall if tests failed.
         sys.exit(1)
 
