@@ -64,7 +64,6 @@ def yaml_sort_flow(d):
 def main():
     yaml = ruamel.yaml.YAML()
     yaml.preserve_quotes = True
-    # yaml.default_flow_style = None
     with open("conformance.yaml", "rb") as f:
         output = yaml.load(f)
     with open("conformance_sorted.yaml", "wb") as new_f:
