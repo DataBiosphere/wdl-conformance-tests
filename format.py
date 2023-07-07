@@ -28,12 +28,15 @@ def sort_order_versions(e):
         i = 0
     return i
 
+
 def yaml_sort(d):
     if isinstance(d, dict):
         result = ruamel.yaml.CommentedMap()
         for k in sorted(d.keys(), key=sort_order):
             if k == 'versions':
-                result[k] = yaml_sort(ruamel_list(sorted(d[k], key=sort_order_versions)))
+                result[k] = yaml_sort(ruamel_list(*sorted(d[k], key=sort_order_versions)))
+            elif k == 'value' or k == 'type':
+                result[k] = yaml_sort_flow(d[k])
             else:
                 result[k] = yaml_sort(d[k])
         return result
@@ -43,8 +46,24 @@ def yaml_sort(d):
     return d
 
 
+# this still doesn't deal with nested dictionaries in lists
+# ex [{a: b}] -> [a: b]
+def yaml_sort_flow(d):
+    if isinstance(d, dict):
+        result = ruamel.yaml.CommentedMap()
+        result.fa.set_flow_style()
+        for k in d.keys():
+            result[k] = yaml_sort_flow(d[k])
+        return result
+    elif isinstance(d, list):
+        for i, item in enumerate(d):
+            d[i] = yaml_sort_flow(item)
+
+    return d
+
 def main():
     yaml = ruamel.yaml.YAML()
+    yaml.preserve_quotes = True
     with open("conformance.yaml", "rb") as f:
         output = yaml.load(f)
     with open("conformance_sorted.yaml", "wb") as new_f:

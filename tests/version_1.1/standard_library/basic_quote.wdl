@@ -7,15 +7,27 @@ workflow quoteWorkflow {
         Array[Float] float_arr
         Array[Boolean] bool_arr
         Array[File] file_arr
-        # Array[Directory] dir_arr
     }
-
+    call file_quote {input: file_arr = file_arr}
     output {
         Array[String] str_output = quote(str_arr)
         Array[String] int_output = quote(int_arr)
         Array[String] float_output = quote(float_arr)
         Array[String] bool_output = quote(bool_arr)
-        Array[String] file_output = quote(file_arr)
-        # Array[String] dir_output = quote(dir_arr)
+        File file_output = file_quote.out
+    }
+}
+
+task file_quote {
+    input {
+        Array[File] file_arr
+    }
+
+    command <<<
+        echo ~{sep(' ', quote(file_arr))} >> output.txt
+    >>>
+
+    output {
+        File out = "output.txt"
     }
 }

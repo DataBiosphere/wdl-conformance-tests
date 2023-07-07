@@ -7,15 +7,28 @@ workflow squoteWorkflow{
         Array[Float] float_arr
         Array[Boolean] bool_arr
         Array[File] file_arr
-        # Array[Directory] dir_arr
     }
-
+    call file_squote {input: file_arr = file_arr}
     output {
         Array[String] str_output = squote(str_arr)
         Array[String] int_output = squote(int_arr)
         Array[String] float_output = squote(float_arr)
         Array[String] bool_output = squote(bool_arr)
-        Array[String] file_output = squote(file_arr)
-        # Array[String] dir_output = quote(dir_arr)
+        File file_output = file_squote.out
+    }
+}
+
+
+task file_squote {
+    input {
+        Array[File] file_arr
+    }
+
+    command <<<
+        echo ~{sep(' ', squote(file_arr))} >> output.txt
+    >>>
+
+    output {
+        File out = "output.txt"
     }
 }

@@ -322,6 +322,9 @@ def compare_outputs(expected: Any, result: Any, typ: WDLBase):
             return {'status': 'FAILED', 'reason': f"Result file does not exist!\n"
                                                   f"Expected filepath: {result}!"}
 
+        if not isinstance(expected, dict):
+            return {'status': 'FAILED', 'reason': f"Expected value is not a regex or md5sum!\n"
+                                                  f"Expected result was: {expected}"}
         regex = expected.get('regex')
         if regex == "":
             return {'status': 'FAILED', 'reason': f"Expected regex is empty!"}
@@ -356,7 +359,7 @@ def compare_outputs(expected: Any, result: Any, typ: WDLBase):
         except (KeyError, TypeError):
             return {'status': 'FAILED', 'reason': f"Not a pair or missing keys!\nExpected output: {expected}\n"
                                                   f"Result output: {result}"}
-    return {'status': f'SUCCEEDED', 'reason': None}
+    return {'status': f'SUCCEEDED'}
 
 
 def run_verify(expected: dict, results_file: str, ret_code: int) -> dict:
@@ -458,9 +461,10 @@ def print_response(response):
     # remove newlines in description to make printing neater
     parsed_description = response["description"].strip().replace("\n", "; ")
     print(f'{response["number"]}: {response["status"]}: {parsed_description}')
-    if response["status"] == "FAILED":
-        print(f"REASON: {response['reason']}")
 
+    # print reason, exists only if failed or if verbose
+    if response.get("reason"):
+        print(f'REASON: {response.get("reason")}')
     # if failed or --verbose, stdout and stderr will exist, so print
     if response.get("stdout"):
         print(f'stdout: {response.get("stdout")}\n')
@@ -474,9 +478,6 @@ def run_test(test_index: str, test: dict, runner: WDLRunner, verbose: bool, vers
 
     Return the response dict.
     """
-
-    if version not in test['versions']:
-        return {'status': 'SKIPPED', 'reason': f'Test only applies to versions: {",".join(test["versions"])}'}
 
     inputs = test['inputs']
     wdl_input = inputs['wdl']
@@ -523,7 +524,10 @@ def handle_test(test_index, test, runner, version, verbose):
     """
     response = {'description': test.get('description'), 'number': test_index}
     if version not in test['versions']:
-        response.update({'status': 'SKIPPED', 'reason': f'Test only applies to versions: {",".join(test["versions"])}'})
+        response.update({'status': 'SKIPPED'})
+        # return reason only if verbose is true
+        if verbose:
+            response.update({'reason': f'Test only applies to versions: {",".join(test["versions"])}'})
         return response
     else:
         response.update(run_test(test_index, test, runner, verbose, version))
