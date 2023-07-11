@@ -482,18 +482,17 @@ def run_test(test_index: str, test: dict, runner: WDLRunner, verbose: bool, vers
     inputs = test['inputs']
     wdl_input = inputs['wdl']
     json_input = inputs['json']
-    match version:
-        case "draft-2":
-            wdl_input = f'tests/draft-2/{wdl_input}'
-            json_input = f'tests/draft-2/{json_input}'
-        case "1.0":
-            wdl_input = f'tests/version_1.0/{wdl_input}'
-            json_input = f'tests/version_1.0/{json_input}'
-        case "1.1":
-            wdl_input = f'tests/version_1.1/{wdl_input}'
-            json_input = f'tests/version_1.1/{json_input}'
-        case _:
-            return {'status': 'FAILED', 'reason': f'WDL version {version} is not supported!'}
+    if version == "draft-2":
+        wdl_input = f'tests/draft-2/{wdl_input}'
+        json_input = f'tests/draft-2/{json_input}'
+    elif version == "1.0":
+        wdl_input = f'tests/version_1.0/{wdl_input}'
+        json_input = f'tests/version_1.0/{json_input}'
+    elif version == "1.1":
+        wdl_input = f'tests/version_1.1/{wdl_input}'
+        json_input = f'tests/version_1.1/{json_input}'
+    else:
+        return {'status': 'FAILED', 'reason': f'WDL version {version} is not supported!'}
 
     wdl_file = os.path.abspath(wdl_input)
     json_file = os.path.abspath(json_input)
