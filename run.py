@@ -17,6 +17,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from shutil import which
 from uuid import uuid4
 
+from patch import *
+
 from WDL.Type import Float as WDLFloat, String as WDLString, File as WDLFile, Int as WDLInt, Boolean as WDLBool, \
     Array as WDLArray, Map as WDLMap, Pair as WDLPair, StructInstance as WDLStruct
 
@@ -480,22 +482,24 @@ def run_test(test_index: str, test: dict, runner: WDLRunner, verbose: bool, vers
     """
 
     inputs = test['inputs']
-    wdl_input = inputs['wdl']
-    json_input = inputs['json']
+    wdl_dir = inputs['dir']
+    wdl_input = inputs.get('wdl', f'{wdl_dir}.wdl') # default wdl name
+    json_input = inputs.get('json', f'{wdl_dir}.json') # default json name
+    test_folder = "tests"
+    abs_wdl_dir = os.path.abspath(os.path.join(test_folder, wdl_dir))
     if version == "draft-2":
-        wdl_input = f'tests/draft-2/{wdl_input}'
-        json_input = f'tests/draft-2/{json_input}'
+        wdl_input = f'{test_folder}/{wdl_dir}/{wdl_input}'
     elif version == "1.0":
-        wdl_input = f'tests/version_1.0/{wdl_input}'
-        json_input = f'tests/version_1.0/{json_input}'
+        wdl_input = f'{test_folder}/{wdl_dir}/{wdl_input}'
     elif version == "1.1":
-        wdl_input = f'tests/version_1.1/{wdl_input}'
-        json_input = f'tests/version_1.1/{json_input}'
+        wdl_input = f'{test_folder}/{wdl_dir}/{wdl_input}'
     else:
         return {'status': 'FAILED', 'reason': f'WDL version {version} is not supported!'}
 
-    wdl_file = os.path.abspath(wdl_input)
-    json_file = os.path.abspath(json_input)
+    json_path = f'{test_folder}/{wdl_dir}/{json_input}' # maybe return failing result if no json file found
+
+    wdl_file = os.path.abspath(get_wdl_file(wdl_input, abs_wdl_dir, version))
+    json_file = os.path.abspath(json_path)
 
     args = test.get('args', [])
     outputs = test['outputs']
