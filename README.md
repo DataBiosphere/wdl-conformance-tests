@@ -67,3 +67,19 @@ options:
                         Select the WDL runner to use.
   --threads THREADS     Number of tests to run in parallel.
 ```
+
+## Adding Tests
+In order to keep a single WDL file per each test, the same test for other versions are generated. \
+However, this means that input sections must follow the format:
+```wdl
+input {
+    ...
+}
+```
+And command sections must follow the format
+```wdl
+# same for triple angle braces
+command {
+    ...
+} # line with isolated closing brace indicates end of command section
+```

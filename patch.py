@@ -113,26 +113,31 @@ def generate_wdl(filename: str, wdl_dir: str, target_version: str, outfile_name:
     """
 
     # first see what version the base wdl file is
-    # only tests the first line
     version = get_wdl_version_from_file(filename)
 
     # if the wdl file version is the same as the target version, return the wdl file as there is no need to generate
     if version == target_version:
         return filename
 
-    # draft-2 and 1.0/1.1 are not interchangeable by just changing the wdl version
-    # so if version is draft-2, a patch file is necessary
-    patch_file = f"{wdl_dir}/draft-2.patch"  # hardcoded patchfile name
-    if target_version == "draft-2" and os.path.exists(patch_file):
-        return patch(filename, patch_file, wdl_dir, outfile_name=outfile_name)
+    # patchfiles for each version
+    # if they exist, use patch instead of parsing/generating
+    patch_file_draft2 = f"{wdl_dir}/version_draft-2.patch"  # hardcoded patchfile names
+    patch_file_10 = f"{wdl_dir}/version_1.0.patch"
+    patch_file_11 = f"{wdl_dir}/version_1.1.patch"
+    if target_version == "draft-2" and os.path.exists(patch_file_draft2):
+        return patch(filename, patch_file_draft2, wdl_dir, outfile_name=outfile_name)
+    if target_version == "1.0" and os.path.exists(patch_file_10):
+        return patch(filename, patch_file_10, wdl_dir, outfile_name=outfile_name)
+    if target_version == "1.1" and os.path.exists(patch_file_11):
+        return patch(filename, patch_file_11, wdl_dir, outfile_name=outfile_name)
 
 
-    # versions 1.1 and 1.0 should be interchangeable (or at least mostly backwards compatible), so just swap the version declaration at the beginning of the file
+    # generate new wdl file
     outfile_path = os.path.join(wdl_dir, outfile_name)
     with open(filename, 'r') as f:
         with open(outfile_path, 'w') as out:
             gen = generate_replace_version_wdl(target_version, f.readlines())
-            # remove input section declaration if draft-2
+            # if draft-2, remove input section and change command section syntax
             if target_version == "draft-2":
                 gen = generate_change_command_string(generate_remove_input(gen))
             for line in gen:
