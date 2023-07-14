@@ -39,6 +39,6 @@ workflow wf {
   output {
     String x_value = x.value
     String y_value = y.value
-    String z_the_output = z.the_output
+    File z_the_output = z.the_output
   }
 }
