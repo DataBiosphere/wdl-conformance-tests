@@ -83,3 +83,4 @@ command {
     ...
 } # line with isolated closing brace indicates end of command section
 ```
+If the format cannot be followed, patch files can be used instead to differentiate from the base file.

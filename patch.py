@@ -1,165 +1,54 @@
+import argparse
 import os
 import subprocess
+import sys
 
-def get_first_wdl_line(filename: str) -> str:
-    """
-    Get the first line of code (not a comment or whitespace) in a wdl file
-    """
-    with open(filename, 'r') as f:
-        for line in f.readlines():
-            # skip over comments and empty lines
-            if line.lstrip().startswith("#"):
-                continue
-            if line.strip() == '':
-                continue
+from run import get_wdl_version_from_file
 
-            return line
+def highest_version_in_filelist(lst):
+    # not the prettiest approach
+    basename_lst = list(map(lambda x : get_wdl_version_from_file(x), lst))
+    in_order = ["1.1", "1.0", "draft-2"]
+    for version_wdl in in_order:
+        if version_wdl in basename_lst:
+            return basename_lst.index(version_wdl)
 
+def create_patch(directory, base_version, remove=False, rename=False):
+    files = list()
+    base_wdl = None
+    for file in os.listdir(directory):
+        if file.endswith(".wdl"):
+            path = os.path.abspath(os.path.join(directory, file))
+            files.append(path)
+            if get_wdl_version_from_file(path) == base_version:
+                base_wdl = path
 
-def get_wdl_version_from_file(filename: str) -> str:
-    """
-    Find the wdl version of a wdl file through parsing
-    """
-    line = get_first_wdl_line(filename)
+    working_dir = os.getcwd()
+    os.chdir(directory)
+    for file in files:
+        if file != base_wdl:
+            version = get_wdl_version_from_file(file)
+            command = f'diff -u {base_wdl} {file} > version_{version}.patch'
+            subprocess.run(command, shell=True)
+            if remove:
+                os.remove(file)
+    if remove and rename:
+        os.rename(base_wdl, f"{os.path.basename(directory)}.wdl")
+    os.chdir(working_dir)
 
-    # get version
-    if "version 1.0" in line:
-        return "1.0"
-    elif "version 1.1" in line:
-        return "1.1"
-    else:
-        return "draft-2"
+def main(argv=sys.argv[1:]):
+    parser = argparse.ArgumentParser(description='Create patch files in the right format')
+    parser.add_argument("--version", "-v", default=None,
+                        help="The base WDL file's version")
+    parser.add_argument("--directory", "-d", default=None,
+                        help='Directory where all the WDL files are')
+    parser.add_argument("--remove", default=False,
+                        help='Remove WDL files that are not the base')
+    parser.add_argument("--rename", default=False,
+                        help='Rename the base WDL file to the directory (--remove must be set to True too)')
+    args = parser.parse_args(argv)
 
-def generate_change_command_string(lines):
-    """
-    Generator to change the expression placeholder syntax in command strings for draft-2
+    create_patch(args.directory, args.version, args.remove, args.rename)
 
-    ex:
-    command {
-        ~{var}
-    }
-    turns into
-    command {
-        ${var}
-    }
-
-    Syntax must follow the above and isolated closing braces should only indicate where the command string ends
-
-    """
-    iterator = iter(lines)
-    in_command = False
-    for line in iterator:
-        if in_command is False:
-            if line.strip() == "command <<<" or line.strip() == "command {":
-                in_command = True
-            yield line
-        else:
-            if line.strip() == ">>>" or line.strip() == "}": # this could be accidentally triggered
-                in_command = False
-            yield line.replace("~{", "${")
-
-def generate_remove_input(lines):
-    """
-    Generator to remove input section wrapper for converting to draft-2
-
-    Base wdl file must have the format:
-    input {
-        ...
-    }
-    """
-    iterator = iter(lines)
-    flag = False
-    for line in iterator:
-        # skip over comments and empty lines
-        if line.lstrip().startswith("#"):
-            continue
-        if line.strip() == '':
-            continue
-
-        if "input {" == line.strip():
-            flag = True
-            continue
-        if flag is True and "}" == line.strip():
-            flag = False
-            continue
-        yield line
-
-def generate_replace_version_wdl(version, lines):
-    """
-    Generator to replace version declaration given an iterator or iterable
-    """
-    iterator = iter(lines)
-    for line in iterator:
-        # skip over comments and empty lines
-        if line.lstrip().startswith("#"):
-            continue
-        if line.strip() == '':
-            continue
-
-        if version == "1.0":
-            yield "version 1.0\n"
-        elif version == "1.1":
-            yield "version 1.1\n"
-
-        yield from iterator
-        return
-
-
-def generate_wdl(filename: str, wdl_dir: str, target_version: str, outfile_name: str = "generated_wdl.wdl") -> str:
-    """
-    Generate the wdl file given an existing wdl file and a target version.
-
-    Returns the filename
-    """
-
-    # first see what version the base wdl file is
-    version = get_wdl_version_from_file(filename)
-
-    # if the wdl file version is the same as the target version, return the wdl file as there is no need to generate
-    if version == target_version:
-        return filename
-
-    # patchfiles for each version
-    # if they exist, use patch instead of parsing/generating
-    patch_file_draft2 = f"{wdl_dir}/version_draft-2.patch"  # hardcoded patchfile names
-    patch_file_10 = f"{wdl_dir}/version_1.0.patch"
-    patch_file_11 = f"{wdl_dir}/version_1.1.patch"
-    if target_version == "draft-2" and os.path.exists(patch_file_draft2):
-        return patch(filename, patch_file_draft2, wdl_dir, outfile_name=outfile_name)
-    if target_version == "1.0" and os.path.exists(patch_file_10):
-        return patch(filename, patch_file_10, wdl_dir, outfile_name=outfile_name)
-    if target_version == "1.1" and os.path.exists(patch_file_11):
-        return patch(filename, patch_file_11, wdl_dir, outfile_name=outfile_name)
-
-
-    # generate new wdl file
-    outfile_path = os.path.join(wdl_dir, outfile_name)
-    with open(filename, 'r') as f:
-        with open(outfile_path, 'w') as out:
-            gen = generate_replace_version_wdl(target_version, f.readlines())
-            # if draft-2, remove input section and change command section syntax
-            if target_version == "draft-2":
-                gen = generate_change_command_string(generate_remove_input(gen))
-            for line in gen:
-                out.write(line)
-    return outfile_path
-
-
-def patch(filename: str, patch_filename: str, wdl_dir: str, outfile_name: str = "draft-2.wdl") -> str:
-    """Run the patch command given an input file, patch file, directory, and output file"""
-    outfile_path = os.path.join(wdl_dir, outfile_name)
-    subprocess.run(f"patch {filename} {patch_filename} -o {outfile_path}", shell=True)
-    return f"{outfile_name}"
-
-
-def get_wdl_file(wdl_file: str, wdl_dir: str, version: str) -> str:
-    """
-    Get the right WDL file for a test.
-
-    Takes a base wdl file, the wdl directory, and a version.
-
-    If the base wdl file is already the right version, it will return the base wdl file.
-    Else, it will generate/create a new wdl file for the given version.
-    """
-    outfile_name = f"_version_{version}.wdl"
-    return generate_wdl(wdl_file, wdl_dir, version, outfile_name=outfile_name)
+if __name__ == "__main__":
+    main()
