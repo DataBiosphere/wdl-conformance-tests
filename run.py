@@ -24,6 +24,172 @@ from typing import Optional, Iterable, Any
 from WDL.Type import Base as WDLBase
 
 
+def get_first_wdl_line(filename: str) -> str:
+    """
+    Get the first line of code (not a comment or whitespace) in a wdl file
+    """
+    with open(filename, 'r') as f:
+        for line in f.readlines():
+            # skip over comments and empty lines
+            if line.lstrip().startswith("#"):
+                continue
+            if line.strip() == '':
+                continue
+
+            return line
+
+
+def get_wdl_version_from_file(filename: str) -> str:
+    """
+    Find the wdl version of a wdl file through parsing
+    """
+    line = get_first_wdl_line(filename)
+
+    # get version
+    if "version 1.0" in line:
+        return "1.0"
+    elif "version 1.1" in line:
+        return "1.1"
+    else:
+        return "draft-2"
+
+
+def generate_change_command_string(lines):
+    """
+    Generator to change the expression placeholder syntax in command strings for draft-2
+
+    ex:
+    command {
+        ~{var}
+    }
+    turns into
+    command {
+        ${var}
+    }
+
+    Syntax must follow the above and isolated closing braces should only indicate where the command string ends
+
+    """
+    iterator = iter(lines)
+    in_command = False
+    for line in iterator:
+        if in_command is False:
+            if line.strip() == "command <<<" or line.strip() == "command {":
+                in_command = True
+            yield line
+        else:
+            if line.strip() == ">>>" or line.strip() == "}":  # this could be accidentally triggered
+                in_command = False
+            yield line.replace("~{", "${")
+
+
+def generate_remove_input(lines):
+    """
+    Generator to remove input section wrapper for converting to draft-2
+
+    Base wdl file must have the format:
+    input {
+        ...
+    }
+    """
+    iterator = iter(lines)
+    flag = False
+    for line in iterator:
+        # skip over comments and empty lines
+        if line.lstrip().startswith("#"):
+            continue
+        if line.strip() == '':
+            continue
+
+        if "input {" == line.strip():
+            flag = True
+            continue
+        if flag is True and "}" == line.strip():
+            flag = False
+            continue
+        yield line
+
+
+def generate_replace_version_wdl(version, lines):
+    """
+    Generator to replace version declaration given an iterator or iterable
+    """
+    iterator = iter(lines)
+    for line in iterator:
+        # skip over comments and empty lines
+        if line.lstrip().startswith("#"):
+            continue
+        if line.strip() == '':
+            continue
+
+        if version == "1.0":
+            yield "version 1.0\n"
+        elif version == "1.1":
+            yield "version 1.1\n"
+
+        yield from iterator
+        return
+
+
+def generate_wdl(filename: str, wdl_dir: str, target_version: str, outfile_name: str = "generated_wdl.wdl") -> str:
+    """
+    Generate the wdl file given an existing wdl file and a target version.
+
+    Returns the filename
+    """
+
+    # first see what version the base wdl file is
+    version = get_wdl_version_from_file(filename)
+
+    # if the wdl file version is the same as the target version, return the wdl file as there is no need to generate
+    if version == target_version:
+        return filename
+
+    # patchfiles for each version
+    # if they exist, use patch instead of parsing/generating
+    patch_file_draft2 = f"{wdl_dir}/version_draft-2.patch"  # hardcoded patchfile names
+    patch_file_10 = f"{wdl_dir}/version_1.0.patch"
+    patch_file_11 = f"{wdl_dir}/version_1.1.patch"
+    if target_version == "draft-2" and os.path.exists(patch_file_draft2):
+        return patch(filename, patch_file_draft2, wdl_dir, outfile_name=outfile_name)
+    if target_version == "1.0" and os.path.exists(patch_file_10):
+        return patch(filename, patch_file_10, wdl_dir, outfile_name=outfile_name)
+    if target_version == "1.1" and os.path.exists(patch_file_11):
+        return patch(filename, patch_file_11, wdl_dir, outfile_name=outfile_name)
+
+    # generate new wdl file
+    outfile_path = os.path.join(wdl_dir, outfile_name)
+    with open(filename, 'r') as f:
+        with open(outfile_path, 'w') as out:
+            gen = generate_replace_version_wdl(target_version, f.readlines())
+            # if draft-2, remove input section and change command section syntax
+            if target_version == "draft-2":
+                gen = generate_change_command_string(generate_remove_input(gen))
+            for line in gen:
+                out.write(line)
+    return outfile_path
+
+
+def patch(filename: str, patch_filename: str, wdl_dir: str, outfile_name: str = "draft-2.wdl") -> str:
+    """Run the patch command given an input file, patch file, directory, and output file"""
+    outfile_path = os.path.join(wdl_dir, outfile_name)
+    subprocess.run(f"patch {filename} {patch_filename} -o {outfile_path}", shell=True)
+    return f"{outfile_name}"
+
+
+def get_wdl_file(wdl_file: str, wdl_dir: str, version: str) -> str:
+    """
+    Get the right WDL file for a test.
+
+    Takes a base wdl file, the wdl directory, and a version.
+
+    If the base wdl file is already the right version, it will return the base wdl file.
+    Else, it will generate/create a new wdl file for the given version.
+    """
+    outfile_name = f"_version_{version}.wdl"
+    return generate_wdl(wdl_file, wdl_dir, version, outfile_name=outfile_name)
+
+
 class WDLRunner:
     """
     A class describing how to invoke a WDL runner to run a workflow.
@@ -236,6 +402,7 @@ def expand_vars_in_expected(expected_value: Iterable) -> None:
                 if isinstance(value, str):
                     expected_value[name] = os.path.expandvars(value)
 
+
 def py_type_of_wdl_class(wdl_type: WDLBase):
     """
     Return python equivalent type for a given WDL.Type class
@@ -248,6 +415,7 @@ def py_type_of_wdl_class(wdl_type: WDLBase):
         return bool
     elif isinstance(wdl_type, WDLString):
         return str
+
 
 def compare_outputs(expected: Any, result: Any, typ: WDLBase):
     """
@@ -480,22 +648,24 @@ def run_test(test_index: str, test: dict, runner: WDLRunner, verbose: bool, vers
     """
 
     inputs = test['inputs']
-    wdl_input = inputs['wdl']
-    json_input = inputs['json']
+    wdl_dir = inputs['dir']
+    wdl_input = inputs.get('wdl', f'{wdl_dir}.wdl')  # default wdl name
+    json_input = inputs.get('json', f'{wdl_dir}.json')  # default json name
+    test_folder = "tests"
+    abs_wdl_dir = os.path.abspath(os.path.join(test_folder, wdl_dir))
     if version == "draft-2":
-        wdl_input = f'tests/draft-2/{wdl_input}'
-        json_input = f'tests/draft-2/{json_input}'
+        wdl_input = f'{test_folder}/{wdl_dir}/{wdl_input}'
     elif version == "1.0":
-        wdl_input = f'tests/version_1.0/{wdl_input}'
-        json_input = f'tests/version_1.0/{json_input}'
+        wdl_input = f'{test_folder}/{wdl_dir}/{wdl_input}'
     elif version == "1.1":
-        wdl_input = f'tests/version_1.1/{wdl_input}'
-        json_input = f'tests/version_1.1/{json_input}'
+        wdl_input = f'{test_folder}/{wdl_dir}/{wdl_input}'
     else:
         return {'status': 'FAILED', 'reason': f'WDL version {version} is not supported!'}
 
-    wdl_file = os.path.abspath(wdl_input)
-    json_file = os.path.abspath(json_input)
+    json_path = f'{test_folder}/{wdl_dir}/{json_input}'  # maybe return failing result if no json file found
+
+    wdl_file = os.path.abspath(get_wdl_file(wdl_input, abs_wdl_dir, version))
+    json_file = os.path.abspath(json_path)
 
     args = test.get('args', [])
     outputs = test['outputs']
@@ -660,8 +830,8 @@ def main(argv=sys.argv[1:]):
 
         print("=== REPORT ===")
 
-        # print tests in order at the end to improve readability
-        test_responses.sort(key = lambda a: a['number'])
+        # print tests in order to improve readability
+        test_responses.sort(key=lambda a: a['number'])
         for response in test_responses:
             print_response(response)
 
