@@ -241,7 +241,7 @@ class MiniWDLStyleWDLRunner(WDLRunner):
 RUNNERS = {
     'cromwell': CromwellWDLRunner(),
     'toil-wdl-runner-old': CromwellStyleWDLRunner('toil-wdl-runner-old'),
-    'toil-wdl-runner': CromwellStyleWDLRunner('toil-wdl-runner --outputDialect miniwdl'),
+    'toil-wdl-runner': CromwellStyleWDLRunner('toil-wdl-runner --outputDialect miniwdl --logDebug'),
     'miniwdl': MiniWDLStyleWDLRunner('miniwdl run')
 }
 
@@ -820,10 +820,15 @@ def main(argv=sys.argv[1:]):
             # Go get each result or reraise the relevant exception
             result = result_future.result()
             test_responses.append(result)
+            if args.verbose:
+                # Also print result now since we printed RUNNING
+                print_response(result)
             if result['status'] == 'SUCCEEDED':
                 successes += 1
             elif result['status'] == 'SKIPPED':
                 skips += 1
+
+        print("=== REPORT ===")
 
         # print tests in order to improve readability
         test_responses.sort(key=lambda a: a['number'])
@@ -834,6 +839,9 @@ def main(argv=sys.argv[1:]):
         f'{selected_tests_amt - skips} tests run, {successes} succeeded, {selected_tests_amt - skips - successes} failed, {skips} skipped')
 
     if successes < selected_tests_amt - skips:
+        # identify the failing tests
+        failed_ids = [str(response['number']) for response in test_responses if response['status'] not in {'SUCCEEDED', 'SKIPPED'}]
+        print(f"\tFailures: {','.join(failed_ids)}")
         # Fail the program overall if tests failed.
         sys.exit(1)
 
