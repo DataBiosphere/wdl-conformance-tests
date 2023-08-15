@@ -3,8 +3,9 @@
   tags: ["stdout", "standard_library"]
   versions: ["draft-2", "1.0"]
   inputs:
-    wdl: standard_library/basic_stdout.wdl
-    json: standard_library/basic_stdout.json
+    dir: basic_stdout
+    wdl: basic_stdout.wdl
+    json: basic_stdout.json
   outputs:
     stdoutWorkflow.check_this:
       type: File
@@ -14,8 +15,9 @@
   tags: ["stderr", "standard_library"]
   versions: ["draft-2", "1.0"]
   inputs:
-    wdl: standard_library/basic_stderr.wdl
-    json: standard_library/basic_stderr.json
+    dir: basic_stderr
+    wdl: basic_stderr.wdl
+    json: basic_stderr.json
   outputs:
     stderrWorkflow.check_this:
       type: File
@@ -25,8 +27,9 @@
   tags: ["quote", "standard_library"]
   versions: ["1.1"]
   inputs:
-    wdl: standard_library/basic_quote.wdl
-    json: standard_library/basic_quote.json
+    dir: basic_quote
+    wdl: basic_quote.wdl
+    json: basic_quote.json
   outputs:
     quoteWorkflow.str_output:
       type: Array[String]
@@ -48,8 +51,9 @@
   tags: ["squote", "standard_library"]
   versions: ["1.1"]
   inputs:
-    wdl: standard_library/basic_squote.wdl
-    json: standard_library/basic_squote.json
+    dir: basic_squote
+    wdl: basic_squote.wdl
+    json: basic_squote.json
   outputs:
     squoteWorkflow.str_output:
       type: Array[String]
@@ -71,8 +75,9 @@
   tags: ["sep", "standard_library"]
   versions: ["1.1"]
   inputs:
-    wdl: standard_library/basic_sep.wdl
-    json: standard_library/basic_sep.json
+    dir: basic_sep
+    wdl: basic_sep.wdl
+    json: basic_sep.json
   outputs:
     sepWorkflow.str_output:
       type: String
@@ -82,8 +87,9 @@
   tags: ["prefix", "standard_library"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: standard_library/basic_prefix.wdl
-    json: standard_library/basic_prefix.json
+    dir: basic_prefix
+    wdl: basic_prefix.wdl
+    json: basic_prefix.json
   outputs:
     prefixWorkflow.str_output:
       type: Array[String]
@@ -93,8 +99,9 @@
   tags: ["select_first", "standard_library"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: standard_library/basic_select_first.wdl
-    json: standard_library/basic_select_first.json
+    dir: basic_select_first
+    wdl: basic_select_first.wdl
+    json: basic_select_first.json
   outputs:
     selectFirstWorkflow.int_output:
       type: Int
@@ -110,14 +117,15 @@
       value: 999.9999999
     selectFirstWorkflow.file_output:
       type: File
-      value: {md5sum: "337cf995cbd86664d941095a45e5e75d"}
+      value: {md5sum: "e0f9a741134edfdf960fc2e647dbc52a"}
 - description: |
     Standard Lib: Basic test for select_all()
   tags: ["select_all", "standard_library"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: standard_library/basic_select_all.wdl
-    json: standard_library/basic_select_all.json
+    dir: basic_select_all
+    wdl: basic_select_all.wdl
+    json: basic_select_all.json
   outputs:
     selectAllWorkflow.int_output:
       type: "Array[Int]"
@@ -139,8 +147,9 @@
   tags: ["suffix", "standard_library"]
   versions: ["1.1"]
   inputs:
-    wdl: standard_library/basic_suffix.wdl
-    json: standard_library/basic_suffix.json
+    dir: basic_suffix
+    wdl: basic_suffix.wdl
+    json: basic_suffix.json
   outputs:
     suffixWorkflow.str_output:
       type: Array[String]
@@ -150,8 +159,9 @@
   tags: ["defined", "standard_library"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: standard_library/basic_defined.wdl
-    json: standard_library/basic_defined.json
+    dir: basic_defined
+    wdl: basic_defined.wdl
+    json: basic_defined.json
   outputs:
     definedWorkflow.bool_output:
       type: "Boolean"
@@ -164,8 +174,9 @@
   tags: ["basename", "standard_library"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: standard_library/basic_basename.wdl
-    json: standard_library/basic_basename.json
+    dir: basic_basename
+    wdl: basic_basename.wdl
+    json: basic_basename.json
   outputs:
     basenameWorkflow.str_output:
       type: String
@@ -184,8 +195,9 @@
   tags: ["bad_args", "fail", "standard_library"]
   versions: ["1.0", "1.1"]
   inputs:
-    wdl: standard_library/basic_fail.wdl
-    json: standard_library/basic_fail.json
+    dir: basic_fail
+    wdl: basic_fail.wdl
+    json: basic_fail.json
   outputs:
     fail: {}
 - description: |
@@ -193,8 +205,9 @@
   tags: ["ceil", "standard_library"]
   versions: ["draft-2", "1.0"]
   inputs:
-    wdl: standard_library/basic_ceil.wdl
-    json: standard_library/basic_ceil.json
+    dir: basic_ceil
+    wdl: basic_ceil.wdl
+    json: basic_ceil.json
   outputs:
     ceilWorkflow.int_output:
       type: Int
@@ -204,8 +217,9 @@
   tags: ["pair", "semantics"]
   versions: ["1.0", "1.1"]
   inputs:
-    wdl: semantics/basic_pair.wdl
-    json: semantics/basic_pair.json
+    dir: basic_pair
+    wdl: basic_pair.wdl
+    json: basic_pair.json
   outputs:
     pairWorkflow.pair_output:
       type: Pair[Int, Int]
@@ -215,8 +229,9 @@
   tags: ["map", "semantics"]
   versions: ["1.0", "1.1"]
   inputs:
-    wdl: semantics/basic_map.wdl
-    json: semantics/basic_map.json
+    dir: basic_map
+    wdl: basic_map.wdl
+    json: basic_map.json
   outputs:
     mapWorkflow.map_output:
       type: Map[Int, Int]
@@ -226,8 +241,9 @@
   tags: ["array_pair", "semantics"]
   versions: ["1.0", "1.1"]
   inputs:
-    wdl: semantics/basic_array_pair.wdl
-    json: semantics/basic_array_pair.json
+    dir: basic_array_pair
+    wdl: basic_array_pair.wdl
+    json: basic_array_pair.json
   outputs:
     arrayPairWorkflow.pair_output:
       type: Array[Pair[Int,Int]]
@@ -238,8 +254,9 @@
   tags: ["object", "semantics"]
   versions: ["1.0"]
   inputs:
-    wdl: semantics/basic_object.wdl
-    json: semantics/basic_object.json
+    dir: basic_object
+    wdl: basic_object.wdl
+    json: basic_object.json
   outputs:
     objectWorkflow.obj_output:
       type: {b: String, a: Int, f: File}
@@ -249,8 +266,9 @@
   tags: ["struct", "semantics"]
   versions: ["1.0", "1.1"]
   inputs:
-    wdl: semantics/basic_struct.wdl
-    json: semantics/basic_struct.json
+    dir: basic_struct
+    wdl: basic_struct.wdl
+    json: basic_struct.json
   outputs:
     structWorkflow.struct_output:
       type: {sample_string: String, sample_index: Int}
@@ -260,8 +278,9 @@
   tags: ["nested_struct", "semantics"]
   versions: ["1.1"]
   inputs:
-    wdl: semantics/basic_nested_struct.wdl
-    json: semantics/basic_nested_struct.json
+    dir: basic_nested_struct
+    wdl: basic_nested_struct.wdl
+    json: basic_nested_struct.json
   outputs:
     structWorkflow.struct_output:
       type: {sample_struct: {sample_int: Int, sample_string: String}, sample_int: Int}
@@ -271,8 +290,9 @@
   tags: ["string_placeholders", "parser"]
   versions: ["1.1"]
   inputs:
-    wdl: parser/string_placeholders_1.1.wdl
-    json: parser/empty.json
+    dir: string_placeholders_1.1
+    wdl: string_placeholders_1.1.wdl
+    json: empty.json
   "outputs":
     placeholderWorkflow.ones:
       type: Array[String]
@@ -282,8 +302,9 @@
   tags: ["string_placeholders_in_conditionals_1.1", "parser"]
   versions: ["1.1"]
   inputs:
-    wdl: parser/string_placeholders_in_conditionals_1.1.wdl
-    json: parser/empty.json
+    dir: string_placeholders_in_conditionals_1.1
+    wdl: string_placeholders_in_conditionals_1.1.wdl
+    json: empty.json
   "outputs":
     placeholderWorkflow.result:
       type: String
@@ -294,8 +315,9 @@
   tags: ["string_placeholders_in_conditionals_1.0", "parser"]
   versions: ["1.0"]
   inputs:
-    wdl: parser/string_placeholders_in_conditionals_1.0.wdl
-    json: parser/empty.json
+    dir: string_placeholders_in_conditionals_1.0
+    wdl: string_placeholders_in_conditionals_1.0.wdl
+    json: empty.json
   "outputs":
     placeholderWorkflow.result:
       type: String
@@ -305,8 +327,9 @@
   tags: ["null_optional_vs_default_1.0", "semantics"]
   versions: ["1.0", "1.1"]
   inputs:
-    wdl: semantics/null_optional_vs_default_1.0.wdl
-    json: semantics/empty.json
+    dir: null_optional_vs_default_1.0
+    wdl: null_optional_vs_default_1.0.wdl
+    json: empty.json
   "outputs":
     overrideWorkflow.result:
       type: Int
@@ -316,8 +339,9 @@
   tags: ["null_input_through_workflows_1.0", "semantics"]
   versions: ["1.0", "1.1"]
   inputs:
-    wdl: semantics/null_input_through_workflows_1.0.wdl
-    json: semantics/empty.json
+    dir: null_input_through_workflows_1.0
+    wdl: null_input_through_workflows_1.0.wdl
+    json: empty.json
   "outputs":
     nullInput.result:
       type: Int
@@ -327,8 +351,9 @@
   tags: ["non_null_input_through_workflows_1.0", "semantics"]
   versions: ["1.0", "1.1"]
   inputs:
-    wdl: semantics/null_input_through_workflows_1.0.wdl
-    json: semantics/nonnull_input.json
+    dir: null_input_through_workflows_1.0
+    wdl: null_input_through_workflows_1.0.wdl
+    json: nonnull_input.json
   "outputs":
     nullInput.result:
       type: Int
@@ -338,10 +363,11 @@
   tags: ["empty_output", "semantics"]
   versions: ["1.0"]
   inputs:
-    wdl: semantics/empty_output.wdl
-    json: semantics/empty_output_intput.json
+    dir: empty_output
+    wdl: empty_output.wdl
+    json: empty_output_input.json
   outputs:
-    emptyOutputWorkflow.task_with_output:
+    emptyOutputWorkflow.task_with_output.int_output:
       type: Int
       value: 1
 # tests from toil's original wdl tests
@@ -352,8 +378,9 @@
   tags: ["type_pair", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/type_pair_basic.wdl
-    json: legacy/type_pair_basic.json
+    dir: type_pair_basic
+    wdl: type_pair_basic.wdl
+    json: type_pair_basic.json
   outputs:
     typePairWorkflow.left_pair_output:
       type: Int
@@ -372,8 +399,9 @@
   tags: ["type_pair", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/type_pair_with_files.wdl
-    json: legacy/type_pair_with_files.json
+    dir: type_pair_with_files
+    wdl: type_pair_with_files.wdl
+    json: type_pair_with_files.json
   outputs:
     typePairWorkflow.the_output:
       type: File
@@ -383,8 +411,9 @@
   tags: ["declaration", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/v1_spec_declaration.wdl
-    json: legacy/v1_spec.json
+    dir: v1_spec_declaration
+    wdl: v1_spec_declaration.wdl
+    json: v1_spec.json
   outputs:
     wf.x_value:
       type: String
@@ -400,8 +429,9 @@
   tags: ["sub", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/sub_as_input.wdl
-    json: legacy/sub.json
+    dir: sub_as_input
+    wdl: sub_as_input.wdl
+    json: sub.json
   outputs:
     subWorkflow.the_output:
       type: File
@@ -411,8 +441,9 @@
   tags: ["sub", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/sub_as_input_with_file.wdl
-    json: legacy/sub.json
+    dir: sub_as_input_with_file
+    wdl: sub_as_input_with_file.wdl
+    json: sub.json
   outputs:
     subWorkflow.the_output:
       type: File
@@ -422,8 +453,9 @@
   tags: ["size", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/size_as_command.wdl
-    json: legacy/size.json
+    dir: size_as_command
+    wdl: size_as_command.wdl
+    json: size.json
   outputs:
     sizeWorkflow.the_output:
       type: File
@@ -434,8 +466,9 @@
   tags: ["size", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/size_as_output.wdl
-    json: legacy/empty.json
+    dir: size_as_output
+    wdl: size_as_output.wdl
+    json: empty.json
   outputs:
     sizeWorkflow.the_output:
       type: File
@@ -454,8 +487,9 @@
   tags: ["ceil", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/ceil_as_input.wdl
-    json: legacy/ceil.json
+    dir: ceil_as_input
+    wdl: ceil_as_input.wdl
+    json: ceil.json
   outputs:
     ceilWorkflow.the_ceiling:
       type: File
@@ -465,8 +499,9 @@
   tags: ["ceil", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/ceil_as_command.wdl
-    json: legacy/ceil.json
+    dir:  ceil_as_command
+    wdl: ceil_as_command.wdl
+    json: ceil.json
   outputs:
     ceilWorkflow.the_ceiling:
       type: File
@@ -476,8 +511,9 @@
   tags: ["floor", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/floor_as_input.wdl
-    json: legacy/floor.json
+    dir: floor_as_input
+    wdl: floor_as_input.wdl
+    json: floor.json
   outputs:
     floorWorkflow.the_flooring:
       type: File
@@ -487,8 +523,9 @@
   tags: ["floor", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/floor_as_command.wdl
-    json: legacy/floor.json
+    dir: floor_as_command
+    wdl: floor_as_command.wdl
+    json: floor.json
   outputs:
     floorWorkflow.the_flooring:
       type: File
@@ -498,8 +535,9 @@
   tags: ["round", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/round_as_input.wdl
-    json: legacy/round.json
+    dir: round_as_input
+    wdl: round_as_input.wdl
+    json: round.json
   outputs:
     roundWorkflow.the_rounding:
       type: File
@@ -509,8 +547,9 @@
   tags: ["round", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/round_as_command.wdl
-    json: legacy/round.json
+    dir: round_as_command
+    wdl: round_as_command.wdl
+    json: round.json
   outputs:
     roundWorkflow.the_rounding:
       type: File
@@ -520,8 +559,9 @@
   tags: ["stdout", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/stdout_as_output.wdl
-    json: legacy/stdout.json
+    dir: stdout_as_output
+    wdl: stdout_as_output.wdl
+    json: stdout.json
   outputs:
     stdoutWorkflow.the_output:
       type: File
@@ -534,8 +574,9 @@
   tags: ["stderr", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/stderr_as_output.wdl
-    json: legacy/stderr.json
+    dir: stderr_as_output
+    wdl: stderr_as_output.wdl
+    json: stderr.json
   outputs:
     stderrWorkflow.the_output:
       type: File
@@ -548,8 +589,9 @@
   tags: ["read_lines", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/read_lines_as_output.wdl
-    json: legacy/read_lines.json
+    dir: read_lines_as_output
+    wdl: read_lines_as_output.wdl
+    json: read_lines.json
   outputs:
     readLinesWorkflow.the_output:
       type: File
@@ -562,8 +604,9 @@
   tags: ["read_tsv", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/read_tsv_as_output.wdl
-    json: legacy/read_tsv.json
+    dir: read_tsv_as_output
+    wdl: read_tsv_as_output.wdl
+    json: read_tsv.json
   outputs:
     readTsvWorkflow.the_output:
       type: File
@@ -576,8 +619,9 @@
   tags: ["read_json", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/read_json_as_output.wdl
-    json: legacy/read_json.json
+    dir: read_json_as_output
+    wdl: read_json_as_output.wdl
+    json: read_json.json
   outputs:
     readJsonWorkflow.the_output:
       type: File
@@ -590,8 +634,9 @@
   tags: ["read_map", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/read_map_as_output.wdl
-    json: legacy/read_map.json
+    dir: read_map_as_output
+    wdl: read_map_as_output.wdl
+    json: read_map.json
   outputs:
     readMapWorkflow.the_output:
       type: File
@@ -604,8 +649,9 @@
   tags: ["read_int", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/read_int_as_command.wdl
-    json: legacy/read_int.json
+    dir: read_int_as_command
+    wdl: read_int_as_command.wdl
+    json: read_int.json
   outputs:
     readIntWorkflow.the_output:
       type: File
@@ -615,8 +661,9 @@
   tags: ["read_string", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/read_string_as_command.wdl
-    json: legacy/read_string.json
+    dir: read_string_as_command
+    wdl: read_string_as_command.wdl
+    json: read_string.json
   outputs:
     readStringWorkflow.read_string.the_output:
       type: File
@@ -626,8 +673,9 @@
   tags: ["read_float", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/read_float_as_command.wdl
-    json: legacy/read_float.json
+    dir: read_float_as_command
+    wdl: read_float_as_command.wdl
+    json: read_float.json
   outputs:
     readFloatWorkflow.the_output:
       type: File
@@ -637,8 +685,9 @@
   tags: ["read_boolean", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/read_boolean_as_command.wdl
-    json: legacy/read_boolean.json
+    dir: read_boolean_as_command
+    wdl: read_boolean_as_command.wdl
+    json: read_boolean.json
   outputs:
     readBooleanWorkflow.the_output:
       type: File
@@ -648,8 +697,9 @@
   tags: ["write_tsv", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/write_tsv_as_command.wdl
-    json: legacy/write_tsv.json
+    dir: write_tsv_as_command
+    wdl: write_tsv_as_command.wdl
+    json: write_tsv.json
   outputs:
     writeTsvWorkflow.the_output:
       type: File
@@ -659,8 +709,9 @@
   tags: ["write_json", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/write_json_as_command.wdl
-    json: legacy/write_json.json
+    dir: write_json_as_command
+    wdl: write_json_as_command.wdl
+    json: write_json.json
   outputs:
     writeJsonWorkflow.the_output:
       type: File
@@ -670,8 +721,9 @@
   tags: ["write_map", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/write_map_as_command.wdl
-    json: legacy/write_map.json
+    dir: write_map_as_command
+    wdl: write_map_as_command.wdl
+    json: write_map.json
   outputs:
     writeMapWorkflow.the_output:
       type: File
@@ -681,8 +733,9 @@
   tags: ["range", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/range_as_input.wdl
-    json: legacy/range.json
+    dir: range_as_input
+    wdl: range_as_input.wdl
+    json: range.json
   outputs:
     rangeWorkflow.the_output:
       type: File
@@ -692,8 +745,9 @@
   tags: ["range", "legacy", "fail"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/range_as_input.wdl
-    json: legacy/range_invalid.json
+    dir: range_as_input
+    wdl: range_as_input.wdl
+    json: range_invalid.json
   outputs:
     fail: {}
 - description: |
@@ -701,8 +755,9 @@
   tags: ["range", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/range_as_input.wdl
-    json: legacy/range_0.json
+    dir: range_as_input
+    wdl: range_as_input.wdl
+    json: range_0.json
   outputs:
     rangeWorkflow.the_output:
       type: File
@@ -712,8 +767,9 @@
   tags: ["write_lines", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/write_lines_as_command.wdl
-    json: legacy/write_lines.json
+    dir: write_lines_as_command
+    wdl: write_lines_as_command.wdl
+    json: write_lines.json
   outputs:
     writeLinesWorkflow.the_output:
       type: File
@@ -723,8 +779,9 @@
   tags: ["transpose", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/transpose_as_input.wdl
-    json: legacy/transpose.json
+    dir: transpose_as_input
+    wdl: transpose_as_input.wdl
+    json: transpose.json
   outputs:
     transposeWorkflow.the_output:
       type: File
@@ -734,8 +791,9 @@
   tags: ["length", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/length_as_input.wdl
-    json: legacy/length.json
+    dir: length_as_input
+    wdl: length_as_input.wdl
+    json: length.json
   outputs:
     lengthWorkflow.the_output:
       type: File
@@ -745,8 +803,9 @@
   tags: ["length", "legacy", "fail"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/length_as_input_with_map.wdl
-    json: legacy/length.json
+    dir: length_as_input_with_map
+    wdl: length_as_input_with_map.wdl
+    json: length.json
   outputs:
     fail: {}
 - description: |
@@ -754,8 +813,9 @@
   tags: ["length", "legacy", "fail"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/length_as_input.wdl
-    json: legacy/length_invalid.json
+    dir: length_as_input
+    wdl: length_as_input.wdl
+    json: length_invalid.json
   outputs:
     fail: {}
 - description: |
@@ -763,8 +823,9 @@
   tags: ["zip", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/zip_as_input.wdl
-    json: legacy/zip.json
+    dir: zip_as_input
+    wdl: zip_as_input.wdl
+    json: zip.json
   outputs:
     zipWorkflow.the_output:
       type: File
@@ -774,8 +835,9 @@
   tags: ["cross", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/cross_as_input.wdl
-    json: legacy/cross.json
+    dir: cross_as_input
+    wdl: cross_as_input.wdl
+    json: cross.json
   outputs:
     crossWorkflow.the_output:
       type: File
@@ -785,8 +847,9 @@
   tags: ["flatten", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/flatten_as_input.wdl
-    json: legacy/flatten.json
+    dir: flatten_as_input
+    wdl: flatten_as_input.wdl
+    json: flatten.json
   outputs:
     flattenWorkflow.the_output:
       type: File
@@ -796,8 +859,9 @@
   tags: ["as_pairs", "legacy"]
   versions: ["1.1"]
   inputs:
-    wdl: legacy/as_pairs_as_input.wdl
-    json: legacy/as_pairs.json
+    dir: as_pairs_as_input
+    wdl: as_pairs_as_input.wdl
+    json: as_pairs.json
   outputs:
     asPairsWorkflow.the_output:
       type: File
@@ -808,8 +872,9 @@
   tags: ["as_map", "legacy"]
   versions: ["1.1"]
   inputs:
-    wdl: legacy/as_map_as_input.wdl
-    json: legacy/as_map.json
+    dir: as_map_as_input
+    wdl: as_map_as_input.wdl
+    json: as_map.json
   outputs:
     asMapWorkflow.the_output:
       type: File
@@ -819,8 +884,9 @@
   tags: ["keys", "legacy"]
   versions: ["1.1"]
   inputs:
-    wdl: legacy/keys_as_input.wdl
-    json: legacy/keys.json
+    dir: keys_as_input
+    wdl: keys_as_input.wdl
+    json: keys.json
   outputs:
     keysWorkflow.the_output:
       type: File
@@ -830,8 +896,9 @@
   tags: ["collect_by_key", "legacy"]
   versions: ["1.1"]
   inputs:
-    wdl: legacy/collect_by_key_as_input.wdl
-    json: legacy/collect_by_key.json
+    dir: collect_by_key_as_input
+    wdl: collect_by_key_as_input.wdl
+    json: collect_by_key.json
   outputs:
     collectByKeyWorkflow.the_output:
       type: File
@@ -841,8 +908,9 @@
   tags: ["self_test", "legacy"]
   versions: ["1.0", "1.1"]
   inputs:
-    wdl: legacy/miniwdl_self_test.wdl
-    json: legacy/miniwdl_self_test_inputs.json
+    dir: miniwdl_self_test
+    wdl: miniwdl_self_test.wdl
+    json: miniwdl_self_test_inputs.json
   outputs:
     hello_caller.messages:
       type: Array[String]
@@ -855,8 +923,9 @@
   tags: ["md5", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/md5sum.wdl
-    json: legacy/md5sum.json
+    dir: md5sum
+    wdl: md5sum.wdl
+    json: md5sum.json
   outputs:
     ga4ghMd5.value:
       type: File
@@ -866,12 +935,13 @@
   tags: ["md5_empty", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
   inputs:
-    wdl: legacy/md5sum.wdl
-    json: legacy/md5sum.json
+    dir: md5sum
+    wdl: md5sum.wdl
+    json: md5sum_empty.json
   outputs:
     ga4ghMd5.value:
       type: File
-      value: {md5sum: '24b6378740d9662c8f464364b10a133a'}
+      value: {md5sum: '227bc609651f929e367c3b2b79e09d5b'}
 - description: |
     Test that sibling files are kept in the same directory when downloaded
   versions: ["1.0", "1.1"]
