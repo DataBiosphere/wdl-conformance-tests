@@ -1,4 +1,0 @@
-{
-    "wf.first": "tests/version_1.0/behavior/sibling_files.wdl",
-    "wf.second": "tests/version_1.0/behavior/sibling_files.json"
-}
