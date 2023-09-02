@@ -665,7 +665,7 @@
     wdl: read_string_as_command.wdl
     json: read_string.json
   outputs:
-    readStringWorkflow.read_string.the_output:
+    readStringWorkflow.the_output:
       type: File
       value: {md5sum: '91d69f7c47b6e7d5e4d81fab67f7f304'}
 - description: |
