@@ -1047,8 +1047,8 @@
     wf.out:
       type: Array[Int]
       value: [2,3]
-- description: | # temp
-    temp
+- description: |
+    Ensure that an array of Ints with one optional input Int set to an integer will be an Array of Ints
   versions: ["draft-2", "1.0", "1.1"]
   tags: ["empty_optional", "parser"]
   inputs:
@@ -1059,10 +1059,10 @@
     wf.out:
       type: Array[Int]
       value: [1,2,3]
-- description: | # temp
-    temp
+- description: |
+    Ensure that an array of Ints with one optional input Int set to None will be an Array of Ints
   versions: ["draft-2", "1.0", "1.1"]
-  tags: ["empty_optional_1", "parser"]
+  tags: ["empty_optional_undefined", "parser"]
   inputs:
     dir: empty_optional_inputs
     wdl: int_undefined.wdl
