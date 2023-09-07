@@ -1071,3 +1071,48 @@
     wf.out:
       type: Array[Int]
       value: [1,2]
+- description: |
+    Tests that a basic string to file conversion works
+  versions: ["draft-2", "1.0", "1.1"]
+  tags: ["string_to_file", "behavior"]
+  inputs:
+    dir: string_to_file
+    wdl: str_to_file_normal.wdl
+    json: str_to_file.json
+  outputs:
+    wf.out:
+      type: Float
+      value: 62.0
+- description: |
+    Tests all variants of string to file conversion
+  versions: ["draft-2", "1.0", "1.1"]
+  tags: ["string_to_file_variants", "behavior"]
+  inputs:
+    dir: string_to_file
+    wdl: str_to_file_variants.wdl
+    json: str_to_file.json
+  outputs:
+    wf.task_in_size:
+      type: Float
+      value: 62.0
+    wf.task_out_size:
+      type: Float
+      value: 62.0
+    wf.task_cmd_size:
+      type: Float
+      value: 62.0
+    wf.scatter_size:
+      type: Array[Float]
+      value: [1427.0, 62.0]
+    wf.in_size:
+      type: Float
+      value: 62.0
+    wf.out_size:
+      type: Float
+      value: 147.0
+    wf.int_size:
+      type: Float
+      value: 1427.0
+    wf.cond_size:
+      type: Float
+      value: 62.0
