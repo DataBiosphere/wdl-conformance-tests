@@ -11,7 +11,7 @@ workflow wf {
   }
 
   String file_str2 = "tests/string_to_file/str_to_file_variants.wdl"
-  Array[File] file_arr = ["tests/string_to_file/str_to_file_variants.wdl", "tests/string_to_file/str_to_file.json"]
+  Array[File] file_arr = [file_str2, file_str]
 
   # test intermediate
   Float int_filesize = size(file_str2)
@@ -61,5 +61,4 @@ task get_size {
     Float in_size = f_size
     Float cmd_size = read_float(stdout())
   }
-  
 }

@@ -1103,7 +1103,7 @@
       value: 62.0
     wf.scatter_size:
       type: Array[Float]
-      value: [1427.0, 62.0]
+      value: [1355.0, 62.0]
     wf.in_size:
       type: Float
       value: 62.0
@@ -1112,7 +1112,7 @@
       value: 147.0
     wf.int_size:
       type: Float
-      value: 1427.0
+      value: 1355.0
     wf.cond_size:
       type: Float
       value: 62.0
