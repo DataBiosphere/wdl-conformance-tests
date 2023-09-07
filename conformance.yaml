@@ -975,3 +975,63 @@
     wf.out:
       type: String
       value: "file"
+- description: |
+    Tests that the workflow input section can reference itself
+  versions: ["draft-2", "1.0", "1.1"]
+  tags: ["declaration", "reference_section", "behavior"]
+  inputs:
+    dir: section_declaration
+    wdl: workflow_input.wdl
+    json: empty.json
+  outputs:
+    wf.file_basename:
+      type: String
+      value: "file.txt"
+    wf.filepath:
+      type: String
+      value: "path/to/file.txt"
+- description: |
+    Tests that the workflow output section can reference itself
+  versions: ["draft-2", "1.0", "1.1"]
+  tags: ["declaration", "reference_section", "behavior"]
+  inputs:
+    dir: section_declaration
+    wdl: workflow_output.wdl
+    json: empty.json
+  outputs:
+    wf.file_basename:
+      type: String
+      value: "file.txt"
+    wf.filepath:
+      type: String
+      value: "path/to/file.txt"
+- description: |
+    Tests that the task input section can reference itself
+  versions: ["draft-2", "1.0", "1.1"]
+  tags: ["declaration", "reference_section", "behavior"]
+  inputs:
+    dir: section_declaration
+    wdl: task_input.wdl
+    json: empty.json
+  outputs:
+    wf.file_basename:
+      type: String
+      value: "file.txt"
+    wf.filepath:
+      type: String
+      value: "path/to/file.txt"
+- description: |
+    Tests that the task output section can reference itself
+  versions: ["draft-2", "1.0", "1.1"]
+  tags: ["declaration", "reference_section", "behavior"]
+  inputs:
+    dir: section_declaration
+    wdl: task_output.wdl
+    json: empty.json
+  outputs:
+    wf.file_basename:
+      type: String
+      value: "file.txt"
+    wf.filepath:
+      type: String
+      value: "path/to/file.txt"
