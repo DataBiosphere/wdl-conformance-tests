@@ -975,3 +975,99 @@
     wf.out:
       type: String
       value: "file"
+- description: |
+    Test that the array quantifier + succeeds when valid
+  versions: ["1.0", "1.1"]
+  tags: ["array+", "semantics"]
+  inputs:
+    dir: array_quantifiers
+    wdl: nonempty_success.wdl
+    json: empty.json
+  outputs:
+    wf.nonempty_length:
+      type: Int
+      value: 3
+    wf.nonempty_out:
+      type: Array[Int]
+      value: [1,2,3]
+- description: |
+    Test that the array quantifier + fails when invalid
+  versions: ["1.0", "1.1"]
+  tags: ["array+_fail", "fail", "semantics"]
+  inputs:
+    dir: array_quantifiers
+    wdl: nonempty_fail.wdl
+    json: empty.json
+  outputs:
+    fail: {}
+- description: |
+    Test that the array quantifier + fails when invalid through the input
+  versions: ["1.0", "1.1"]
+  tags: ["array+_input_fail", "fail", "semantics"]
+  inputs:
+    dir: array_quantifiers
+    wdl: nonempty_input_fail.wdl
+    json: nonempty_input_fail.json
+  outputs:
+    fail: {}
+- description: |
+    Test that the two array quantifier + and ? when used together succeeds when valid
+  versions: ["1.1"]
+  tags: ["array+?", "semantics"]
+  inputs:
+    dir: array_quantifiers
+    wdl: nonempty_optional_success.wdl
+    json: empty.json
+  outputs:
+    wf.out1:
+      type: Boolean
+      value: True
+    wf.out2:
+      type: Boolean
+      value: True
+- description: |
+    Test that the two array quantifier + and ? when used together fails when invalid
+  versions: ["1.1"]
+  tags: ["array+?_fail", "fail", "semantics"]
+  inputs:
+    dir: array_quantifiers
+    wdl: nonempty_optional_fail.wdl
+    json: empty.json
+  outputs:
+    fail: {}
+- description: |
+    Test that the array quantifier + on optional elements is valid
+  versions: ["1.1"]
+  tags: ["array+of?", "semantics"]
+  inputs:
+    dir: array_quantifiers
+    wdl: nonempty_of_optional.wdl
+    json: empty.json
+  outputs:
+    wf.out:
+      type: Array[Int]
+      value: [2,3]
+- description: | # temp
+    temp
+  versions: ["draft-2", "1.0", "1.1"]
+  tags: ["empty_optional", "parser"]
+  inputs:
+    dir: empty_optional_inputs
+    wdl: int.wdl
+    json: int.json
+  outputs:
+    wf.out:
+      type: Array[Int]
+      value: [1,2,3]
+- description: | # temp
+    temp
+  versions: ["draft-2", "1.0", "1.1"]
+  tags: ["empty_optional_1", "parser"]
+  inputs:
+    dir: empty_optional_inputs
+    wdl: int_undefined.wdl
+    json: int_undefined.json
+  outputs:
+    wf.out:
+      type: Array[Int]
+      value: [1,2]
