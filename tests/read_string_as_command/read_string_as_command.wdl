@@ -5,6 +5,10 @@ workflow readStringWorkflow {
   }
 
   call read_string {input: in_file=in_file}
+
+  output {
+    File the_output = read_string.the_output
+  }
 }
 
 task read_string {

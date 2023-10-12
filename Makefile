@@ -20,7 +20,9 @@ clean:
 	rm -rf cromwell-executions
 	rm -rf cromwell-workflow-logs
 	rm -rf wdl-out-*
-	find -name "_LAST" -delete
+	find tests -name "_version_1.0*.wdl" -delete
+	find tests -name "_version_1.1*.wdl" -delete
+	find tests -name "_version_draft-2*.wdl" -delete
 
 cromwell:
 	mkdir -p build

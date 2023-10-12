@@ -6,11 +6,14 @@ conformance.yaml
 import os
 import json
 import re
+import resource
 import sys
 import hashlib
 import argparse
 import subprocess
 import threading
+import timeit
+
 from ruamel.yaml import YAML
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -186,7 +189,7 @@ def get_wdl_file(wdl_file: str, wdl_dir: str, version: str) -> str:
     If the base wdl file is already the right version, it will return the base wdl file.
     Else, it will generate/create a new wdl file for the given version.
     """
-    outfile_name = f"_version_{version}.wdl"
+    outfile_name = f"_version_{version}_{os.path.splitext(os.path.basename(wdl_file))[0]}.wdl"
     return generate_wdl(wdl_file, wdl_dir, version, outfile_name=outfile_name)
 
 
@@ -638,9 +641,25 @@ def print_response(response):
         print(f'stdout: {response.get("stdout")}\n')
     if response.get("stderr"):
         print(f'stderr: {response.get("stderr")}')
+    if response.get("time"):
+        real_min = int(response["time"]["real"] // 60)
+        real_sec = response["time"]["real"] % 60
+        real_time = f"{real_min}m{real_sec:.3f}s"
+
+        user_min = int(response["time"]["user"] // 60)
+        user_sec = response["time"]["user"] % 60
+        user_time = f"{user_min}m{user_sec:.3f}s"
+
+        system_min = int(response["time"]["system"] // 60)
+        system_sec = response["time"]["system"] % 60
+        system_time = f"{system_min}m{system_sec:.3f}s"
+
+        print(f'\n{"real":<8}{real_time:<10}')
+        print(f'{"user":<8}{user_time:<10}')
+        print(f'{"system":<8}{system_time:<10}')
 
 
-def run_test(test_index: str, test: dict, runner: WDLRunner, verbose: bool, version: str) -> dict:
+def run_test(test_index: str, test: dict, runner: WDLRunner, verbose: bool, version: str, time: bool) -> dict:
     """
     Run a test and log success or failure.
 
@@ -672,12 +691,28 @@ def run_test(test_index: str, test: dict, runner: WDLRunner, verbose: bool, vers
     results_file = os.path.abspath(f'results-{uuid4()}.json')
     cmd = runner.format_command(wdl_file, json_file, results_file, args, verbose)
 
-    (ret_code, stdout, stderr) = run_cmd(cmd=cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
+    realtime = usertime = systemtime = None
+    if time:
+        # The resource library does not record real time, only user and system time
+        # Include the real time as a significant portion of toil-wdl-runner's time spent is not in system or user time
+        time_start = resource.getrusage(resource.RUSAGE_CHILDREN)
+        realtime_start = timeit.default_timer()
+        (ret_code, stdout, stderr) = run_cmd(cmd=cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
+        time_end = resource.getrusage(resource.RUSAGE_CHILDREN)
+        realtime_end = timeit.default_timer()
+        realtime = realtime_end - realtime_start
+        usertime = time_end.ru_utime - time_start.ru_utime
+        systemtime = time_end.ru_stime - time_start.ru_stime
+    else:
+        (ret_code, stdout, stderr) = run_cmd(cmd=cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
 
     if verbose:
         with LOG_LOCK:
             announce_test(test_index, test, version)
     response = run_verify(outputs, results_file, ret_code)
+
+    if time:
+        response['time'] = {"real": realtime, "user": usertime, "system": systemtime}
 
     if verbose or response['status'] == 'FAILED':
         response['stdout'] = stdout.decode("utf-8", errors="ignore")
@@ -685,7 +720,7 @@ def run_test(test_index: str, test: dict, runner: WDLRunner, verbose: bool, vers
     return response
 
 
-def handle_test(test_index, test, runner, version, verbose):
+def handle_test(test_index, test, runner, version, verbose, time):
     """
     Decide if the test should be skipped. If not, run it.
 
@@ -699,7 +734,7 @@ def handle_test(test_index, test, runner, version, verbose):
             response.update({'reason': f'Test only applies to versions: {",".join(test["versions"])}'})
         return response
     else:
-        response.update(run_test(test_index, test, runner, verbose, version))
+        response.update(run_test(test_index, test, runner, verbose, version, time))
     return response
 
 
@@ -768,6 +803,8 @@ def main(argv=sys.argv[1:]):
                         help='Select the WDL runner to use.')
     parser.add_argument("--threads", type=int, default=None,
                         help='Number of tests to run in parallel.')
+    parser.add_argument("--time", default=False, action="store_true",
+                        help="Time the conformance test run.")
     args = parser.parse_args(argv)
 
     # Get all the versions to test.
@@ -798,8 +835,9 @@ def main(argv=sys.argv[1:]):
 
     test_responses = list()
 
-    with ThreadPoolExecutor(max_workers=args.threads) as executor:
-        pending_futures = []
+    if args.time:
+        print(f'WARNING: The time flag is enabled; tests will run sequentially and overall runtime will be SIGNIFICANTLY'
+              f' slower if multiple tests are queued.\n')
         for test_index in selected_tests:
             for version in versions_to_test:
                 try:
@@ -808,32 +846,42 @@ def main(argv=sys.argv[1:]):
                 except KeyError:
                     print(f'ERROR: Provided test [{test_index}] do not exist.')
                     sys.exit(1)
-                # Handle each test as a concurrent job
-                result_future = executor.submit(handle_test,
-                                                test_index,
-                                                test,
-                                                runner,
-                                                version,
-                                                args.verbose)
-                pending_futures.append(result_future)
-        for result_future in as_completed(pending_futures):
-            # Go get each result or reraise the relevant exception
-            result = result_future.result()
-            test_responses.append(result)
-            if args.verbose:
-                # Also print result now since we printed RUNNING
-                print_response(result)
-            if result['status'] == 'SUCCEEDED':
-                successes += 1
-            elif result['status'] == 'SKIPPED':
-                skips += 1
+                test_responses.append(handle_test(test_index, test, runner, version, args.verbose, args.time))
+    else:
+        with ThreadPoolExecutor(max_workers=args.threads) as executor:
+            pending_futures = []
+            for test_index in selected_tests:
+                for version in versions_to_test:
+                    try:
+                        test = tests[test_index]
+                        expand_vars_in_expected(test)
+                    except KeyError:
+                        print(f'ERROR: Provided test [{test_index}] do not exist.')
+                        sys.exit(1)
+                    # Handle each test as a concurrent job
+                    result_future = executor.submit(handle_test,
+                                                    test_index,
+                                                    test,
+                                                    runner,
+                                                    version,
+                                                    args.verbose,
+                                                    args.time)
+                    pending_futures.append(result_future)
+            for result_future in as_completed(pending_futures):
+                # Go get each result
+                result = result_future.result()
+                test_responses.append(result)
 
-        print("=== REPORT ===")
+    print("=== REPORT ===")
 
-        # print tests in order to improve readability
-        test_responses.sort(key=lambda a: a['number'])
-        for response in test_responses:
-            print_response(response)
+    # print tests in order to improve readability
+    test_responses.sort(key=lambda a: a['number'])
+    for response in test_responses:
+        print_response(response)
+        if response['status'] == 'SUCCEEDED':
+            successes += 1
+        elif response['status'] == 'SKIPPED':
+            skips += 1
 
     print(
         f'{selected_tests_amt - skips} tests run, {successes} succeeded, {selected_tests_amt - skips - successes} failed, {skips} skipped')
