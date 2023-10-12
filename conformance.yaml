@@ -977,9 +977,9 @@
       value: "file"
 
 - description: |
-    Test that sibling files are kept in the same directory when downloaded
+    Test that sibling files with colliding basenames with different directories are arranged properly when accessed
   versions: ["1.0", "1.1"]
-  tags: ["sibling_files_dir", "behavior"]
+  tags: ["sibling_files_dir_collision", "behavior"]
   inputs:
     dir: sibling_files
     wdl: sibling_files_dir_collision.wdl
