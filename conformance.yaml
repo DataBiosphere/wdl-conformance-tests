@@ -963,9 +963,6 @@
     wf.result4:
       type: Boolean
       value: True
-    wf.result5:
-      type: Boolean
-      value: True
 - description: | # toil-wdl-runner currently fails this
     Test that passing a file generated with write_lines() into another task succeeds
   versions: ["draft-2", "1.0", "1.1"]
@@ -978,3 +975,15 @@
     wf.out:
       type: String
       value: "file"
+
+- description: |
+    Test that sibling files are kept in the same directory when downloaded
+  versions: ["1.0", "1.1"]
+  tags: ["sibling_files_dir", "behavior"]
+  inputs:
+    dir: sibling_files
+    wdl: sibling_files_dir_collision.wdl
+  outputs:
+    wf.result1:
+      type: Boolean
+      value: True
