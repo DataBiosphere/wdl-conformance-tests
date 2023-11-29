@@ -1048,6 +1048,17 @@
       type: String
       value: "file"
 - description: |
+    Test that sibling files with colliding basenames with different directories are arranged properly when accessed
+  versions: ["1.0", "1.1"]
+  tags: ["sibling_files_dir_collision", "behavior"]
+  inputs:
+    dir: sibling_files
+    wdl: sibling_files_dir_collision.wdl
+  outputs:
+    wf.result1:
+      type: Boolean
+      value: True
+- description: |
     Test ENCODE
   versions: ["draft-2", "1.0"]
   id: encode

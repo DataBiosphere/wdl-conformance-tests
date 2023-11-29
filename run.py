@@ -76,7 +76,7 @@ class MiniWDLStyleWDLRunner(WDLRunner):
 
     def format_command(self, wdl_file, json_file, results_file, args, verbose):
         directory = '-d miniwdl-logs'
-        return f'{self.runner} {wdl_file} -i {json_file} -o {results_file} {" ".join(args)} {directory} --verbose --env MINIWDL__FILE_IO__ALLOW_ANY_INPUT=True'
+        return f'{self.runner} {wdl_file} -i {json_file} -o {results_file} {" ".join(args)} {directory} --verbose'
 
 
 RUNNERS = {
@@ -329,7 +329,8 @@ class WDLConformanceTestRunner:
         return response
 
     def handle_test(self, test_index: int, test: Dict[str, Any], runner: str, version: str, time: bool,
-                    verbose: bool, quiet: bool, args: Optional[List[str]], repeat: Optional[int] = None) -> Dict[str, Any]:
+                    verbose: bool, quiet: bool, args: Optional[List[str]], repeat: Optional[int] = None) \
+            -> Dict[str, Any]:
         """
         Decide if the test should be skipped. If not, run it.
 
@@ -385,7 +386,7 @@ class WDLConformanceTestRunner:
                                                         verbose,
                                                         quiet,
                                                         args,
-                                                        iteration+1 if repeat is not None else None)
+                                                        iteration + 1 if repeat is not None else None)
                         pending_futures.append(result_future)
             for result_future in as_completed(pending_futures):
                 # Go get each result
@@ -454,6 +455,7 @@ def add_options(parser) -> None:
     parser.add_argument("--id", default=None, help="Specify a WDL test by ID.")
     parser.add_argument("--repeat", default=None, help="Specify how many times to run each test.")
 
+
 def main(argv=None):
     # get directory of conformance tests and store as environmental variable
     # used to specify absolute paths in conformance file
@@ -468,12 +470,7 @@ def main(argv=None):
         sys.exit(1)
 
     conformance_runner = WDLConformanceTestRunner(conformance_file="conformance.yaml")
-    _, successful_run = conformance_runner.run_and_generate_tests(tags=args.tags, numbers=args.numbers,
-                                                                  versions=args.versions, runner=args.runner,
-                                                                  time=args.time, verbose=args.verbose,
-                                                                  quiet=args.quiet, threads=args.threads,
-                                                                  args=args.args, exclude_numbers=args.exclude_numbers,
-                                                                  ids=args.id)
+    _, successful_run = conformance_runner.run_and_generate_tests(args)
     if not successful_run:
         # Fail the program overall if tests failed.
         sys.exit(1)
