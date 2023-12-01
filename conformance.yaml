@@ -1051,8 +1051,9 @@
     Test that sibling files with colliding basenames with different directories are arranged properly when accessed
   versions: ["1.0", "1.1"]
   tags: ["sibling_files_dir_collision", "behavior"]
+  id: sibling_collision
   inputs:
-    dir: sibling_files
+    dir: tests/sibling_files
     wdl: sibling_files_dir_collision.wdl
   outputs:
     wf.result1:

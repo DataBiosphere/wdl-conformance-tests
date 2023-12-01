@@ -352,7 +352,7 @@ class WDLConformanceTestRunner:
     def run_and_generate_tests_args(self, tags: Optional[str], numbers: Optional[str], versions: str, runner: str,
                                     threads: int = 1, time: bool = False, verbose: bool = False, quiet: bool = False,
                                     args: Optional[List[str]] = None, exclude_numbers: Optional[str] = None,
-                                    ids: Optional[str] = None, repeat: Optional[str] = None) -> Tuple[List[Any], bool]:
+                                    ids: Optional[str] = None, repeat: Optional[int] = None) -> Tuple[List[Any], bool]:
         # Get all the versions to test.
         # Unlike with CWL, WDL requires a WDL file to declare a specific version,
         # and prohibits mixing file versions in a workflow, although some runners
@@ -361,8 +361,7 @@ class WDLConformanceTestRunner:
         versions_to_test = set(versions.split(','))
         selected_tests = get_specific_tests(conformance_tests=self.tests, tag_argument=tags, number_argument=numbers,
                                             exclude_number_argument=exclude_numbers, id_argument=ids)
-        repeat_num = int(repeat) if repeat is not None else 1
-        selected_tests_amt = len(selected_tests) * len(versions_to_test) * repeat_num
+        selected_tests_amt = len(selected_tests) * len(versions_to_test) * repeat
         successes = 0
         skips = 0
         test_responses = list()
@@ -375,7 +374,7 @@ class WDLConformanceTestRunner:
                     print(f'ERROR: Provided test [{test_index}] do not exist.')
                     sys.exit(1)
                 for version in versions_to_test:
-                    for iteration in range(repeat_num):
+                    for iteration in range(repeat):
                         # Handle each test as a concurrent job
                         result_future = executor.submit(self.handle_test,
                                                         test_index,
@@ -453,7 +452,7 @@ def add_options(parser) -> None:
     parser.add_argument("--exclude-numbers", default=None, help="Exclude certain test numbers.")
     parser.add_argument("--args", default=None, help="Arguments to pass into the runner.")
     parser.add_argument("--id", default=None, help="Specify a WDL test by ID.")
-    parser.add_argument("--repeat", default=None, help="Specify how many times to run each test.")
+    parser.add_argument("--repeat", default=1, type=int, help="Specify how many times to run each test.")
 
 
 def main(argv=None):
