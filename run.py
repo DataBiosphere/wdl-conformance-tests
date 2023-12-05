@@ -318,7 +318,7 @@ class WDLConformanceTestRunner:
 
         if verbose:
             with self.LOG_LOCK:
-                announce_test(test_index, test, version)
+                announce_test(test_index, test, version, runner)
         response = self.run_verify(outputs, results_file, ret_code)
 
         if time:
@@ -453,7 +453,6 @@ def add_options(parser) -> None:
     parser.add_argument("--args", default=None, help="Arguments to pass into the runner.")
     parser.add_argument("--id", default=None, help="Specify a WDL test by ID.")
     parser.add_argument("--repeat", default=1, type=int, help="Specify how many times to run each test.")
-
 
 def main(argv=None):
     # get directory of conformance tests and store as environmental variable

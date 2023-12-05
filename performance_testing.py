@@ -15,18 +15,27 @@ from run import WDLConformanceTestRunner, WDLRunner, CromwellWDLRunner, MiniWDLS
     RUNNERS, add_options
 
 
+def get_runners(options: argparse.Namespace):
+    if options.all_runners:
+        return ["miniwdl", "toil-wdl-runner", "cromwell"]
+    elif options.runners is None:
+        return [options.runner]
+    else:
+        return options.runners.split(",")
+
+
 def call_test(options: argparse.Namespace) -> Dict[str, Any]:
     """
     Run all tests and record times
     """
     conformance_file = "conformance.yaml"
     conformance_runner = WDLConformanceTestRunner(conformance_file)
-    runners = ["miniwdl", "toil-wdl-runner", "cromwell"] if options.all_runners else [options.runner]
+    runners = get_runners(options)
     all_responses = {}
-    options.time = True
     for runner in runners:
         realtime_start = timeit.default_timer()
         options.runner = runner
+        options.time = True
         all_test_responses, successful_run = conformance_runner.run_and_generate_tests(options)
         realtime_end = timeit.default_timer()
         print(f"Total runtime: {parse_time(realtime_end - realtime_start)}")
@@ -44,46 +53,9 @@ def call_test(options: argparse.Namespace) -> Dict[str, Any]:
     return ordered_tests_by_id
 
 
-def write_times_to_csv(tests_by_id: Dict[str, Any], options: argparse.Namespace) -> None:
-    # def get_average_time(test_time_list: List[str]) -> str:
-    #     """
-    #     Get the average time in a list of test runtimes. Returns SKIPPED or FAILED if any test was skipped or failed.
-    #     """
-    #     time_sum = 0
-    #     for time in test_time_list:
-    #         if isinstance(time, str):
-    #             # at least one of the runs did not succeed or was skipped
-    #             # this should be either skipped or failure
-    #             return time
-    #         time_sum += time
-    #
-    #     return str(time_sum / len(test_time_list))
-
-    # def get_lowest_time(test_time_list: List[str]) -> str:
-    #     """
-    #     Get the lowest time from list of runtimes. Returns SKIPPED or FAILED if any test was skipped or failed.
-    #     """
-    #     lowest_time = None
-    #     for time in test_time_list:
-    #         if isinstance(time, str):
-    #             return time
-    #         lowest_time = time if lowest_time is None or time < lowest_time else lowest_time
-    #     return str(lowest_time)
-    #
-    # def get_highest_time(test_time_list: List[str]) -> str:
-    #     """
-    #     Get the highest time from list of runtimes. Returns SKIPPED or FAILED if any test was skipped or failed.
-    #     """
-    #     highest_time = None
-    #     for time in test_time_list:
-    #         if isinstance(time, str):
-    #             return time
-    #         highest_time = time if highest_time is None or time > highest_time else highest_time
-    #     return str(highest_time)
-
+def write_times_to_csv(tests_by_id: Dict[str, Any], output: str, runners: List[str]) -> None:
     # write the average of all runtimes per test id
-    runners = ["miniwdl", "toil-wdl-runner", "cromwell"] if options.all_runners else [options.runner]
-    with open(options.output, "w") as f:
+    with open(output, "w") as f:
         f.write("Test ID,Runner,Runtime\n")
         # f.write("Test ID" + "," + ",".join(runners) + "\n")
         for test_id, test_times in tests_by_id.items():
@@ -110,16 +82,21 @@ def get_data(test_response: Dict[str, Any], all_test_data: List[Dict[str, Any]])
 
 
 def call_and_write_csv(options: argparse.Namespace) -> None:
+    runners = get_runners(options)
+    output = options.output
     tests_by_id = call_test(options)
-    write_times_to_csv(tests_by_id, options)
+    write_times_to_csv(tests_by_id, output, runners)
 
 
 def add_performance_testing_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--output", "-o", default="csv_output.csv",
-                        help='Specify the output CSV file.')
-    parser.add_argument("--all-runners", "-a", default=False, action="store_true",
-                        help="Specify whether to run with all runners")
-    # parser.add_argument("--dont-preserve-error", default=True, dest="error", action="store_false")
+    performance_testing_group = parser.add_argument_group("Arguments for running WDL performance tests")
+    performance_testing_group.add_argument("--output", "-o", default="csv_output.csv",
+                                           help='Specify the output CSV file.')
+    performance_testing_group.add_argument("--all-runners", "-a", default=False, action="store_true",
+                                           help="Specify whether to run with all runners. This will override the "
+                                                "--runners argument.")
+    performance_testing_group.add_argument("--runners", default=None,
+                                           help="Specify multiple runners in a comma separated list.")
 
 
 def main(args):

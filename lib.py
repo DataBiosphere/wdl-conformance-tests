@@ -226,10 +226,10 @@ def parse_time(time):
     return f"{real_min}m{real_sec:.3f}s"
 
 
-def announce_test(test_index, test, version):
+def announce_test(test_index, test, version, runner):
     parsed_description = test["description"].strip().replace("\n", "; ")
     if version is not None:
-        print(f'{test_index}: RUNNING with WDL version {version}: {parsed_description}')
+        print(f'{test_index}: RUNNING on "{runner}" with WDL version {version}: {parsed_description}')
 
 
 def get_tags(tags):
