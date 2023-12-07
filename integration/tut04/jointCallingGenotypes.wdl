@@ -25,7 +25,8 @@ workflow jointCallingGenotypes {
         bamIndex=sample[2]
     }
   }
-  call GenotypeGVCFs {
+  # this is using the combine step from GATK Tutorial #3 as the tutorial #4 test is broken
+  call combine {
     input: GATK=gatk, 
       RefFasta=refFasta, 
       RefIndex=refIndex, 
@@ -36,8 +37,7 @@ workflow jointCallingGenotypes {
   call validate_and_gather_the_output {
     input:
       compare_against_files = compareFiles,
-      GVCFs = HaplotypeCallerERC.GVCF,
-      rawVCF = GenotypeGVCFs.rawVCF
+      rawVCF = combine.rawVCF
   }
   output {
     String result = validate_and_gather_the_output.validate_success
@@ -73,7 +73,7 @@ task HaplotypeCallerERC {
   }
 }
 
-task GenotypeGVCFs {
+task combine {
   input {
     File GATK
     File RefFasta
@@ -81,18 +81,19 @@ task GenotypeGVCFs {
     File RefDict
     String sampleName
     Array[File] GVCFs
+
   }
 
-  # The previous ${sep=" --variant " GVCFs} results in an error as there can only be one --variant argument, it seems like all files in GVCFs is the same, so one should work?
-  command {
-    java -Xmx4g -jar ${GATK} \
-        GenotypeGVCFs \
-        --reference ${RefFasta} \
-        --variant ${GVCFs[0]} \
-        --output ${sampleName}_rawVariants.vcf
-  }
+  command <<<
+    java -jar ~{GATK} \
+      MergeVcfs \
+      --INPUT ~{GVCFs[0]} \
+      --INPUT ~{GVCFs[1]} \
+      --INPUT ~{GVCFs[2]} \
+      --OUTPUT ~{sampleName}_combine.vcf
+  >>>
   output {
-    File rawVCF = "${sampleName}_rawVariants.vcf"
+    File rawVCF = "${sampleName}_combine.vcf"
   }
 
   runtime {
@@ -101,10 +102,8 @@ task GenotypeGVCFs {
   }
 }
 
-
 task validate_and_gather_the_output {
     input {
-        Array[File] GVCFs
         File rawVCF
 
         Array[File] compare_against_files
@@ -113,13 +112,9 @@ task validate_and_gather_the_output {
     command <<<
         mkdir ./output
         cp ~{rawVCF} ./output
-        cp ~{GVCFs[0]} ./output
-        cp ~{GVCFs[1]} ./output
-        cp ~{GVCFs[2]} ./output
 
         mkdir ./ref
         cp ~{compare_against_files[0]} ./ref
-        cp ~{compare_against_files[1]} ./ref
 
         python <<CODE
 import os

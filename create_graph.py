@@ -209,7 +209,7 @@ def generate_graphs_from_range(df: pd.DataFrame, iteration: int, ignored_runners
 def create_graph(from_file: str, options: argparse.Namespace) -> None:
     data = pd.read_csv(from_file)
     df = pd.DataFrame(data)
-    number_of_entries_per_graph = options.display_num
+    number_of_entries_per_graph = options.display_num if not options.display_all else sys.maxsize
     ignored_runners = None if options.ignore_runner is None else options.ignore_runner.split(",")
 
     unique_tests = df["Test ID"].unique()
@@ -274,6 +274,8 @@ def add_create_graph_args(parser: argparse.ArgumentParser) -> None:
     graph_args.add_argument("--from-file", "-f", dest="file", default=None, help="Specify a csv file to read from.")
     graph_args.add_argument("--display-num", "-d", default=30, type=int, help="Specify the number of tests to "
                                                                               "display per graph.")
+    graph_args.add_argument("--display-all", "-a", default=False, action="store_true",
+                            help="Display all tests on a single graph. Overrides --display-num.")
     graph_args.add_argument("--ignore-runner", default=None, help="Specify a runner(s) to ignore in the graph output.")
     graph_args.add_argument("--precision", default=1, type=int,
                             help="Specify the precision when outputting float values. "

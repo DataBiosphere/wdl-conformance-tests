@@ -7,8 +7,8 @@
   "SimpleVariantSelection.gatk": "datasets/GATK_data/gatk-package-4.1.9.0-local.jar",
   "SimpleVariantSelection.inputBAM": "datasets/GATK_data/inputs/NA12878_wgs_20.bam",
   "SimpleVariantSelection.compareFiles": [
-    "integration/tut02/reference/WDL_tut2_output.raw.indels.snps.vcf",
-    "integration/tut02/reference/WDL_tut2_output_raw.INDEL.vcf",
-    "integration/tut02/reference/WDL_tut2_output_raw.SNP.vcf"
+    "datasets/wdl_templates/t02/output/WDL_tut2_output.raw.indels.snps.vcf",
+    "datasets/wdl_templates/t02/output/WDL_tut2_output_raw.INDEL.vcf",
+    "datasets/wdl_templates/t02/output/WDL_tut2_output_raw.SNP.vcf"
   ]
 }
