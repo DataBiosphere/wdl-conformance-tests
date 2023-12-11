@@ -23,8 +23,8 @@ colors = {
 }
 
 
-def create_bar_graph(all_runtimes: Dict[Dict[Any]], unique_tests_subset: List[str], include_runners: List[str],
-                     iteration: int, precision: int = 1, labels: bool = True) -> None:
+def create_bar_graph(all_runtimes: Dict[str, Dict[str, Any]], unique_tests_subset: List[str],
+                     include_runners: List[str], iteration: int, precision: int = 1, labels: bool = True) -> None:
     """
     Draw the bar graph with error bars representing standard deviation using matplotlib
     :param all_runtimes: all runtimes, each list of runtimes is indexed by all_runtimes[test_id][runner].
@@ -89,8 +89,8 @@ def create_bar_graph(all_runtimes: Dict[Dict[Any]], unique_tests_subset: List[st
     plt.figure(iteration)
 
 
-def create_box_graph(all_runtimes: Dict[Dict[str, Any]], unique_tests_subset: List[str], include_runners: List[str],
-                     iteration: int, precision: int = 1, label: bool = True) -> None:
+def create_box_graph(all_runtimes: Dict[str, Dict[str, Any]], unique_tests_subset: List[str],
+                     include_runners: List[str], iteration: int, precision: int = 1, label: bool = True) -> None:
     """
     Draw the boxplot graph with matplotlib
     :param all_runtimes: all runtimes, each list of runtimes is indexed by all_runtimes[test_id][runner].
