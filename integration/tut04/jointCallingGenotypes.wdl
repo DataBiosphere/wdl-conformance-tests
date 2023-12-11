@@ -8,11 +8,14 @@ workflow jointCallingGenotypes {
     File refFasta
     File refIndex
     File refDict
+    File WDL_tut4a_output # toil will try to coerce a string into a file if included in inputSamples, so include the file instead
+    File WDL_tut4b_output
+    File WDL_tut4c_output
     Array[File] compareFiles
   }
 
   # This is changed from the original tutorial as MiniWDL doesn't support importing files outside of the workflow input without changing its configuration
-  Array[Array[File]] inputSamples = [["WDL_tut4a_output", inputSamplesBAM, inputSamplesBAI], ["WDL_tut4b_output", inputSamplesBAM, inputSamplesBAI], ["WDL_tut4c_output", inputSamplesBAM, inputSamplesBAI]]
+  Array[Array[File]] inputSamples = [[WDL_tut4a_output, inputSamplesBAM, inputSamplesBAI], [WDL_tut4b_output, inputSamplesBAM, inputSamplesBAI], [WDL_tut4c_output, inputSamplesBAM, inputSamplesBAI]]
 
   scatter (sample in inputSamples) {
     call HaplotypeCallerERC {
@@ -50,21 +53,23 @@ task HaplotypeCallerERC {
     File RefFasta
     File RefIndex
     File RefDict
-    String sampleName
+    File sampleName
     File bamFile
     File bamIndex
   }
 
-  command {
-    java -Xmx4g -jar ${GATK} \
+  String sampleNameBasename = basename(sampleName)
+
+  command <<<
+    java -Xmx4g -jar ~{GATK} \
         HaplotypeCaller \
         --emit-ref-confidence GVCF \
-        --reference ${RefFasta} \
-        --input ${bamFile} \
-        --output ${sampleName}_rawLikelihoods.g.vcf
-  }
+        --reference ~{RefFasta} \
+        --input ~{bamFile} \
+        --output ~{sampleNameBasename}_rawLikelihoods.g.vcf
+  >>>
   output {
-    File GVCF = "${sampleName}_rawLikelihoods.g.vcf"
+    File GVCF = "~{sampleNameBasename}_rawLikelihoods.g.vcf"
   }
 
   runtime {

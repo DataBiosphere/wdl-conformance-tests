@@ -5,7 +5,10 @@
   "jointCallingGenotypes.refIndex": "datasets/GATK_data/ref/human_g1k_b37_20.fasta.fai",
   "jointCallingGenotypes.inputSamplesBAM": "datasets/GATK_data/inputs/NA12878_wgs_20.bam",
   "jointCallingGenotypes.inputSamplesBAI": "datasets/GATK_data/inputs/NA12878_wgs_20.bai",
-  "jointCallingGenotypes.compareFiles": ["datasets/wdl_templates/t04/output/CEUtrio_combine.vcf"]
+  "jointCallingGenotypes.compareFiles": ["datasets/wdl_templates/t04/output/CEUtrio_combine.vcf"],
+  "jointCallingGenotypes.WDL_tut4a_output": "integration/tut04/WDL_tut4a_output",
+  "jointCallingGenotypes.WDL_tut4b_output": "integration/tut04/WDL_tut4b_output",
+  "jointCallingGenotypes.WDL_tut4c_output": "integration/tut04/WDL_tut4c_output"
 }
 
 

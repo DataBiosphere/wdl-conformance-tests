@@ -40,7 +40,7 @@ task mapping {
 
     runtime {
         docker: 'quay.io/encode-dcc/mapping:v1.0'
-        cpu: '2'
+        cpu: 2
         memory: '4.1 GB'
         disks: 'local-disk 5 HDD'
     }
@@ -76,7 +76,7 @@ task post_processing {
 
     runtime {
         docker: 'quay.io/encode-dcc/post_mapping:v1.0'
-        cpu: '2'
+        cpu: 2
         memory: '4.1 GB'
         disks: 'local-disk 5 HDD'
     }
@@ -109,7 +109,7 @@ task filter_qc {
 
     runtime {
         docker: 'quay.io/encode-dcc/filter:v1.0'
-        cpu: '2'
+        cpu: 2
         memory: '4.1 GB'
         disks: 'local-disk 5 HDD'
     }
@@ -139,7 +139,7 @@ task xcor {
 
     runtime {
         docker: 'quay.io/encode-dcc/xcor:v1.0'
-        cpu: '2'
+        cpu: 2
         memory: '4.1 GB'
         disks: 'local-disk 5 HDD'
     }
