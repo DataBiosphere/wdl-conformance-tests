@@ -45,7 +45,7 @@ class CromwellStyleWDLRunner(WDLRunner):
         self.runner = runner
 
     def format_command(self, wdl_file, json_file, results_file, args, verbose):
-        return f'{self.runner} {wdl_file} -i {json_file} -m {results_file} {" ".join(args)}'
+        return f'{self.runner} {wdl_file} -i {json_file} -m {results_file} {args}'
 
 
 class CromwellWDLRunner(CromwellStyleWDLRunner):
@@ -76,12 +76,11 @@ class MiniWDLStyleWDLRunner(WDLRunner):
 
     def format_command(self, wdl_file, json_file, results_file, args, verbose):
         directory = '-d miniwdl-logs'
-        return f'{self.runner} {wdl_file} -i {json_file} -o {results_file} {" ".join(args)} {directory} --verbose'
+        return f'{self.runner} {wdl_file} -i {json_file} -o {results_file} {args} {directory} --verbose'
 
 
 RUNNERS = {
     'cromwell': CromwellWDLRunner(),
-    'toil-wdl-runner-old': CromwellStyleWDLRunner('toil-wdl-runner-old'),
     'toil-wdl-runner': CromwellStyleWDLRunner('toil-wdl-runner --outputDialect miniwdl --logDebug'),
     'miniwdl': MiniWDLStyleWDLRunner('miniwdl run')
 }
@@ -272,7 +271,7 @@ class WDLConformanceTestRunner:
     LOG_LOCK = threading.Lock()
 
     def run_single_test(self, test_index: int, test: dict, runner: str, version: str, time: bool, verbose: bool,
-                        quiet: bool, args: Optional[List[str]]) -> dict:
+                        quiet: bool, args: Optional[Dict[str, Any]]) -> dict:
         """
         Run a test and log success or failure.
 
@@ -299,9 +298,7 @@ class WDLConformanceTestRunner:
         wdl_file = os.path.abspath(get_wdl_file(wdl_input, abs_wdl_dir, version))
         json_file = os.path.abspath(json_path)
 
-        test_args = test.get('args', [])
-        if args is not None:
-            test_args.extend(args)
+        test_args = args[runner]
         outputs = test['outputs']
         results_file = os.path.abspath(f'results-{uuid4()}.json')
         wdl_runner = RUNNERS[runner]
@@ -329,7 +326,7 @@ class WDLConformanceTestRunner:
         return response
 
     def handle_test(self, test_index: int, test: Dict[str, Any], runner: str, version: str, time: bool,
-                    verbose: bool, quiet: bool, args: Optional[List[str]], repeat: Optional[int] = None) \
+                    verbose: bool, quiet: bool, args: Optional[Dict[str, Any]], repeat: Optional[int] = None) \
             -> Dict[str, Any]:
         """
         Decide if the test should be skipped. If not, run it.
@@ -351,7 +348,7 @@ class WDLConformanceTestRunner:
 
     def run_and_generate_tests_args(self, tags: Optional[str], numbers: Optional[str], versions: str, runner: str,
                                     threads: int = 1, time: bool = False, verbose: bool = False, quiet: bool = False,
-                                    args: Optional[List[str]] = None, exclude_numbers: Optional[str] = None,
+                                    args: Optional[Dict[str, Any]] = None, exclude_numbers: Optional[str] = None,
                                     ids: Optional[str] = None, repeat: Optional[int] = None) -> Tuple[List[Any], bool]:
         # Get all the versions to test.
         # Unlike with CWL, WDL requires a WDL file to declare a specific version,
@@ -421,11 +418,19 @@ class WDLConformanceTestRunner:
         """
         Call run_and_generate_tests_args with a namespace object
         """
+        args = {}
+        for runner in RUNNERS.keys():
+            if runner == "miniwdl":
+                args[runner] = options.miniwdl_args or []
+            if runner == "toil-wdl-runner":
+                args[runner] = options.toil_args or []
+            if runner == "cromwell":
+                args[runner] = options.cromwell_args or []
         return self.run_and_generate_tests_args(tags=options.tags, numbers=options.numbers,
                                                 versions=options.versions, runner=options.runner,
                                                 time=options.time, verbose=options.verbose,
                                                 quiet=options.quiet, threads=options.threads,
-                                                args=options.args,
+                                                args=args,
                                                 exclude_numbers=options.exclude_numbers,
                                                 ids=options.id, repeat=options.repeat)
 
@@ -450,9 +455,15 @@ def add_options(parser) -> None:
                         help="Time the conformance test run.")
     parser.add_argument("--quiet", default=False, action="store_true")
     parser.add_argument("--exclude-numbers", default=None, help="Exclude certain test numbers.")
-    parser.add_argument("--args", default=None, help="Arguments to pass into the runner.")
+    parser.add_argument("--toil-args", default=None, help="Arguments to pass into toil-wdl-runner. Ex: "
+                                                          "--toil-args=\"caching=False\"")
+    parser.add_argument("--miniwdl-args", default=None, help="Arguments to pass into miniwdl. Ex: "
+                                                             "--miniwdl-args=\"--no-outside-imports\"")
+    parser.add_argument("--cromwell-args", default=None, help="Arguments to pass into cromwell. Ex: "
+                                                              "--cromwell-args=\"--options=[OPTIONS]\"")
     parser.add_argument("--id", default=None, help="Specify a WDL test by ID.")
     parser.add_argument("--repeat", default=1, type=int, help="Specify how many times to run each test.")
+
 
 def main(argv=None):
     # get directory of conformance tests and store as environmental variable

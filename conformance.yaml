@@ -519,7 +519,7 @@
     Legacy test for ceil_as_input
   tags: ["ceil", "legacy"]
   versions: ["draft-2", "1.0", "1.1"]
-  id: ceil
+  id: ceil_old
   inputs:
     dir: tests/ceil_as_input
     wdl: ceil_as_input.wdl
