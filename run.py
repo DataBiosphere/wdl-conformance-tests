@@ -45,7 +45,7 @@ class CromwellStyleWDLRunner(WDLRunner):
         self.runner = runner
 
     def format_command(self, wdl_file, json_file, results_file, args, verbose):
-        return f'{self.runner} {wdl_file} -i {json_file} -m {results_file} {args}'
+        return self.runner.split(" ") + [wdl_file, "-i", json_file, "-m", results_file] + args
 
 
 class CromwellWDLRunner(CromwellStyleWDLRunner):
@@ -64,7 +64,7 @@ class CromwellWDLRunner(CromwellStyleWDLRunner):
                     cromwell = os.path.abspath('build/cromwell.jar')
                     if not os.path.exists(cromwell):
                         print('Cromwell not seen in the path, now downloading cromwell to run tests... ')
-                        run_cmd(cmd='make cromwell', cwd=os.getcwd())
+                        run_cmd(cmd='make cromwell'.split(" "), cwd=os.getcwd())
                     self.runner = f'java {log_level} -jar {cromwell} run'
 
         return super().format_command(wdl_file, json_file, results_file, args, verbose)
@@ -75,8 +75,7 @@ class MiniWDLStyleWDLRunner(WDLRunner):
         self.runner = runner
 
     def format_command(self, wdl_file, json_file, results_file, args, verbose):
-        directory = '-d miniwdl-logs'
-        return f'{self.runner} {wdl_file} -i {json_file} -o {results_file} {args} {directory} --verbose'
+        return [self.runner, wdl_file, "-i", json_file, "-o", results_file, "-d", "miniwdl-logs", "--verbose"] + args
 
 
 RUNNERS = {
@@ -297,8 +296,7 @@ class WDLConformanceTestRunner:
 
         wdl_file = os.path.abspath(get_wdl_file(wdl_input, abs_wdl_dir, version))
         json_file = os.path.abspath(json_path)
-
-        test_args = args[runner]
+        test_args = args[runner].split(" ")
         outputs = test['outputs']
         results_file = os.path.abspath(f'results-{uuid4()}.json')
         wdl_runner = RUNNERS[runner]
@@ -421,11 +419,11 @@ class WDLConformanceTestRunner:
         args = {}
         for runner in RUNNERS.keys():
             if runner == "miniwdl":
-                args[runner] = options.miniwdl_args or []
+                args[runner] = options.miniwdl_args or ""
             if runner == "toil-wdl-runner":
-                args[runner] = options.toil_args or []
+                args[runner] = options.toil_args or ""
             if runner == "cromwell":
-                args[runner] = options.cromwell_args or []
+                args[runner] = options.cromwell_args or ""
         return self.run_and_generate_tests_args(tags=options.tags, numbers=options.numbers,
                                                 versions=options.versions, runner=options.runner,
                                                 time=options.time, verbose=options.verbose,

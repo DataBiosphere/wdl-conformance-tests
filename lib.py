@@ -177,7 +177,7 @@ def get_wdl_file(wdl_file: str, wdl_dir: str, version: str) -> str:
 
 
 def run_cmd(cmd, cwd):
-    p = subprocess.Popen(cmd, stdout=-1, stderr=-1, shell=True, cwd=cwd)
+    p = subprocess.Popen(cmd, stdout=-1, stderr=-1, cwd=cwd)
     stdout, stderr = p.communicate()
 
     return p.returncode, stdout, stderr
