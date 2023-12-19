@@ -296,7 +296,7 @@ class WDLConformanceTestRunner:
 
         wdl_file = os.path.abspath(get_wdl_file(wdl_input, abs_wdl_dir, version))
         json_file = os.path.abspath(json_path)
-        test_args = args[runner].split(" ")
+        test_args = args[runner].split(" ") if args[runner] is not None else []
         outputs = test['outputs']
         results_file = os.path.abspath(f'results-{uuid4()}.json')
         wdl_runner = RUNNERS[runner]
@@ -419,11 +419,11 @@ class WDLConformanceTestRunner:
         args = {}
         for runner in RUNNERS.keys():
             if runner == "miniwdl":
-                args[runner] = options.miniwdl_args or ""
+                args[runner] = options.miniwdl_args
             if runner == "toil-wdl-runner":
-                args[runner] = options.toil_args or ""
+                args[runner] = options.toil_args
             if runner == "cromwell":
-                args[runner] = options.cromwell_args or ""
+                args[runner] = options.cromwell_args
         return self.run_and_generate_tests_args(tags=options.tags, numbers=options.numbers,
                                                 versions=options.versions, runner=options.runner,
                                                 time=options.time, verbose=options.verbose,
