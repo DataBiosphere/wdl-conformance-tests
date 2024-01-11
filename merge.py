@@ -1,3 +1,7 @@
+"""
+Tool to merge two or more CSV files into one while keeping data sorted by ID
+"""
+
 import argparse
 import os
 import sys
@@ -9,7 +13,7 @@ from ruamel import yaml
 def main(args=None):
     if args is None:
         args = sys.argv[1:]
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("file", help="Specify files.", nargs="+")
     # parser.add_argument("file1", help="First file")
     # parser.add_argument("file2", help="Second file")
@@ -22,7 +26,7 @@ def main(args=None):
 
     for file in options.file:
         if not os.path.exists(file):
-            raise Exception(f"'{file}' is not a valid file!")
+            raise Exception(f"'{file}' doesn't exist!")
 
     data_list = []
     dataframe_list = []

@@ -1,3 +1,10 @@
+"""
+Run the performance testing suite and output the results to a CSV file.
+
+Output file is specified with --output and runners are specified by --runners or --all-runners. Test options such as
+--repeat and -n are carried over from the standalone run.py script.
+"""
+
 import argparse
 import json
 import os.path
@@ -100,7 +107,7 @@ def add_performance_testing_args(parser: argparse.ArgumentParser) -> None:
 
 
 def main(args):
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     add_options(parser)
     add_performance_testing_args(parser)
 

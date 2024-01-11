@@ -1,3 +1,19 @@
+"""
+Graph performance testing results.
+
+Either takes a formatted input CSV file with -f from run_performance.py or runs performance testing itself.
+
+By default, it graphs boxplots with a new matplotlib window per 30 tests. Graphtype can be changed with --graph-type
+and number of tests per window can be changed with --display-num or --display-all. Runners to display can be altered
+with --ignore-runner.
+
+Specifying an input conformance file (ex: conformance.yaml) will allow displaying only certain tests with options -n,
+-t, and --id.
+
+Writing the graph to a PNG file works by specifying --output [filename.png] and the image dimensions can be specified
+with --dimensions x,y in inches.
+"""
+
 import argparse
 import os.path
 import sys
@@ -12,7 +28,7 @@ import pandas as pd
 from ruamel import yaml
 
 from lib import get_specific_tests
-from performance_testing import call_and_write_csv
+from run_performance import call_and_write_csv
 from run import add_options
 
 default_color_list = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -342,7 +358,7 @@ def add_create_graph_args(parser: argparse.ArgumentParser) -> None:
 
 
 def main(args):
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     add_options(parser)
     add_create_graph_args(parser)
     options = parser.parse_args(args)
