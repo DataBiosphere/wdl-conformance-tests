@@ -125,7 +125,7 @@ def create_box_graph(all_runtimes: Dict[str, Dict[str, Any]], unique_tests_subse
     """
     Draw the boxplot graph with matplotlib
     :param all_runtimes: all runtimes, each list of runtimes is indexed by all_runtimes[test_id][runner].
-    Must be in order
+        Must be in order
     :param unique_tests_subset: list of test ID names specific to this graph call
     :param include_runners: runners in include in a list of strings
     :param iteration: iteration number
