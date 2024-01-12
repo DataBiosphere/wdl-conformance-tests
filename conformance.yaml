@@ -1066,7 +1066,7 @@
   tags: ["encode", "integration"]
   setup: integration/setup.sh
   inputs:
-    dir: integration/encode
+    dir: integration/gatk/encode
     wdl: encode_mapping_workflow.wdl
     json: encode_mapping_workflow.wdl.json
   outputs:
@@ -1080,7 +1080,7 @@
   tags: ["gatk", "integration"]
   setup: integration/setup.sh
   inputs:
-    dir: integration/tut01
+    dir: integration/gatk/tut01
     wdl: helloHaplotypeCaller.wdl
     json: helloHaplotypeCaller_inputs.json
   outputs:
@@ -1094,7 +1094,7 @@
   tags: ["gatk", "integration"]
   setup: integration/setup.sh
   inputs:
-    dir: integration/tut02
+    dir: integration/gatk/tut02
     wdl: simpleVariantSelection.wdl
     json: simpleVariantSelection_inputs.json
   outputs:
@@ -1108,7 +1108,7 @@
   tags: ["gatk", "integration"]
   setup: integration/setup.sh
   inputs:
-    dir: integration/tut03
+    dir: integration/gatk/tut03
     wdl: simpleVariantDiscovery.wdl
     json: simpleVariantDiscovery_inputs.json
   outputs:
@@ -1122,7 +1122,7 @@
   tags: ["gatk", "integration"]
   setup: integration/setup.sh
   inputs:
-    dir: integration/tut04
+    dir: integration/gatk/tut04
     wdl: jointCallingGenotypes.wdl
     json: jointCallingGenotypes_inputs.json
   outputs:

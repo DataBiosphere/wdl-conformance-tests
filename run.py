@@ -75,7 +75,7 @@ class MiniWDLStyleWDLRunner(WDLRunner):
         self.runner = runner
 
     def format_command(self, wdl_file, json_file, results_file, args, verbose):
-        return [self.runner, wdl_file, "-i", json_file, "-o", results_file, "-d", "miniwdl-logs", "--verbose"] + args
+        return self.runner.split(" ") + [wdl_file, "-i", json_file, "-o", results_file, "-d", "miniwdl-logs", "--verbose"] + args
 
 
 RUNNERS = {
