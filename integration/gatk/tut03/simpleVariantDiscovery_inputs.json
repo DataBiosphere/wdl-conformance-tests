@@ -1,0 +1,17 @@
+{
+  "SimpleVariantDiscovery.refIndex": "datasets/GATK_data/ref/human_g1k_b37_20.fasta.fai",
+  "SimpleVariantDiscovery.bamIndex": "datasets/GATK_data/inputs/NA12878_wgs_20.bai",
+  "SimpleVariantDiscovery.inputBAM": "datasets/GATK_data/inputs/NA12878_wgs_20.bam",
+  "SimpleVariantDiscovery.refFasta": "datasets/GATK_data/ref/human_g1k_b37_20.fasta",
+  "SimpleVariantDiscovery.gatk": "datasets/GATK_data/gatk-package-4.1.9.0-local.jar",
+  "SimpleVariantDiscovery.refDict": "datasets/GATK_data/ref/human_g1k_b37_20.dict",
+  "SimpleVariantDiscovery.name": "WDL_tut3_output",
+  "SimpleVariantDiscovery.compareFiles": [
+    "datasets/wdl_templates/t03/output/WDL_tut3_output.filtered.indels.vcf",
+    "datasets/wdl_templates/t03/output/WDL_tut3_output.filtered.snps.indels.vcf",
+    "datasets/wdl_templates/t03/output/WDL_tut3_output.filtered.snps.vcf",
+    "datasets/wdl_templates/t03/output/WDL_tut3_output.raw.indels.snps.vcf",
+    "datasets/wdl_templates/t03/output/WDL_tut3_output_raw.INDEL.vcf",
+    "datasets/wdl_templates/t03/output/WDL_tut3_output_raw.SNP.vcf"
+  ]
+}

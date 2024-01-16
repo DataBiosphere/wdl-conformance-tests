@@ -24,6 +24,9 @@ clean:
 	find tests -name "_version_1.1*.wdl" -delete
 	find tests -name "_version_draft-2*.wdl" -delete
 
+clean-csv:
+	rm csv_output_*
+
 cromwell:
 	mkdir -p build
 	if [ ! -f build/cromwell.jar ]; then \

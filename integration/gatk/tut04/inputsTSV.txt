@@ -1,0 +1,3 @@
+WDL_tut4a_output	datasets/GATK_data/inputs/NA12878_wgs_20.bam	datasets/GATK_data/inputs/NA12878_wgs_20.bai
+WDL_tut4b_output	datasets/GATK_data/inputs/NA12878_wgs_20.bam	datasets/GATK_data/inputs/NA12878_wgs_20.bai
+WDL_tut4c_output	datasets/GATK_data/inputs/NA12878_wgs_20.bam	datasets/GATK_data/inputs/NA12878_wgs_20.bai

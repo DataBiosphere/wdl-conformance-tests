@@ -1,0 +1,6 @@
+{
+  "encode_mapping_workflow.fastqs": ["datasets/ENCODE_data/ENCFF000VOL_chr21.fq.gz"],
+  "encode_mapping_workflow.trimming_parameter": "native",
+  "encode_mapping_workflow.reference": "datasets/ENCODE_data/reference/GRCh38_chr21_bwa.tar.gz",
+  "encode_mapping_workflow.compare_against_files": ["datasets/wdl_templates/testENCODE/output/ENCFF000VOL_chr21.raw.srt.bam.flagstat.qc", "datasets/wdl_templates/testENCODE/output/ENCFF000VOL_chr21.raw.srt.dup.qc", "datasets/wdl_templates/testENCODE/output/ENCFF000VOL_chr21.raw.srt.filt.nodup.srt.final.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc", "datasets/wdl_templates/testENCODE/output/ENCFF000VOL_chr21.raw.srt.filt.nodup.srt.final.flagstat.qc", "datasets/wdl_templates/testENCODE/output/ENCFF000VOL_chr21.raw.srt.filt.nodup.srt.final.pbc.qc"]
+}
