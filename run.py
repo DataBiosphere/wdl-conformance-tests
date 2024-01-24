@@ -297,12 +297,13 @@ class WDLConformanceTestRunner:
         wdl_file = os.path.abspath(get_wdl_file(wdl_input, abs_wdl_dir, version))
         json_file = os.path.abspath(json_path)
         test_args = args[runner].split(" ") if args[runner] is not None else []
+        unique_id = uuid4()
         # deal with jobstore_path argument for toil
         if runner == "toil-wdl-runner" and jobstore_path is not None:
-            unique_jobstore_path = os.path.join(jobstore_path, "wdl-jobstore-" + str(uuid4()))
+            unique_jobstore_path = os.path.join(jobstore_path, f"wdl-jobstore-{unique_id}")
             test_args.extend(["--jobstore", unique_jobstore_path])
         outputs = test['outputs']
-        results_file = os.path.abspath(f'results-{uuid4()}.json')
+        results_file = os.path.abspath(f'results-{unique_id}.json')
         wdl_runner = RUNNERS[runner]
         cmd = wdl_runner.format_command(wdl_file, json_file, results_file, test_args, verbose)
 
