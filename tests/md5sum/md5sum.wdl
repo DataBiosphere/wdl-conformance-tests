@@ -5,7 +5,7 @@ task md5 {
     File inputFile
   }
   command {
-    /bin/my_md5sum ${inputFile}
+    md5sum ${inputFile} >> md5sum.txt
   }
 
  output {
@@ -13,7 +13,7 @@ task md5 {
  }
 
  runtime {
-   docker: "quay.io/briandoconnor/dockstore-tool-md5sum:1.0.4"
+   docker: "ubuntu:22.04"
    cpu: 1
    memory: "512 MB"
    disks: "local-disk 10 HDD"
