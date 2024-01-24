@@ -270,7 +270,7 @@ class WDLConformanceTestRunner:
     LOG_LOCK = threading.Lock()
 
     def run_single_test(self, test_index: int, test: dict, runner: str, version: str, time: bool, verbose: bool,
-                        quiet: bool, args: Optional[Dict[str, Any]]) -> dict:
+                        quiet: bool, args: Optional[Dict[str, Any]], jobstore_path: Optional[str]) -> dict:
         """
         Run a test and log success or failure.
 
@@ -297,6 +297,10 @@ class WDLConformanceTestRunner:
         wdl_file = os.path.abspath(get_wdl_file(wdl_input, abs_wdl_dir, version))
         json_file = os.path.abspath(json_path)
         test_args = args[runner].split(" ") if args[runner] is not None else []
+        # deal with jobstore_path argument for toil
+        if runner == "toil-wdl-runner" and jobstore_path is not None:
+            unique_jobstore_path = os.path.join(jobstore_path, "wdl-jobstore-" + str(uuid4()))
+            test_args.extend(["--jobstore", unique_jobstore_path])
         outputs = test['outputs']
         results_file = os.path.abspath(f'results-{uuid4()}.json')
         wdl_runner = RUNNERS[runner]
@@ -324,8 +328,8 @@ class WDLConformanceTestRunner:
         return response
 
     def handle_test(self, test_index: int, test: Dict[str, Any], runner: str, version: str, time: bool,
-                    verbose: bool, quiet: bool, args: Optional[Dict[str, Any]], repeat: Optional[int] = None) \
-            -> Dict[str, Any]:
+                    verbose: bool, quiet: bool, args: Optional[Dict[str, Any]], jobstore_path: Optional[str],
+                    repeat: Optional[int] = None) -> Dict[str, Any]:
         """
         Decide if the test should be skipped. If not, run it.
 
@@ -339,15 +343,17 @@ class WDLConformanceTestRunner:
                 response.update({'reason': f'Test only applies to versions: {",".join(test["versions"])}'})
             return response
         else:
-            response.update(self.run_single_test(test_index, test, runner, version, time, verbose, quiet, args))
+            response.update(self.run_single_test(test_index, test, runner, version, time, verbose, quiet, args,
+                                                 jobstore_path))
         if repeat is not None:
             response["repeat"] = repeat
         return response
 
     def run_and_generate_tests_args(self, tags: Optional[str], numbers: Optional[str], versions: str, runner: str,
                                     threads: int = 1, time: bool = False, verbose: bool = False, quiet: bool = False,
-                                    args: Optional[Dict[str, Any]] = None, exclude_numbers: Optional[str] = None,
-                                    ids: Optional[str] = None, repeat: Optional[int] = None) -> Tuple[List[Any], bool]:
+                                    args: Optional[Dict[str, Any]] = None, jobstore_path: Optional[str] = None,
+                                    exclude_numbers: Optional[str] = None, ids: Optional[str] = None,
+                                    repeat: Optional[int] = None) -> Tuple[List[Any], bool]:
         # Get all the versions to test.
         # Unlike with CWL, WDL requires a WDL file to declare a specific version,
         # and prohibits mixing file versions in a workflow, although some runners
@@ -380,6 +386,7 @@ class WDLConformanceTestRunner:
                                                         verbose,
                                                         quiet,
                                                         args,
+                                                        jobstore_path,
                                                         iteration + 1 if repeat is not None else None)
                         pending_futures.append(result_future)
             for result_future in as_completed(pending_futures):
@@ -424,13 +431,12 @@ class WDLConformanceTestRunner:
                 args[runner] = options.toil_args
             if runner == "cromwell":
                 args[runner] = options.cromwell_args
-        return self.run_and_generate_tests_args(tags=options.tags, numbers=options.numbers,
-                                                versions=options.versions, runner=options.runner,
-                                                time=options.time, verbose=options.verbose,
-                                                quiet=options.quiet, threads=options.threads,
-                                                args=args,
-                                                exclude_numbers=options.exclude_numbers,
-                                                ids=options.id, repeat=options.repeat)
+        return self.run_and_generate_tests_args(tags=options.tags, numbers=options.numbers, versions=options.versions,
+                                                runner=options.runner, time=options.time, verbose=options.verbose,
+                                                quiet=options.quiet, threads=options.threads, args=args,
+                                                jobstore_path=options.jobstore_path,
+                                                exclude_numbers=options.exclude_numbers, ids=options.id,
+                                                repeat=options.repeat)
 
 
 def add_options(parser) -> None:
@@ -448,7 +454,8 @@ def add_options(parser) -> None:
     parser.add_argument("--runner", "-r", default='cromwell',
                         help='Select the WDL runner to use.')
     parser.add_argument("--threads", type=int, default=1,
-                        help='Number of tests to run in parallel.')
+                        help='Number of tests to run in parallel. The maximum should be the number of CPU cores (not '
+                             'threads due to wall clock timing).')
     parser.add_argument("--time", default=False, action="store_true",
                         help="Time the conformance test run.")
     parser.add_argument("--quiet", default=False, action="store_true")
@@ -461,6 +468,10 @@ def add_options(parser) -> None:
                                                               "--cromwell-args=\"--options=[OPTIONS]\"")
     parser.add_argument("--id", default=None, help="Specify a WDL test by ID.")
     parser.add_argument("--repeat", default=1, type=int, help="Specify how many times to run each test.")
+    # This is to deal with jobstores being created in the /data/tmp directory on Phoenix, which appears to be unique
+    # per worker, thus causing JobstoreNotFound exceptions when delegating to many workers at a time
+    parser.add_argument("--jobstore-path", "-j", default=None, help="Specify the PARENT directory for the jobstores to "
+                                                                    "be created in.")
 
 
 def main(argv=None):
