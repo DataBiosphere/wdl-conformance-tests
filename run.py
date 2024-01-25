@@ -399,7 +399,7 @@ class WDLConformanceTestRunner:
                 test_responses.append(result)
                 if progress:
                     # if progress is true, then print a summarized output of the completed test and current status
-                    print(f"{completed_count}/{selected_tests_amt}. Test {test_index} (ID: {test['id']}) completed "
+                    print(f"{completed_count}/{selected_tests_amt}. Test {result['number']} (ID: {test['id']}) completed "
                           f"with status {result['status']}. ")
 
         print("\n=== REPORT ===\n")
