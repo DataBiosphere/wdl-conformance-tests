@@ -1058,10 +1058,22 @@
   inputs:
     dir: tests/sibling_files
     wdl: sibling_files_dir_collision.wdl
+    json: sibling_files.json
   outputs:
     wf.result1:
       type: Boolean
       value: True
+- description: |
+    Test that array cannot coerce to a string. WDL 1.1 does not allow compound types to coerce into a string. This should return a TypeError.
+  versions: ["1.1"]
+  tags: ["array_coerce","behavior"]
+  id: array_coerce
+  inputs:
+    dir: tests/array_coerce
+    wdl: array_coerce.wdl
+    json: empty.json
+  outputs:
+    fail: {}
 - description: |
     Test ENCODE
   versions: ["draft-2", "1.0"]
