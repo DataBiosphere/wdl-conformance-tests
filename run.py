@@ -324,8 +324,8 @@ class WDLConformanceTestRunner:
         return response
 
     def handle_test(self, test_index: int, test: Dict[str, Any], runner: str, version: str, time: bool,
-                    verbose: bool, quiet: bool, args: Optional[Dict[str, Any]], repeat: Optional[int] = None) \
-            -> Dict[str, Any]:
+                    verbose: bool, quiet: bool, args: Optional[Dict[str, Any]], repeat: Optional[int] = None,
+                    progress: bool = False) -> Dict[str, Any]:
         """
         Decide if the test should be skipped. If not, run it.
 
@@ -333,12 +333,18 @@ class WDLConformanceTestRunner:
         """
         response = {'description': test.get('description'), 'number': test_index, 'id': test.get('id')}
         if version not in test['versions']:
+            # Test to skip, if progress is true, then output
+            if progress:
+                print(f"Skipping test {test_index} (ID: {test['id']}) with runner {runner} on WDL version {version}.")
             response.update({'status': 'SKIPPED'})
             # return reason only if verbose is true
             if verbose:
                 response.update({'reason': f'Test only applies to versions: {",".join(test["versions"])}'})
             return response
         else:
+            # New test to run, if progress is true, then output
+            if progress:
+                print(f"Running test {test_index} (ID: {test['id']}) with runner {runner} on WDL version {version}.")
             response.update(self.run_single_test(test_index, test, runner, version, time, verbose, quiet, args))
         if repeat is not None:
             response["repeat"] = repeat
@@ -347,7 +353,8 @@ class WDLConformanceTestRunner:
     def run_and_generate_tests_args(self, tags: Optional[str], numbers: Optional[str], versions: str, runner: str,
                                     threads: int = 1, time: bool = False, verbose: bool = False, quiet: bool = False,
                                     args: Optional[Dict[str, Any]] = None, exclude_numbers: Optional[str] = None,
-                                    ids: Optional[str] = None, repeat: Optional[int] = None) -> Tuple[List[Any], bool]:
+                                    ids: Optional[str] = None, repeat: Optional[int] = None, progress: bool = False) \
+            -> Tuple[List[Any], bool]:
         # Get all the versions to test.
         # Unlike with CWL, WDL requires a WDL file to declare a specific version,
         # and prohibits mixing file versions in a workflow, although some runners
@@ -360,6 +367,7 @@ class WDLConformanceTestRunner:
         successes = 0
         skips = 0
         test_responses = list()
+        print(f'Testing runner {runner} on WDL versions: {",".join(versions_to_test)}\n')
         with ProcessPoolExecutor(max_workers=threads) as executor:  # process instead of thread so realtime works
             pending_futures = []
             for test_index in selected_tests:
@@ -380,16 +388,21 @@ class WDLConformanceTestRunner:
                                                         verbose,
                                                         quiet,
                                                         args,
-                                                        iteration + 1 if repeat is not None else None)
+                                                        iteration + 1 if repeat is not None else None,
+                                                        progress)
                         pending_futures.append(result_future)
+            completed_count = 0
             for result_future in as_completed(pending_futures):
+                completed_count += 1
                 # Go get each result
                 result = result_future.result()
-                # self.print_response(result)
                 test_responses.append(result)
-        print(f'Testing runner {runner} on WDL versions: {",".join(versions_to_test)}\n')
+                if progress:
+                    # if progress is true, then print a summarized output of the completed test and current status
+                    print(f"{completed_count}/{selected_tests_amt}. Test {result['number']} (ID: {test['id']}) completed "
+                          f"with status {result['status']}. ")
 
-        print("=== REPORT ===")
+        print("\n=== REPORT ===\n")
 
         # print tests in order to improve readability
         test_responses.sort(key=lambda a: a['number'])
@@ -430,7 +443,8 @@ class WDLConformanceTestRunner:
                                                 quiet=options.quiet, threads=options.threads,
                                                 args=args,
                                                 exclude_numbers=options.exclude_numbers,
-                                                ids=options.id, repeat=options.repeat)
+                                                ids=options.id, repeat=options.repeat,
+                                                progress=options.progress)
 
 
 def add_options(parser) -> None:
@@ -461,6 +475,9 @@ def add_options(parser) -> None:
                                                               "--cromwell-args=\"--options=[OPTIONS]\"")
     parser.add_argument("--id", default=None, help="Specify a WDL test by ID.")
     parser.add_argument("--repeat", default=1, type=int, help="Specify how many times to run each test.")
+    # Test responses are collected and sorted, so this option allows the script to print out the current progress
+    parser.add_argument("--progress", default=False, action="store_true", help="Print the progress of the test suite "
+                                                                               "as it runs.")
 
 
 def main(argv=None):
