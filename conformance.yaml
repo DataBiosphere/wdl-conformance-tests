@@ -1037,6 +1037,19 @@
     wf.result5:
       type: Boolean
       value: True
+- description: |
+    Test that files with special characters in their names are supported
+  versions: ["draft-2", "1.0", "1.1"]
+  id: special_chartacter_files
+  tags: ["special_characters", "behavior"]
+  inputs:
+    dir: tests/special_character_files
+    wdl: special_character_files.wdl
+    json: special_character_files.json
+  outputs:
+    wf.success:
+      type: Boolean
+      value: True
 - description: | # toil-wdl-runner currently fails this
     Test that passing a file generated with write_lines() into another task succeeds
   versions: ["draft-2", "1.0", "1.1"]
