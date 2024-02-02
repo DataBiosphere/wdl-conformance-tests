@@ -998,7 +998,7 @@
   outputs:
     ga4ghMd5.value:
       type: File
-      value: {md5sum: 'd3d7db14b8d14dcf8232f921a71d1b08'}
+      value: {md5sum: '24b6378740d9662c8f464364b10a133a'}
 - description: |
     MD5 test with an empty file
   tags: ["md5_empty", "legacy"]
@@ -1011,7 +1011,7 @@
   outputs:
     ga4ghMd5.value:
       type: File
-      value: {md5sum: 'fb38131feb008675f8fb141e7f9010e8'}
+      value: {md5sum: '227bc609651f929e367c3b2b79e09d5b'}
 - description: |
     Test that sibling files are kept in the same directory when downloaded
   versions: ["1.0", "1.1"]
