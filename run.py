@@ -568,7 +568,7 @@ def verify_outputs(expected: dict, results_file: str, ret_code: int) -> dict:
 
     if len(test_results['outputs']) != len(expected):
         return {'status': 'FAILED',
-                'reason': f"'outputs' section expected {len(expected)} results, got {len(test_results['outputs'])} instead"}
+                'reason': f"'outputs' section expected {len(expected)} results ({list(expected.keys())}), got {len(test_results['outputs'])} instead ({list(test_results['outputs'].keys())})"}
 
     result_outputs = test_results['outputs']
 
