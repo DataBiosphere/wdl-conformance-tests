@@ -1040,7 +1040,7 @@
 - description: |
     Test that files with special characters in their names are supported
   versions: ["draft-2", "1.0", "1.1"]
-  id: special_chartacter_files
+  id: special_character_files
   tags: ["special_characters", "behavior"]
   inputs:
     dir: tests/special_character_files
