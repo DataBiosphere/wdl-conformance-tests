@@ -46,7 +46,7 @@ task check {
         # placeholder in order to be agnostic as to whether the local decls see
         # the same filesystem the command does.
         while IFS="" read -r FILENAME || [ -n "$FILENAME" ] ; do
-            cp "${FILENAME}" .
+            cp "$FILENAME" .
         done <~{write_lines(files)}
         stat 'GRCh38#0#chm1.fa'
         stat 'GRCh38%230%23chm1.fa'
