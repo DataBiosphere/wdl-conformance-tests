@@ -1038,6 +1038,28 @@
       type: Boolean
       value: True
 - description: |
+    Test that output files with the same name can be kept straight
+  versions: ["1.0", "1.1"]
+  id: samename
+  tags: ["sibling_files", "output", "behavior"]
+  inputs:
+    dir: tests/output_collision
+    wdl: output_collision.wdl
+    json: output_collision.json
+  outputs:
+    wf.file11:
+      type: File
+      value: {regex: '^A$'}
+    wf.file12:
+      type: File
+      value: {regex: '^A$'}
+    wf.file21:
+      type: File
+      value: {regex: '^B$'}
+    wf.file22:
+      type: File
+      value: {regex: '^B$'}
+- description: |
     Test that files with special characters in their names are supported
   versions: ["draft-2", "1.0", "1.1"]
   id: special_character_files
