@@ -63,8 +63,9 @@ def create_bar_graph(all_runtimes: Dict[str, Dict[str, Any]], unique_tests_subse
     ax.set_title('WDL Test Runtimes')
     ax.set_xlabel('WDL Test ID')
 
-    bars = []
     single_width = 1
+
+    output_order = sorted(include_runners, key=lambda x: graph_order.index(x))
 
     def autolabel(rects):
         """
@@ -91,7 +92,7 @@ def create_bar_graph(all_runtimes: Dict[str, Dict[str, Any]], unique_tests_subse
             width = bar_width * single_width
             color = colors[runner_name]
             runner_name_to_graph_data[runner_name] = {"avg": avg, "width": width, "color": color, "std": std}
-        for runner_idx, runner_name in enumerate(graph_order):
+        for runner_idx, runner_name in enumerate(output_order):
             x_offset = (runner_idx - number_of_runners / 2) * bar_width + bar_width / 2
             x_pos = x + x_offset
             graph_data = runner_name_to_graph_data[runner_name]
@@ -142,6 +143,8 @@ def create_box_graph(all_runtimes: Dict[str, Dict[str, Any]], unique_tests_subse
     number_of_runners = len(include_runners)
     box_width = total_width / number_of_runners
 
+    output_order = sorted(include_runners, key=lambda x: graph_order.index(x))
+
     def autolabel(box_obj):
         """
         Attach a label above the median line of each box displaying its height
@@ -173,7 +176,7 @@ def create_box_graph(all_runtimes: Dict[str, Dict[str, Any]], unique_tests_subse
             color = colors[runner_name]
             runner_name_to_graph_data[runner_name] = {"runtimes": runtimes, "notch": 0, "sym": "", "widths": box_width,
                                                       "color": color}
-        for runner_idx, runner_name in enumerate(graph_order):
+        for runner_idx, runner_name in enumerate(output_order):
             x_offset = (runner_idx - number_of_runners / 2) * box_width + box_width / 2
             x_pos = x + x_offset
             graph_data = runner_name_to_graph_data[runner_name]
