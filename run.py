@@ -45,7 +45,7 @@ class CromwellStyleWDLRunner(WDLRunner):
         self.runner = runner
 
     def format_command(self, wdl_file, json_file, results_file, args, verbose):
-        return self.runner.split(" ") + [wdl_file, "-i", json_file, "-m", results_file] + args
+        return list(filter(None, self.runner.split(" "))) + [wdl_file, "-i", json_file, "-m", results_file] + args
 
 
 class CromwellWDLRunner(CromwellStyleWDLRunner):
