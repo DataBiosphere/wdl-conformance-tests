@@ -3,7 +3,7 @@ import os
 import subprocess
 import sys
 
-from run import get_wdl_version_from_file
+from lib import get_wdl_version_from_file
 
 def highest_version_in_filelist(lst):
     # not the prettiest approach
