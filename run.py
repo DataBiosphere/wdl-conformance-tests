@@ -36,7 +36,7 @@ class WDLRunner:
     """
     runner: str
 
-    def format_command(self, wdl_file, json_file, results_file, args, verbose):
+    def format_command(self, wdl_file, json_file, results_file, args, verbose, pre_args=None):
         raise NotImplementedError
 
 
@@ -44,8 +44,8 @@ class CromwellStyleWDLRunner(WDLRunner):
     def __init__(self, runner):
         self.runner = runner
 
-    def format_command(self, wdl_file, json_file, results_file, args, verbose):
-        return self.runner.split(" ") + [wdl_file, "-i", json_file, "-m", results_file] + args
+    def format_command(self, wdl_file, json_file, results_file, args, verbose, pre_args=None):
+        return list(filter(None, self.runner.split(" "))) + [wdl_file, "-i", json_file, "-m", results_file] + args
 
 
 class CromwellWDLRunner(CromwellStyleWDLRunner):
@@ -54,18 +54,19 @@ class CromwellWDLRunner(CromwellStyleWDLRunner):
     def __init__(self):
         super().__init__('cromwell')
 
-    def format_command(self, wdl_file, json_file, results_file, args, verbose):
+    def format_command(self, wdl_file, json_file, results_file, args, verbose, pre_args=None):
         if self.runner == 'cromwell' and not which('cromwell'):
             with CromwellWDLRunner.download_lock:
                 if self.runner == 'cromwell':
                     # if there is no cromwell binary seen on the path, download
                     # our pinned version and use that instead
                     log_level = '-DLOG_LEVEL=OFF' if not verbose else ''
+                    pre_args = '' if pre_args is None else pre_args
                     cromwell = os.path.abspath('build/cromwell.jar')
                     if not os.path.exists(cromwell):
                         print('Cromwell not seen in the path, now downloading cromwell to run tests... ')
                         run_cmd(cmd='make cromwell'.split(" "), cwd=os.getcwd())
-                    self.runner = f'java {log_level} -jar {cromwell} run'
+                    self.runner = f'java {log_level} {pre_args} -jar {cromwell} run'
 
         return super().format_command(wdl_file, json_file, results_file, args, verbose)
 
@@ -74,8 +75,9 @@ class MiniWDLStyleWDLRunner(WDLRunner):
     def __init__(self, runner):
         self.runner = runner
 
-    def format_command(self, wdl_file, json_file, results_file, args, verbose):
-        return self.runner.split(" ") + [wdl_file, "-i", json_file, "-o", results_file, "-d", "miniwdl-logs", "--verbose"] + args
+    def format_command(self, wdl_file, json_file, results_file, args, verbose, pre_args=None):
+        return self.runner.split(" ") + [wdl_file, "-i", json_file, "-o", results_file, "-d", "miniwdl-logs",
+                                         "--verbose"] + args
 
 
 RUNNERS = {
@@ -305,7 +307,11 @@ class WDLConformanceTestRunner:
         outputs = test['outputs']
         results_file = os.path.abspath(f'results-{unique_id}.json')
         wdl_runner = RUNNERS[runner]
-        cmd = wdl_runner.format_command(wdl_file, json_file, results_file, test_args, verbose)
+        # deal with cromwell arguments to define java system properties
+        pre_args = None
+        if runner == "cromwell":
+            pre_args = args["cromwell_pre_args"]
+        cmd = wdl_runner.format_command(wdl_file, json_file, results_file, test_args, verbose, pre_args)
 
         realtime = None
         if time:
@@ -350,7 +356,8 @@ class WDLConformanceTestRunner:
             # New test to run, if progress is true, then output
             if progress:
                 print(f"Running test {test_index} (ID: {test['id']}) with runner {runner} on WDL version {version}.")
-            response.update(self.run_single_test(test_index, test, runner, version, time, verbose, quiet, args, jobstore_path))
+            response.update(
+                self.run_single_test(test_index, test, runner, version, time, verbose, quiet, args, jobstore_path))
         if repeat is not None:
             response["repeat"] = repeat
         return response
@@ -405,8 +412,9 @@ class WDLConformanceTestRunner:
                 test_responses.append(result)
                 if progress:
                     # if progress is true, then print a summarized output of the completed test and current status
-                    print(f"{completed_count}/{selected_tests_amt}. Test {result['number']} (ID: {test['id']}) completed "
-                          f"with status {result['status']}. ")
+                    print(
+                        f"{completed_count}/{selected_tests_amt}. Test {result['number']} (ID: {test['id']}) completed "
+                        f"with status {result['status']}. ")
 
         print("\n=== REPORT ===\n")
 
@@ -443,6 +451,7 @@ class WDLConformanceTestRunner:
                 args[runner] = options.toil_args
             if runner == "cromwell":
                 args[runner] = options.cromwell_args
+                args["cromwell_pre_args"] = options.cromwell_pre_args
         return self.run_and_generate_tests_args(tags=options.tags, numbers=options.numbers, versions=options.versions,
                                                 runner=options.runner, time=options.time, verbose=options.verbose,
                                                 quiet=options.quiet, threads=options.threads, args=args,
@@ -478,6 +487,11 @@ def add_options(parser) -> None:
                                                              "--miniwdl-args=\"--no-outside-imports\"")
     parser.add_argument("--cromwell-args", default=None, help="Arguments to pass into cromwell. Ex: "
                                                               "--cromwell-args=\"--options=[OPTIONS]\"")
+    parser.add_argument("--cromwell-pre-args", default=None, help="Arguments to set java system properties before "
+                                                                  "calling cromwell. This allows things such as "
+                                                                  "setting cromwell config files with "
+                                                                  "--cromwell-pre-args="
+                                                                  "\"-Dconfig.file=build/overrides.conf\".")
     parser.add_argument("--id", default=None, help="Specify a WDL test by ID.")
     parser.add_argument("--repeat", default=1, type=int, help="Specify how many times to run each test.")
     # This is to deal with jobstores being created in the /data/tmp directory on Phoenix, which appears to be unique
