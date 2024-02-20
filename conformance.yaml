@@ -998,7 +998,7 @@
   outputs:
     ga4ghMd5.value:
       type: File
-      value: {md5sum: 'd3d7db14b8d14dcf8232f921a71d1b08'}
+      value: {md5sum: '24b6378740d9662c8f464364b10a133a'}
 - description: |
     MD5 test with an empty file
   tags: ["md5_empty", "legacy"]
@@ -1011,7 +1011,7 @@
   outputs:
     ga4ghMd5.value:
       type: File
-      value: {md5sum: 'fb38131feb008675f8fb141e7f9010e8'}
+      value: {md5sum: '227bc609651f929e367c3b2b79e09d5b'}
 - description: |
     Test that sibling files are kept in the same directory when downloaded
   versions: ["1.0", "1.1"]
@@ -1037,6 +1037,54 @@
     wf.result5:
       type: Boolean
       value: True
+- description: |
+    Test that output files with the same name can be kept straight
+  versions: ["1.0", "1.1"]
+  id: samename
+  tags: ["sibling_files", "output", "behavior"]
+  inputs:
+    dir: tests/output_collision
+    wdl: output_collision.wdl
+    json: output_collision.json
+  outputs:
+    wf.file11:
+      type: File
+      value: {regex: '^A$'}
+    wf.file12:
+      type: File
+      value: {regex: '^A$'}
+    wf.file21:
+      type: File
+      value: {regex: '^B$'}
+    wf.file22:
+      type: File
+      value: {regex: '^B$'}
+- description: |
+    Test that files with special characters in their names are supported
+  versions: ["draft-2", "1.0", "1.1"]
+  id: special_character_files
+  tags: ["special_characters", "behavior"]
+  inputs:
+    dir: tests/special_character_files
+    wdl: special_character_files.wdl
+    json: special_character_files.json
+  outputs:
+    wf.success:
+      type: Boolean
+      value: True
+- description: | # See <https://github.com/chanzuckerberg/miniwdl/issues/674>
+    Test that placeholder substitutions don't break command dedenting
+  versions: ["draft-2", "1.0", "1.1"]
+  id: dedent
+  tags: ["dedent", "behavior"]
+  inputs:
+    dir: tests/dedent
+    wdl: dedent.wdl
+    json: dedent.json
+  outputs:
+    wf.lines:
+      type: Array[String]
+      value: ["a", "b", "c"]
 - description: | # toil-wdl-runner currently fails this
     Test that passing a file generated with write_lines() into another task succeeds
   versions: ["draft-2", "1.0", "1.1"]
@@ -1058,10 +1106,22 @@
   inputs:
     dir: tests/sibling_files
     wdl: sibling_files_dir_collision.wdl
+    json: sibling_files.json
   outputs:
     wf.result1:
       type: Boolean
       value: True
+- description: |
+    Test that array cannot coerce to a string. WDL 1.1 does not allow compound types to coerce into a string. This should return a TypeError.
+  versions: ["1.1"]
+  tags: ["array_coerce","behavior"]
+  id: array_coerce
+  inputs:
+    dir: tests/array_coerce
+    wdl: array_coerce.wdl
+    json: empty.json
+  outputs:
+    fail: {}
 - description: |
     Test ENCODE
   versions: ["draft-2", "1.0"]

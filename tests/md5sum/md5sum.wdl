@@ -4,9 +4,10 @@ task md5 {
   input {
     File inputFile
   }
-  command {
-    md5sum ${inputFile} >> md5sum.txt
-  }
+  command <<<
+    set -euf -o pipefail
+    md5sum ~{inputFile} | awk '{print $1}' > md5sum.txt
+  >>>
 
  output {
     File value = "md5sum.txt"
