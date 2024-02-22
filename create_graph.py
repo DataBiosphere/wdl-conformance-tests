@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 """
 Graph performance testing results.
 
@@ -21,6 +23,7 @@ import uuid
 from collections import defaultdict
 from typing import List, Optional, Dict, Any
 
+import argcomplete
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
@@ -101,7 +104,7 @@ def create_bar_graph(all_runtimes: Dict[str, Dict[str, Any]], unique_tests_subse
             color = graph_data["color"]
             std = graph_data["std"]
             bar = ax.bar(x_pos, avg, width=width, color=color)
-            ax.errorbar(x_pos, avg, yerr=std, fmt=",-r", ecolor="red")
+            ax.errorbar(x_pos, avg, yerr=std/2, fmt=",-r", ecolor="red")
             if label:
                 autolabel(bar)
         x += 1
@@ -209,7 +212,7 @@ def create_box_graph(all_runtimes: Dict[str, Dict[str, Any]], unique_tests_subse
 def generate_graphs_from_range(df: pd.DataFrame, iteration: int, ignored_runners: Optional[List[str]] = None,
                                test_ids_to_graph: Optional[List[str]] = None, graph_type="box",
                                start: Optional[int] = None, end: Optional[int] = None, label: bool = True,
-                               precision: int = 0) -> None:
+                               precision: int = 0, ignore_skipped: bool = False) -> None:
     """
     Launch a new graph for each range
     :param df: pandas dataframe of csv
@@ -221,15 +224,28 @@ def generate_graphs_from_range(df: pd.DataFrame, iteration: int, ignored_runners
     :param end: optional, end index in df to graph
     :param label: optional, whether to graph with labels
     :param precision: number of decimal points to display in the labels
+    :param ignore_skipped: ignore skipped tests
     """
 
     unique_runners = df["Runner"].unique()
     unique_tests = df["Test ID"].unique()
-    unique_tests_subset = None
     if test_ids_to_graph is None:
         unique_tests_subset = unique_tests[start:end]
+    else:
+        unique_tests_subset = test_ids_to_graph
+    if ignore_skipped:
+        # remove all tests that are skipped from the graph
+        parsed_ids = df.query('Runtime == "SKIPPED"')['Test ID'].unique()
+        test_ids_to_skip = set()
+        for test_id in parsed_ids:
+            # in case the csv has other valid runtimes
+            # as of now this will not happen, but it may be useful to add this functionality later
+            # ex: object is not and will never be supported in miniwdl/toil-wdl-runner, that could be considered skipped
+            if len(df.query('`Test ID` == "{test_id}" & Runtime != "SKIPPED"')) == 0:
+                test_ids_to_skip.add(test_id)
+        unique_tests_subset = [test_id for test_id in unique_tests_subset if test_id not in test_ids_to_skip]
     all_runtimes = defaultdict(lambda: defaultdict(list))
-    for test_idx, test_id in enumerate(unique_tests_subset if test_ids_to_graph is None else test_ids_to_graph):
+    for test_idx, test_id in enumerate(unique_tests_subset):
         for runner_idx, runner in enumerate(unique_runners):
             if runner in (ignored_runners or []):
                 continue
@@ -274,7 +290,7 @@ def create_graph(from_file: str, options: argparse.Namespace) -> None:
                           number_of_entries_per_graph + number_of_entries_per_graph)
             generate_graphs_from_range(df, iteration, ignored_runners, graph_type=options.graph_type, start=start,
                                        end=end, label=label, precision=options.precision,
-                                       test_ids_to_graph=test_ids_to_graph)
+                                       test_ids_to_graph=test_ids_to_graph, ignore_skipped=options.ignore_skipped)
     else:
         # graph tests in order according to conformance.yaml
         with open(options.conformance_file, "r") as f:
@@ -293,7 +309,8 @@ def create_graph(from_file: str, options: argparse.Namespace) -> None:
                           number_of_entries_per_graph + number_of_entries_per_graph)
             test_ids_to_graph = all_test_ids_to_graph[start:end]
             generate_graphs_from_range(df, iteration, ignored_runners, graph_type=options.graph_type,
-                                       test_ids_to_graph=test_ids_to_graph, label=label, precision=options.precision)
+                                       test_ids_to_graph=test_ids_to_graph, label=label, precision=options.precision,
+                                       ignore_skipped=options.ignore_skipped)
     if options.output is None:
         plt.show()
     else:
@@ -304,7 +321,7 @@ def create_graph(from_file: str, options: argparse.Namespace) -> None:
         height_size = 0
 
         if options.dimensions == "default":
-            width_size = num_unique_tests_to_display * 0.5
+            width_size = num_unique_tests_to_display * 0.25
             height_size = 10
         elif options.dimensions is not None:
             # user supplied custom dimensions
@@ -347,6 +364,9 @@ def add_create_graph_args(parser: argparse.ArgumentParser) -> None:
                             help="Specify the conformance file to read from. This will specify whether to grab/graph "
                                  "tests by conformance file or by CSV file test IDs only. Specifying this will make "
                                  "the graph accept -n, -t, -id and other related arguments.")
+    graph_args.add_argument("--ignore-skipped", default=False, action="store_true", help="Specify whether to not graph "
+                                                                                        "skipped conformance tests in "
+                                                                                        "the graph.")
     output_args = parser.add_argument_group("Arguments for specifying how to write the graph to a file.")
     output_args.add_argument("--output", "-o", default=None,
                              help="Instead of displaying the graphs, output it into an image. If --display-num is set "
@@ -364,6 +384,7 @@ def main(args):
     parser = argparse.ArgumentParser(description=__doc__)
     add_options(parser)
     add_create_graph_args(parser)
+    argcomplete.autocomplete(parser)
     options = parser.parse_args(args)
 
     if options.file is None:

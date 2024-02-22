@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 """
 run.py: Run conformance tests for WDL, grabbing the tests from the tests folder and expected values from
 conformance.yaml
@@ -10,6 +11,7 @@ import re
 import sys
 import hashlib
 import argparse
+import argcomplete
 import subprocess
 import threading
 import timeit
@@ -28,7 +30,6 @@ from WDL.Type import Base as WDLBase
 
 from lib import run_cmd, py_type_of_wdl_class, verify_failure, announce_test, print_response, convert_type, run_setup, \
     get_specific_tests, get_wdl_file
-
 
 class WDLRunner:
     """
@@ -510,6 +511,7 @@ def main(argv=None):
         argv = sys.argv[1:]
     parser = argparse.ArgumentParser(description='Run WDL conformance tests.')
     add_options(parser)
+    argcomplete.autocomplete(parser)
     args = parser.parse_args(argv)
 
     if args.runner not in RUNNERS:
