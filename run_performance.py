@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 """
 Run the performance testing suite and output the results to a CSV file.
 
@@ -11,6 +13,7 @@ import os.path
 import timeit
 from typing import Dict, Any, Optional, List
 
+import argcomplete
 import regex
 import subprocess
 import sys
@@ -110,7 +113,7 @@ def main(args):
     parser = argparse.ArgumentParser(description=__doc__)
     add_options(parser)
     add_performance_testing_args(parser)
-
+    argcomplete.autocomplete(parser)
     options = parser.parse_args(args)
     call_and_write_csv(options)
 
