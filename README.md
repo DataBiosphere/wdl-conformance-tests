@@ -232,3 +232,7 @@ Arguments for specifying how to write the graph to a file.:
   --dimensions [DIMENSIONS]
                         If custom dimensions are needed, this can be called with input format x_size,y_size in inches. Calling this with no value will size the graph accordingly.
 ```
+### Example Graphs
+These are 2 graphs generated from running performance testing on a SLURM cluster.
+![Example box graph](examples/example_box_graph.png)
+![Example bar graph](examples/example_bar_graph.png)
