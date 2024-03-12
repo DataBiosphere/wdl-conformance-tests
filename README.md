@@ -85,7 +85,8 @@ options:
 ```
 
 ## Adding Tests
-Tests can be added by editing `conformance.yaml`. \
+Tests can be added by editing `conformance.yaml`.
+
 For example, a new test can be added as follows:
 ```yaml
 - description: |
@@ -113,7 +114,8 @@ workflow exampleWf {
 ```
 Only one WDL file is necessary to run in all versions, as long as formatting is followed as [stated below](#test-formatting).
 ## Test formatting
-Additionally, in order to keep a single WDL file per each test, the same test for other versions are generated. \
+Additionally, in order to keep a single WDL file per each test, the same test for other versions are generated.
+
 There are two ways for generating these tests: [automatic](#automatic-formatting) or [manual](#manual-formatting).
 ### Automatic formatting
 With automatic formatting, this means that input sections in WDL code must follow the format:
@@ -199,16 +201,17 @@ Arguments for graphing runtimes of WDL tests:
                         other related arguments.
 ```
 By default, new and separate graphs will be created for every 30 tests.
-\
+
 `--display-num` overrides the number of tests to display per graph, and `--display-all` forces all tests in a single graph.
 ### Writing Graphs to a File
-The graphs can be written to a file(s).\
+The graphs can be written to a file(s).
+
 For example, to output a graph with all tests in a PNG with a size of 40 inches by 10 inches (width,height):
 ```commandline
 python create_graph.py -f performance_output.csv --output performance_graph.png --dimensions 40,10 -a
 ```
 If `--display-all` is not specified and there are more tests to graph than `--display-num`, then multiple graph files will be created with the format `[output_file][iteration].[fileext]`.
-\
+
 For example, calling `python create_graph.py -f performance_output.csv --output performance_graph.png` with 90 total tests to graph will result in:
 ```commandline
 .
@@ -217,7 +220,7 @@ For example, calling `python create_graph.py -f performance_output.csv --output 
 └── performance_graph3.png
 ```
 If trying to put all the tests into a single graph, it is likely that dimensions should be provided to make all tests fit.
-\
+
 All output formats supported by Matplotlib are also supported (ex: pdf, svg).
 ### Graph Output Options
 Other than the previous [general](#options) and [graph specific](#graph-options) options, the options for outputting a graph are:
