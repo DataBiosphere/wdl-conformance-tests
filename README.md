@@ -69,7 +69,37 @@ options:
 ```
 
 ## Adding Tests
-In order to keep a single WDL file per each test, the same test for other versions are generated. \
+Tests can be added by editing `conformance.yaml`. \
+For example, a new test can be added as follows:
+```yaml
+- description: |
+    Example new test description
+  versions: ["draft-2", "1.0", "1.1"] # specify versions to run with
+  id: example_test_id # unique ID of test, no 2 tests should have the same id
+  tags: ["examples", "behavior"] # specify tags, these don't need to be unique
+  inputs:
+    dir: tests/example_files # path to directory where test is, can be an absolute or relative path (to run.py)
+    wdl: example.wdl # wdl file name
+    json: example.json # json file name
+  outputs:
+    exampleWf.outputVar: # output name, should be workflowName.outputVariable
+      type: Boolean # expected output type
+      value: True # expected output value
+```
+The test files must be under the `tests/example_files` directory and be named `example.wdl` and `example.json`.
+Each expected output should specified as `wf.var`. For example, `exampleWf.outputVar` is the specifier if the WDL is this:
+```wdl
+workflow exampleWf {
+    output {
+        Boolean outputVar = true
+    }
+}
+```
+Only one WDL file is necessary to run in all versions, as long as formatting is followed as [stated below](##test-formatting).
+## Test formatting
+Additionally, in order to keep a single WDL file per each test, the same test for other versions are generated. \
+There are two ways for generating these tests: [automatic](###automatic-formatting) or [manual](###manual-formatting).
+### Automatic formatting
 However, this means that input sections must follow the format:
 ```wdl
 input {
@@ -83,4 +113,28 @@ command {
     ...
 } # line with isolated closing brace indicates end of command section
 ```
+### Manual formatting
 If the format cannot be followed, patch files can be used instead to differentiate from the base file.
+The `patch.py` program can be used to do this:
+```commandline
+python patch.py --version 1.1 --directory tests/basic_stdout
+```
+The directory `tests/basic_stdout` is the directory that holds all the WDL files written in all versions. The specified version will be the base file to make patch files from.
+`--remove` can be provided to delete all other WDL files that aren't the base WDL file, and `--rename` can be used to rename the base WDL file to the same name as the directory.
+
+For example, if `tests/basic_stdout` has 3 WDL files:
+```commandline
+tests/basic_stdout
+├── basic_stdout.json
+├── basic_stdout_version_1.0.wdl
+├── basic_stdout_version_1.1.wdl
+└── basic_stdout_version_draft2.wdl
+```
+After `python patch.py --version 1.1 --directory tests/basic_stdout` is called, then `patch.py` will use `basic_stdout_version_1.1.wdl` as the base file for patches, and generate 2 patch files to convert from WDL 1.1 to 1.0 and WDL 1.1 to draft-2.
+```commandline
+tests/basic_stdout
+├── ...
+├── version_1.0.patch
+└── version_draft-2.patch
+```
+These patch files will be used to create the proper versioned WDL file at runtime (This will take priority over the automatic WDL version conversion).
