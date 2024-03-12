@@ -369,6 +369,7 @@ def main(args):
     if options.file is None:
         new_output_file = f"csv_output_{uuid.uuid4()}.csv"
         options.output = new_output_file
+        print("No input CSV file provided. Running performance tests first.")
         call_and_write_csv(options)
         create_graph(new_output_file, options)
     else:

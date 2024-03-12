@@ -6,20 +6,14 @@ Output file is specified with --output and runners are specified by --runners or
 """
 
 import argparse
-import json
 import os.path
 import timeit
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 
-import regex
-import subprocess
 import sys
 
-from ruamel import yaml
-
 from lib import parse_time
-from run import WDLConformanceTestRunner, WDLRunner, CromwellWDLRunner, MiniWDLStyleWDLRunner, CromwellWDLRunner, \
-    RUNNERS, add_options
+from run import WDLConformanceTestRunner, add_options
 
 
 def get_runners(options: argparse.Namespace):

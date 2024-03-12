@@ -3,7 +3,7 @@ import os
 import subprocess
 import sys
 
-from run import get_wdl_version_from_file
+from lib import get_wdl_version_from_file
 
 def highest_version_in_filelist(lst):
     # not the prettiest approach
@@ -22,7 +22,8 @@ def create_patch(directory, base_version, remove=False, rename=False):
             files.append(path)
             if get_wdl_version_from_file(path) == base_version:
                 base_wdl = path
-
+    if base_wdl is None:
+        raise Exception(f"No WDL file found with version {base_version}!")
     working_dir = os.getcwd()
     os.chdir(directory)
     for file in files:
@@ -38,9 +39,9 @@ def create_patch(directory, base_version, remove=False, rename=False):
 
 def main(argv=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Create patch files in the right format')
-    parser.add_argument("--version", "-v", default=None,
+    parser.add_argument("--version", "-v", default=None, required=True, choices=["1.0", "1.1", "draft-2"],
                         help="The base WDL file's version")
-    parser.add_argument("--directory", "-d", default=None,
+    parser.add_argument("--directory", "-d", default=None, required=True,
                         help='Directory where all the WDL files are')
     parser.add_argument("--remove", default=False,
                         help='Remove WDL files that are not the base')

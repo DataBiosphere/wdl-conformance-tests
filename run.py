@@ -457,7 +457,7 @@ def add_options(parser) -> None:
     """
     parser.add_argument("--verbose", default=False, action='store_true',
                         help='Print more information about a test')
-    parser.add_argument("--versions", "-v", default="1.0",
+    parser.add_argument("--versions", "-v", default="1.0", choices=["1.0", "1.1", "draft-2"],
                         help='Select the WDL versions you wish to test against.')
     parser.add_argument("--tags", "-t", default=None,
                         help='Select the tags to run specific tests')
@@ -478,7 +478,7 @@ def add_options(parser) -> None:
                                                              "--miniwdl-args=\"--no-outside-imports\"")
     parser.add_argument("--cromwell-args", default=None, help="Arguments to pass into cromwell. Ex: "
                                                               "--cromwell-args=\"--options=[OPTIONS]\"")
-    parser.add_argument("--id", default=None, help="Specify a WDL test by ID.")
+    parser.add_argument("--id", default=None, help="Specify WDL tests by ID.")
     parser.add_argument("--repeat", default=1, type=int, help="Specify how many times to run each test.")
     # This is to deal with jobstores being created in the /data/tmp directory on Phoenix, which appears to be unique
     # per worker, thus causing JobstoreNotFound exceptions when delegating to many workers at a time
