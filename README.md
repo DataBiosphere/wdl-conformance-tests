@@ -62,7 +62,7 @@ options:
                         Select the WDL versions you wish to test against.
   --tags TAGS, -t TAGS  Select the tags to run specific tests
   --numbers NUMBERS, -n NUMBERS
-                        Select the WDL test numbers you wish to run.
+                        Select the WDL test numbers you wish to run. Can be a comma separated list or hyphen separated inclusive ranges. Ex: -n=1-4,6,8-10
   --runner RUNNER, -r RUNNER
                         Select the WDL runner to use.
   --threads THREADS     Number of tests to run in parallel. The maximum should be the number of CPU cores (not threads due to wall clock timing).
@@ -83,7 +83,31 @@ options:
   --progress            Print the progress of the test suite as it runs.
 
 ```
+Invoking `run.py` with no options will result in the entire test suite being ran, which can take a long time.
+Including `--progress` is recommended when running over a long period of time.
 
+Certain tests can be specified with `--id`, `--tags`, and `--numbers`:
+```commandline
+python run.py --number 1 --id md5 --tags stderr --version 1.0 --runner toil-wdl-runner
+Testing runner toil-wdl-runner on WDL versions: 1.0
+
+
+=== REPORT ===
+
+1: SUCCEEDED: Standard Lib: Basic test for stderr()
+Iteration: 1
+40: SUCCEEDED: Legacy test for stderr_as_output
+Iteration: 1
+68: SUCCEEDED: MD5 test
+Iteration: 1
+3 tests run, 3 succeeded, 0 failed, 0 skipped
+```
+`--repeat` specifies how many times to run each test. `--threads` allows multiple tests to run simultaneously;
+this should be set to the number of processors and not threads in a computer if running with `--time` or with the performance testing script.
+
+By default, runner logs are only printed for failed tests. `--verbose` forces logs to always print and `--quiet` forces logs to never print.
+
+If running tests on a cluster, [extra arguments may be necessary](SLURM_README.md).
 ## Adding Tests
 Tests can be added by editing `conformance.yaml`.
 
@@ -104,7 +128,7 @@ For example, a new test can be added as follows:
       value: True # expected output value
 ```
 The test files then should be under the `tests/example_files` directory and be named `example.wdl` and `example.json`.
-Each expected output should specified as `wf.var`. For example, `exampleWf.outputVar` is the specifier if the WDL is this:
+Each expected output should be specified as `wfName.varName`. For example, `exampleWf.outputVar` is the specifier if the WDL is this:
 ```wdl
 workflow exampleWf {
     output {
@@ -159,14 +183,15 @@ These patch files will be used to create the proper versioned WDL file at runtim
 
 ## Running Performance Tests
 The default runner `run.py` only runs tests and outputs them onto the commandline.
-To store the runtime of tests (and to graph them), the script `run_performance.py` should be used:
+To store the runtime of tests (and eventually graph them), the script `run_performance.py` should be used:
 ```commandline
-python run_performance.py --runners toil-wdl-runner,miniwdl --output performance_output.csv
+python run_performance.py --runners toil-wdl-runner,miniwdl --output performance_output.csv --progress
 ```
 The output will always be in CSV format. `--runners` can specify runners to run with in a comma separated list, and `--all-runners` is a shortcut to specify all of them.
 
 ### Performance Testing Options
 [All options](#options) from the normal `run.py` script apply too. For example, if `--id stdout` is provided, then only the `stdout` test will be measured.
+
 The performance test specific options are:
 ```commandline
 Arguments for running WDL performance tests:
@@ -181,6 +206,7 @@ The script `create_graph.py` can be used to graph the output of the performance 
 ```commandline
 python create_graph.py -f performance_output.csv
 ```
+If no input CSV file is given, then the program will run the entire performance test suite first.
 ### Graph Options
 Similar to the performance testing script, [all options](#options) from the base runner are carried through. However, there are graphing specific options:
 ```commandline
@@ -200,9 +226,12 @@ Arguments for graphing runtimes of WDL tests:
                         Specify the conformance file to read from. This will specify whether to grab/graph tests by conformance file or by CSV file test IDs only. Specifying this will make the graph accept -n, -t, -id and
                         other related arguments.
 ```
-By default, new and separate graphs will be created for every 30 tests.
+By default, separate graphs will be created for every 30 tests.
 
-`--display-num` overrides the number of tests to display per graph, and `--display-all` forces all tests in a single graph.
+This can be controlled with `--display-num`. This overrides the number of tests to display per graph, and `--display-all` forces all tests in a single graph.
+
+`--graph-type` specifies the type of graph to create. The supported options are `box` and `bar`.
+`box` will create a traditional box plot and `bar` will create a bar graph with error bars representing standard deviation. 
 ### Writing Graphs to a File
 The graphs can be written to a file(s).
 

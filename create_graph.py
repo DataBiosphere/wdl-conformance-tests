@@ -276,6 +276,9 @@ def create_graph(from_file: str, options: argparse.Namespace) -> None:
                                        end=end, label=label, precision=options.precision,
                                        test_ids_to_graph=test_ids_to_graph)
     else:
+        if not os.path.exists(options.conformance_file):
+            print(f"Conformance file {options.conformance_file} not found!")
+            return
         # graph tests in order according to conformance.yaml
         with open(options.conformance_file, "r") as f:
             data = yaml.safe_load(f)
@@ -341,9 +344,8 @@ def add_create_graph_args(parser: argparse.ArgumentParser) -> None:
                                  "1.4...")
     graph_args.add_argument("--no-labels", default=False, action="store_true", help="Specify to not display extra "
                                                                                     "labels on the graph.")
-    graph_args.add_argument("--graph-type", default="box")
-    graph_args.add_argument("--conformance-file", default=None, const="conformance.yaml", action="store",
-                            nargs="?",
+    graph_args.add_argument("--graph-type", default="box", choices=["box", "bar"])
+    graph_args.add_argument("--conformance-file", default="conformance.yaml", action="store",
                             help="Specify the conformance file to read from. This will specify whether to grab/graph "
                                  "tests by conformance file or by CSV file test IDs only. Specifying this will make "
                                  "the graph accept -n, -t, -id and other related arguments.")

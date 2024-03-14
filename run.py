@@ -462,8 +462,9 @@ def add_options(parser) -> None:
     parser.add_argument("--tags", "-t", default=None,
                         help='Select the tags to run specific tests')
     parser.add_argument("--numbers", "-n", default=None,
-                        help='Select the WDL test numbers you wish to run.')
-    parser.add_argument("--runner", "-r", default='cromwell',
+                        help='Select the WDL test numbers you wish to run. Can be a comma separated list or hyphen '
+                             'separated inclusive ranges. Ex: -n=1-4,6,8-10')
+    parser.add_argument("--runner", "-r", default='cromwell', choices=["cromwell", "toil-wdl-runner", "miniwdl"],
                         help='Select the WDL runner to use.')
     parser.add_argument("--threads", type=int, default=1,
                         help='Number of tests to run in parallel. The maximum should be the number of CPU cores (not '
