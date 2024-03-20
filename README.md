@@ -182,7 +182,7 @@ tests/basic_stdout
 These patch files will be used to create the proper versioned WDL file at runtime (This will take priority over the automatic WDL version conversion).
 
 ## Running Performance Tests
-The default runner `run.py` only runs tests and outputs them onto the commandline.
+The default runner `run.py` only runs tests and reports on their status in the terminal.
 To store the runtime of tests (and eventually graph them), the script `run_performance.py` should be used:
 ```commandline
 python run_performance.py --runners toil-wdl-runner,miniwdl --output performance_output.csv --progress
