@@ -103,7 +103,7 @@ Iteration: 1
 3 tests run, 3 succeeded, 0 failed, 0 skipped
 ```
 `--repeat` specifies how many times to run each test. `--threads` allows multiple tests to run simultaneously;
-this should be set to the number of processors and not threads in a computer if running with `--time` or with the performance testing script.
+this should be set to no more than the number of physical, highest-performance cores in the system (not counting any efficiency cores or the two logical cores per physical core provided by hyperthreading), in order to ensure consistent timings, if running with `--time` or with the performance testing script.
 
 By default, runner logs are only printed for failed tests. `--verbose` forces logs to always print and `--quiet` forces logs to never print.
 
