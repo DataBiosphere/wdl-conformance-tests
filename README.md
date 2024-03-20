@@ -121,7 +121,7 @@ For example, a new test can be added as follows:
   inputs:
     dir: tests/example_files # path to directory where test is, can be an absolute or relative path (to run.py)
     wdl: example.wdl # wdl file name
-    json: example.json # json file name
+    json: example.json # json file describing test workflow inputs
   outputs:
     exampleWf.outputVar: # output name, should be workflowName.outputVariable
       type: Boolean # expected output type
