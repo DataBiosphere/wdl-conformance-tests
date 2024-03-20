@@ -83,7 +83,7 @@ options:
   --progress            Print the progress of the test suite as it runs.
 
 ```
-Invoking `run.py` with no options will result in the entire test suite being ran, which can take a long time.
+Invoking `run.py` with no options will result in the entire test suite being run, which can take a long time.
 Including `--progress` is recommended when running over a long period of time.
 
 Certain tests can be specified with `--id`, `--tags`, and `--numbers`:
