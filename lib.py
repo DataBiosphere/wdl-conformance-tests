@@ -30,6 +30,9 @@ def get_wdl_version_from_file(filename: str) -> str:
     Find the wdl version of a wdl file through parsing
     """
     line = get_first_wdl_line(filename)
+    if line is None:
+        # if None, then nothing was found, so it is draft-2
+        return "draft-2"
 
     # get version
     if "version 1.0" in line:

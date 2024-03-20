@@ -457,8 +457,8 @@ def add_options(parser) -> None:
     """
     parser.add_argument("--verbose", default=False, action='store_true',
                         help='Print more information about a test')
-    parser.add_argument("--versions", "-v", default="1.0", choices=["1.0", "1.1", "draft-2"],
-                        help='Select the WDL versions you wish to test against.')
+    parser.add_argument("--versions", "-v", default="1.0",
+                        help='Select the WDL versions you wish to test against. Ex: -v=draft-2,1.0')
     parser.add_argument("--tags", "-t", default=None,
                         help='Select the tags to run specific tests')
     parser.add_argument("--numbers", "-n", default=None,

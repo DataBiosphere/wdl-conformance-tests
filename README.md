@@ -262,6 +262,24 @@ Then add the tests to `conformance.yaml`.
 ```
 The runner will find and apply the patch files at runtime (This will take priority over the automatic WDL version conversion).
 
+To reverse this process, another program `unpatch.py` will do the opposite of `patch.py`. This is useful if new patch files need to be created, but the original WDL files were deleted:
+```commandline
+usage: unpatch.py [-h] --directory DIRECTORY [--version {1.0,1.1,draft-2}] [--file FILE]
+
+Reverse patch.py to get back the original WDL files. This can be useful if the original WDL files no longer exist and a modification that invalidates the existing patches is necessary.
+
+options:
+  -h, --help            show this help message and exit
+  --directory DIRECTORY, -d DIRECTORY
+                        Directory where all at least the base WDL file and patch files are
+  --version {1.0,1.1,draft-2}, -v {1.0,1.1,draft-2}
+                        The base WDL file's version. If specified, it will find the first WDL file with this version to create patched files from.
+  --file FILE, -f FILE  File name of base WDL file. If specified, it will use it to create patched files from.Takes priority over --version
+```
+Given a directory `--directory` and the base WDL file version `--version` (or file path `--file`),
+the script will get back the original WDL files that were used for `patch.py`.
+
+If the original files used for `patch.py` already exist, then `unpatch.py` will not overwrite them.
 ## Running Performance Tests
 The default runner `run.py` only runs tests and reports on their status in the terminal.
 To store the runtime of tests (and eventually graph them), the script `run_performance.py` should be used:
