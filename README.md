@@ -86,7 +86,7 @@ options:
 Invoking `run.py` with no options will result in the entire test suite being run, which can take a long time.
 Including `--progress` is recommended when running over a long period of time.
 
-Certain tests can be specified with `--id`, `--tags`, and `--numbers`:
+The tests to run can be specified with `--id`, `--tags`, and `--numbers`. Tests matching any of the selectors will be run:
 ```commandline
 python run.py --number 1 --id md5 --tags stderr --version 1.0 --runner toil-wdl-runner
 Testing runner toil-wdl-runner on WDL versions: 1.0
