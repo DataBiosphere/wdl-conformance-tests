@@ -187,7 +187,7 @@ To store the runtime of tests (and eventually graph them), the script `run_perfo
 ```commandline
 python run_performance.py --runners toil-wdl-runner,miniwdl --output performance_output.csv --progress
 ```
-The output will always be in CSV format. `--runners` can specify runners to run with in a comma separated list, and `--all-runners` is a shortcut to specify all of them.
+The output will always be in CSV format. `--runners` can specify a comma separated list of runners to test, and `--all-runners` is a shortcut to specify all of them.
 
 ### Performance Testing Options
 [All options](#options) from the normal `run.py` script apply too. For example, if `--id stdout` is provided, then only the `stdout` test will be measured.
