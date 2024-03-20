@@ -136,7 +136,7 @@ workflow exampleWf {
     }
 }
 ```
-Only one WDL file is necessary to run in all versions, as long as formatting is followed as [stated below](#test-formatting).
+Only one WDL file is used for all WDL versions that a test runs on; the file [will be rewritten and must obey certain formatting conventions](#test-formatting).
 ## Test formatting
 The test runner uses a single WDL file for each test, written for a single WDL version, to run the test across all applicable WDL versions. This is accomplished by rewriting that one WDL file at runtime to produce generated WDL files targeting the other WDL versions.
 
