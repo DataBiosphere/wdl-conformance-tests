@@ -24,20 +24,20 @@ The [MiniWDL Slurm plugin](https://github.com/miniwdl-ext/miniwdl-slurm) can be 
 
 The plugin can be [installed](https://github.com/miniwdl-ext/miniwdl-slurm?tab=readme-ov-file#installation) like any other MiniWDL plugin.
 
-MiniWDL then needs to be [configured](https://github.com/miniwdl-ext/miniwdl-slurm?tab=readme-ov-file#configuration) to use this extension. This can be done through a [configuration file or through environmental variables](https://miniwdl.readthedocs.io/en/latest/runner_reference.html?highlight=config#configuration).
+MiniWDL then needs to be [configured](https://github.com/miniwdl-ext/miniwdl-slurm?tab=readme-ov-file#configuration) to use this extension. This can be done through a [configuration file or through environment variables](https://miniwdl.readthedocs.io/en/latest/runner_reference.html?highlight=config#configuration).
 An example configuration file is in [miniwdl-config.cfg](examples/miniwdl-config.cfg). 
 
-No arguments are needed to be passed into MiniWDL as long as MiniWDL is able to read the new configuration.
+No extra arguments are needed for MiniWDL as long as MiniWDL is able to read the new configuration.
 
 However, if wanted, arguments can be used instead:
 ```commandline
 python run.py --runner miniwdl --id tut01 --miniwdl-args="--no-outside-imports"
 ```
-However, if running the script under an srun launched interactive session, this will not work.
+However, if running the script under an `srun`-launched interactive session, this will not work.
 
-This is likely because `miniwdl_slurm` runs [srun itself](https://github.com/miniwdl-ext/miniwdl-slurm/blob/624ab390ea872082798733fefbb327dec99e2cde/src/miniwdl_slurm/__init__.py#L97-L100) instead of sbatch, and nested srun's dont appear to work (likely something related to the nested srun asking for more resources beyond the scope of the parent srun).
+This is likely because `miniwdl_slurm` [runs `srun` itself](https://github.com/miniwdl-ext/miniwdl-slurm/blob/624ab390ea872082798733fefbb327dec99e2cde/src/miniwdl_slurm/__init__.py#L97-L100) instead of `sbatch`, and nested `srun`s dont appear to work (likely something related to the nested `srun` asking for more resources beyond the scope of the parent `srun`).
 
-Thus, the performance tests should be invoked in a parent/external node. [(An example for Phoenix cluster.)](SLURM_PHOENIX_README.md#under-miniwdl).
+Thus, the performance tests should be invoked on a head or external node. [(An example for Phoenix cluster.)](SLURM_PHOENIX_README.md#under-miniwdl).
 
 A Slurm+Docker plugin does not currently exist.
 
@@ -47,7 +47,7 @@ A Slurm+Docker plugin does not currently exist.
 Slurm worker partition sizes can be specified with `--partition` or with `TOIL_SLURM_ARGS`.
 For example, `export TOIL_SLURM_ARGS="--time=00:30:00 --partition=short"`. [See an example of how to format it](https://giwiki.gi.ucsc.edu/index.php?title=Phoenix_WDL_Tutorial#Running_at_larger_scale).
 
-Toil communicates with a jobstore that must be accessible to all worker nodes, so some [extra arguments](SLURM_README.md#under-toil-wdl-runner) may be necessary depending on how each cluster is configured.
+Toil communicates via a jobstore that must be accessible to all worker nodes, so some [extra arguments](SLURM_README.md#under-toil-wdl-runner) may be necessary depending on how each cluster is configured.
 ```commandline
 python run.py --runner toil-wdl-runner --id tut01 --toil-args="--batchSystem=slurm --batchLogsDir ./slurm_logs --clean=always"
 ```
