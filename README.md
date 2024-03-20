@@ -142,7 +142,7 @@ Only one WDL file is used for all WDL versions that a test runs on; the file [wi
 ## Test formatting
 The test runner uses a single WDL file for each test, written for a single WDL version, to run the test across all applicable WDL versions. This is accomplished by rewriting that one WDL file at runtime to produce generated WDL files targeting the other WDL versions.
 
-There are two ways for generating these tests: [automatic](#automatic-formatting) or [manual](#manual-formatting).
+Test can use either [automatic version conversion](#automatic-version-conversion) or [manual version conversion](#manual-version-conversion) to be runnable across multiple WDL versions from a single file. If a test uses neither, it must be restricted to a single WDL version.
 ### Automatic version conversion
 Different WDL versions (`draft-2`, `1.0`, `1.1`) all have slightly different syntax. To deal with this, the runner will 
 automatically convert from one version to another before running a WDL test. As long as the format of a WDL file 
@@ -263,12 +263,12 @@ Then add the tests to `conformance.yaml`.
 The runner will find and apply the patch files at runtime (This will take priority over the automatic WDL version conversion).
 
 ## Running Performance Tests
-The default runner `run.py` only runs tests and outputs them onto the commandline.
+The default runner `run.py` only runs tests and reports on their status in the terminal.
 To store the runtime of tests (and eventually graph them), the script `run_performance.py` should be used:
 ```commandline
 python run_performance.py --runners toil-wdl-runner,miniwdl --output performance_output.csv --progress
 ```
-The output will always be in CSV format. `--runners` can specify runners to run with in a comma separated list, and `--all-runners` is a shortcut to specify all of them.
+The output will always be in CSV format. `--runners` can specify a comma separated list of runners to test, and `--all-runners` is a shortcut to specify all of them.
 
 ### Performance Testing Options
 [All options](#options) from the normal `run.py` script apply too. For example, if `--id stdout` is provided, then only the `stdout` test will be measured.
