@@ -103,7 +103,9 @@ Iteration: 1
 3 tests run, 3 succeeded, 0 failed, 0 skipped
 ```
 `--repeat` specifies how many times to run each test. `--threads` allows multiple tests to run simultaneously;
-this should be set to no more than the number of physical, highest-performance cores in the system (not counting any efficiency cores or the two logical cores per physical core provided by hyperthreading), in order to ensure consistent timings, if running with `--time` or with the performance testing script.
+This should be set to no more than the number of physical, highest-performance cores in the system (not counting any efficiency cores or the two logical cores per physical core provided by hyperthreading), in order to ensure consistent timings, if running with `--time` or with the performance testing script.
+However, there is no thread reservation system; if a test is not guaranteed to run singlethreaded and all threads are in use, the timings may be influenced.
+
 
 By default, runner logs are only printed for failed tests. `--verbose` forces logs to always print and `--quiet` forces logs to never print.
 
@@ -119,7 +121,7 @@ For example, a new test can be added as follows:
   id: example_test_id # unique ID of test, no 2 tests should have the same id
   tags: ["examples", "behavior"] # specify tags, these don't need to be unique
   inputs:
-    dir: tests/example_files # path to directory where test is, can be an absolute or relative path (to run.py)
+    dir: tests/example_files # path to directory where test is, can be an absolute or relative path (to conformance.yaml)
     wdl: example.wdl # wdl file name
     json: example.json # json file name
   outputs:
