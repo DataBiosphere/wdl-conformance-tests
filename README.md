@@ -143,30 +143,88 @@ Only one WDL file is used for all WDL versions that a test runs on; the file [wi
 The test runner uses a single WDL file for each test, written for a single WDL version, to run the test across all applicable WDL versions. This is accomplished by rewriting that one WDL file at runtime to produce generated WDL files targeting the other WDL versions.
 
 There are two ways for generating these tests: [automatic](#automatic-formatting) or [manual](#manual-formatting).
-### Automatic formatting
-With automatic formatting, this means that input sections in WDL code must follow the format:
+### Automatic version conversion
+Different WDL versions (`draft-2`, `1.0`, `1.1`) all have slightly different syntax. To deal with this, the runner will 
+automatically convert from one version to another before running a WDL test. As long as the format of a WDL file 
+follows these format conventions, the conversion will work properly:
+
+Any input section in WDL code must follow the format:
 ```wdl
 input {
     ...
 }
 ```
-And command sections must follow the format
+Any command section must follow the format:
 ```wdl
-# same for triple angle braces
 command {
     ...
 } # line with isolated closing brace indicates end of command section
 ```
-### Manual formatting
-If the above format cannot be followed, patch files can be used instead to differentiate from the base file.
-The `patch.py` program can be used to do this:
-```commandline
-python patch.py --version 1.1 --directory tests/basic_stdout
+Any command section can also use triple angle braces:
+```wdl
+command <<<
+    ...
+>>>
 ```
-The directory `tests/basic_stdout` is the directory that holds all the WDL files written in all versions. The specified version will be the base file to make patch files from.
-`--remove` can be provided to delete all other WDL files that aren't the base WDL file, and `--rename` can be used to rename the base WDL file to the same name as the directory.
 
-For example, if `tests/basic_stdout` has 3 WDL files:
+These sections should not have other WDL code spill over or have unnecessary newlines in between the section declaration.
+For example, these will not work:
+```wdl
+input {
+    ...
+} var = 1 # WDL code in input declaration
+```
+```wdl
+input
+{ # newline between input declaration
+    ...
+}
+```
+### Manual version conversion
+While the format for automatic version conversion should be applicable for most WDL code, there may be WDL syntax that is incompatible 
+between WDL versions. If a test has specific syntax differences between versions (for example not just section declarations), patch files can be used instead to describe the differences from a base file.
+
+As long as a test directory has patch files with the name `version_[wdl_version].patch`, the runner will apply
+the patch files automatically before each test.
+
+For example, to convert a test file from WDL version `1.1` to `1.0` and `draft-2`, the file structure will look like this:
+```commandline
+tests/basic_stdout
+├── ...
+├── basic_stdout.wdl
+├── version_1.0.patch
+└── version_draft-2.patch
+```
+
+To help create these patch files, the `patch.py` program is given:
+
+```commandline
+usage: patch.py [-h] --version {1.0,1.1,draft-2} --directory DIRECTORY [--remove REMOVE] [--rename RENAME]
+
+Create patch files in the right format
+
+options:
+  -h, --help            show this help message and exit
+  --version {1.0,1.1,draft-2}, -v {1.0,1.1,draft-2}
+                        The base WDL file's version
+  --directory DIRECTORY, -d DIRECTORY
+                        Directory where all the WDL files are
+  --remove REMOVE       Remove WDL files that are not the base
+  --rename RENAME       Rename the base WDL file to the directory (--remove must be set to True too)
+```
+
+To use this script, first, create the 2-3 different versioned WDL files in a directory. 
+
+When calling `patch.py`, the base WDL version should be passed into `--version`.
+Patch files will be created converting from that base WDL version.
+
+The directory containing all these tests should be passed into `--directory`. All the WDL files must follow the naming convention `[testname]_version_[wdl_version]`. For example, `example_version_1.0`, `example_version_draft-2`.
+
+`--remove` can be provided to delete all other WDL files that aren't the base WDL file, and `--rename` can be used to rename the base WDL file to the same name as the directory (These options are not necessary).
+
+For example, if making a new test called `basic_stdout` for all 3 versions:
+First create the directory `tests/basic_stdout`. Create the 3 different WDL files, one for each version, and name them appropriately
+
 ```commandline
 tests/basic_stdout
 ├── basic_stdout.json
@@ -174,14 +232,35 @@ tests/basic_stdout
 ├── basic_stdout_version_1.1.wdl
 └── basic_stdout_version_draft2.wdl
 ```
-After `python patch.py --version 1.1 --directory tests/basic_stdout` is called, then `patch.py` will use `basic_stdout_version_1.1.wdl` as the base file for patches, and generate 2 patch files to convert from WDL 1.1 to 1.0 and WDL 1.1 to draft-2.
+
+Then run the program:
+```commandline
+python patch.py --version 1.1 --directory tests/basic_stdout
+```
+
+`patch.py` will use `basic_stdout_version_1.1.wdl` as the base file for patches, and generate 2 patch files to convert from WDL 1.1 to 1.0 and draft-2.
 ```commandline
 tests/basic_stdout
 ├── ...
-├── version_1.0.patch
-└── version_draft-2.patch
+├── version_1.0.patch # new file
+└── version_draft-2.patch # new file
 ```
-These patch files will be used to create the proper versioned WDL file at runtime (This will take priority over the automatic WDL version conversion).
+
+Then add the tests to `conformance.yaml`.
+```yaml
+- description: |
+    Example stdout test
+  versions: ["draft-2", "1.0", "1.1"]
+  id: ...
+  tags: ...
+  inputs:
+    dir: tests/basic_stdout
+    wdl: basic_stdout_version_1.1.wdl
+    json: basic_stdout.json
+  outputs:
+    ...
+```
+The runner will find and apply the patch files at runtime (This will take priority over the automatic WDL version conversion).
 
 ## Running Performance Tests
 The default runner `run.py` only runs tests and outputs them onto the commandline.
@@ -264,6 +343,6 @@ Arguments for specifying how to write the graph to a file.:
                         If custom dimensions are needed, this can be called with input format x_size,y_size in inches. Calling this with no value will size the graph accordingly.
 ```
 ### Example Graphs
-These are 2 graphs generated from running performance testing on a SLURM cluster.
+These are 2 graphs generated from running performance testing on a Slurm cluster.
 ![Example box graph](examples/example_box_graph.png)
 ![Example bar graph](examples/example_bar_graph.png)
