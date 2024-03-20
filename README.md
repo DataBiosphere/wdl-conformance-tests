@@ -190,7 +190,7 @@ python run_performance.py --runners toil-wdl-runner,miniwdl --output performance
 The output will always be in CSV format. `--runners` can specify a comma separated list of runners to test, and `--all-runners` is a shortcut to specify all of them.
 
 ### Performance Testing Options
-[All options](#options) from the normal `run.py` script apply too. For example, if `--id stdout` is provided, then only the `stdout` test will be measured.
+[All options](#options) from the normal `run.py` script are also available in `run_performance.py`. For example, if `--id stdout` is provided, then only the `stdout` test will be measured.
 
 The performance test specific options are:
 ```commandline
@@ -228,12 +228,12 @@ Arguments for graphing runtimes of WDL tests:
 ```
 By default, separate graphs will be created for every 30 tests.
 
-This can be controlled with `--display-num`. This overrides the number of tests to display per graph, and `--display-all` forces all tests in a single graph.
+This can be controlled with `--display-num`, which overrides the number of tests to display per graph. `--display-all` forces all tests in a single graph.
 
 `--graph-type` specifies the type of graph to create. The supported options are `box` and `bar`.
 `box` will create a traditional box plot and `bar` will create a bar graph with error bars representing standard deviation. 
 ### Writing Graphs to a File
-The graphs can be written to a file(s).
+The graphs can be written to disk by specifying a (base) filename.
 
 For example, to output a graph with all tests in a PNG with a size of 40 inches by 10 inches (width,height):
 ```commandline
@@ -250,7 +250,7 @@ For example, calling `python create_graph.py -f performance_output.csv --output 
 ```
 If trying to put all the tests into a single graph, it is likely that dimensions should be provided to make all tests fit.
 
-All output formats supported by Matplotlib are also supported (ex: pdf, svg).
+All output formats implemented by Matplotlib (such as `pdf` and `svg`) are supported.
 ### Graph Output Options
 Other than the previous [general](#options) and [graph specific](#graph-options) options, the options for outputting a graph are:
 ```commandline
