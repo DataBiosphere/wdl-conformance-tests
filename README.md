@@ -140,7 +140,7 @@ Only one WDL file is used for all WDL versions that a test runs on; the file [wi
 ## Test formatting
 The test runner uses a single WDL file for each test, written for a single WDL version, to run the test across all applicable WDL versions. This is accomplished by rewriting that one WDL file at runtime to produce generated WDL files targeting the other WDL versions.
 
-There are two ways for generating these tests: [automatic](#automatic-formatting) or [manual](#manual-formatting).
+Test can use either [automatic formatting](#automatic-formatting) or [manual formatting](#manual-formatting) to be runnable across multiple WDL versions from a single file. If a test uses neither, it must be restricted to a single WDL version.
 ### Automatic formatting
 With automatic formatting, this means that input sections in WDL code must follow the format:
 ```wdl
