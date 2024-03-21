@@ -167,7 +167,7 @@ command <<<
 >>>
 ```
 
-These sections should not have other WDL code spill over or have unnecessary newlines in between the section declaration.
+These sections should not have other WDL code on the same line, or have unnecessary newlines in between the section declaration and its block.
 For example, these will not work:
 ```wdl
 input {
