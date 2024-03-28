@@ -277,7 +277,7 @@
   outputs:
     objectWorkflow.obj_output:
       type: {b: String, a: Int, f: File}
-      value: {"b": "hello", "a": 10, "f": {md5sum: "9eb48991c704af23036a7be959efd489"}}
+      value: {"b": "hello", "a": 10, "f": {md5sum: "18b73c749956b3a1ec402b71f731e9fc"}}
 - description: |
     Basic struct test
   tags: ["struct", "semantics"]

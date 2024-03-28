@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 """
 Run the performance testing suite and output the results to a CSV file.
 
@@ -6,20 +8,17 @@ Output file is specified with --output and runners are specified by --runners or
 """
 
 import argparse
-import json
 import os.path
 import timeit
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 
+import argcomplete
 import regex
 import subprocess
 import sys
 
-from ruamel import yaml
-
 from lib import parse_time
-from run import WDLConformanceTestRunner, WDLRunner, CromwellWDLRunner, MiniWDLStyleWDLRunner, CromwellWDLRunner, \
-    RUNNERS, add_options
+from run import WDLConformanceTestRunner, add_options
 
 
 def get_runners(options: argparse.Namespace):
@@ -110,7 +109,7 @@ def main(args):
     parser = argparse.ArgumentParser(description=__doc__)
     add_options(parser)
     add_performance_testing_args(parser)
-
+    argcomplete.autocomplete(parser)
     options = parser.parse_args(args)
     call_and_write_csv(options)
 
