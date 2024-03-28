@@ -30,6 +30,9 @@ def get_wdl_version_from_file(filename: str) -> str:
     Find the wdl version of a wdl file through parsing
     """
     line = get_first_wdl_line(filename)
+    if line is None:
+        # if None, then nothing was found, so it is draft-2
+        return "draft-2"
 
     # get version
     if "version 1.0" in line:
@@ -38,6 +41,38 @@ def get_wdl_version_from_file(filename: str) -> str:
         return "1.1"
     else:
         return "draft-2"
+
+
+def generate_change_container_specifier(lines, to_replace="container", replace_with="docker"):
+    """
+    Generator to change the container specifier from WDL 1.1 to a docker specifier for WDL 1.0 and draft-2
+    ex:
+    runtime {
+        container: ubuntu:latest
+    }
+    turns into
+    runtime {
+        docker: ubuntu:latest
+    }
+    This gets around cromwell not supporting the container specifier. WDL 2.0 will remove the docker specifier,
+    so this can also be used in the future.
+    This requires a specifically formatted runtime section, similar to the command section generator
+    """
+    iterator = iter(lines)
+    in_runtime = False
+    for line in iterator:
+        if in_runtime is False:
+            if line.strip() == "runtime {":
+                in_runtime = True
+            yield line
+        else:
+            i = line.find(to_replace)
+            if line.strip() == "}":
+                in_runtime = False
+            if i > 0:
+                yield line[:i] + replace_with + line[i+len(to_replace):]
+            else:
+                yield line
 
 
 def generate_change_command_string(lines):
@@ -151,6 +186,9 @@ def generate_wdl(filename: str, wdl_dir: str, target_version: str, outfile_name:
             # if draft-2, remove input section and change command section syntax
             if target_version == "draft-2":
                 gen = generate_change_command_string(generate_remove_input(gen))
+            # to get around cromwell not supporting the container specifier, for both 1.0 and draft-2, convert to docker
+            if target_version == "1.0" or target_version == "draft-2":
+                gen = generate_change_container_specifier(gen)
             for line in gen:
                 out.write(line)
     return outfile_path
@@ -273,20 +311,22 @@ def get_specific_tests(conformance_tests, tag_argument, number_argument, exclude
     given_tags = get_tags(tag_argument)
     ids_to_test = None if id_argument is None else set(id_argument.split(','))
     tests = set()
-    given_indices = given_indices or [i for i in range(len(conformance_tests))]
+    given_indices = given_indices or []
     for test_number in range(len(conformance_tests)):
         if exclude_indices is not None and test_number in exclude_indices:
             continue
         test_tags = conformance_tests[test_number]['tags']
         test_id = conformance_tests[test_number]['id']
         if test_number in given_indices:
-            if given_tags is None and ids_to_test is None:
+            tests.add(test_number)
+        if given_tags is None and ids_to_test is None and len(given_indices) == 0:
+            # no test specification, so run all
+            tests.add(test_number)
+        else:
+            if ids_to_test is not None and test_id in ids_to_test:
                 tests.add(test_number)
-            else:
-                if ids_to_test is not None and test_id in ids_to_test:
-                    tests.add(test_number)
-                if given_tags is not None and any(tag in given_tags for tag in test_tags):
-                    tests.add(test_number)
+            if given_tags is not None and any(tag in given_tags for tag in test_tags):
+                tests.add(test_number)
     return sorted(list(tests))
 
 
