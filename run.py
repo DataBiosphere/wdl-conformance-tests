@@ -467,12 +467,13 @@ def add_options(parser) -> None:
     parser.add_argument("--verbose", default=False, action='store_true',
                         help='Print more information about a test')
     parser.add_argument("--versions", "-v", default="1.0",
-                        help='Select the WDL versions you wish to test against.')
+                        help='Select the WDL versions you wish to test against. Ex: -v=draft-2,1.0')
     parser.add_argument("--tags", "-t", default=None,
                         help='Select the tags to run specific tests')
     parser.add_argument("--numbers", "-n", default=None,
-                        help='Select the WDL test numbers you wish to run.')
-    parser.add_argument("--runner", "-r", default='cromwell',
+                        help='Select the WDL test numbers you wish to run. Can be a comma separated list or hyphen '
+                             'separated inclusive ranges. Ex: -n=1-4,6,8-10')
+    parser.add_argument("--runner", "-r", default='cromwell', choices=["cromwell", "toil-wdl-runner", "miniwdl"],
                         help='Select the WDL runner to use.')
     parser.add_argument("--threads", type=int, default=1,
                         help='Number of tests to run in parallel. The maximum should be the number of CPU cores (not '
@@ -492,7 +493,7 @@ def add_options(parser) -> None:
                                                                   "setting cromwell config files with "
                                                                   "--cromwell-pre-args="
                                                                   "\"-Dconfig.file=build/overrides.conf\".")
-    parser.add_argument("--id", default=None, help="Specify a WDL test by ID.")
+    parser.add_argument("--id", default=None, help="Specify WDL tests by ID.")
     parser.add_argument("--repeat", default=1, type=int, help="Specify how many times to run each test.")
     # This is to deal with jobstores being created in the /data/tmp directory on Phoenix, which appears to be unique
     # per worker, thus causing JobstoreNotFound exceptions when delegating to many workers at a time
