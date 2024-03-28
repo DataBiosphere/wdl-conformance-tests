@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 """
 Tool to merge two or more CSV files into one while keeping data sorted by ID
 """
@@ -5,6 +7,8 @@ Tool to merge two or more CSV files into one while keeping data sorted by ID
 import argparse
 import os
 import sys
+
+import argcomplete
 import pandas as pd
 import numpy as np
 from ruamel import yaml
@@ -21,7 +25,7 @@ def main(args=None):
                                                                   "preserve the order"
                                                                   "according to the conformance file. Default is None.")
     parser.add_argument("--output", "-o", default="csv_output_merged.csv", help="Output path of merged CSV file.")
-
+    argcomplete.autocomplete(parser)
     options = parser.parse_args(args)
 
     for file in options.file:

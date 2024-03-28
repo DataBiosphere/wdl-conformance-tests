@@ -1,8 +1,11 @@
+#!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 import argparse
 import os
 import subprocess
 import sys
 
+import argcomplete
 from lib import get_wdl_version_from_file
 
 
@@ -43,6 +46,7 @@ def main(argv=None):
                         help='Remove WDL files that are not the base')
     parser.add_argument("--rename", default=False,
                         help='Rename the base WDL file to the directory (--remove must be set to True too)')
+    argcomplete.autocomplete(parser)
     args = parser.parse_args(argv)
 
     create_patch(args.directory, args.version, args.remove, args.rename)
