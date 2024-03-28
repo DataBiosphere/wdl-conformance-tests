@@ -104,7 +104,7 @@ def create_bar_graph(all_runtimes: Dict[str, Dict[str, Any]], unique_tests_subse
             color = graph_data["color"]
             std = graph_data["std"]
             bar = ax.bar(x_pos, avg, width=width, color=color)
-            ax.errorbar(x_pos, avg, yerr=std/2, fmt=",-r", ecolor="red")
+            ax.errorbar(x_pos, avg, yerr=std, fmt=",-r", ecolor="red")
             if label:
                 autolabel(bar)
         x += 1
