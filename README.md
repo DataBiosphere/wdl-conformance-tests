@@ -176,13 +176,13 @@ input {
 ```
 ```wdl
 input
-{ # newline between input declaration
+{ # newline between input keyword and open brace
     ...
 }
 ```
 ### Manual version conversion
 While the format for automatic version conversion should be applicable for most WDL code, there may be WDL syntax that is incompatible 
-between WDL versions. If a test has specific syntax differences between versions (for example not just section declarations), patch files can be used instead to describe the differences from a base file.
+between WDL versions. If a test needs specific syntax differences between versions (beyond changes to section declarations), patch files can be used instead to describe the differences from a base file.
 
 As long as a test directory has patch files with the name `version_[wdl_version].patch`, the runner will apply
 the patch files automatically before each test.
@@ -220,7 +220,7 @@ Patch files will be created converting from that base WDL version.
 
 The directory containing all these tests should be passed into `--directory`. All the WDL files must follow the naming convention `[testname]_version_[wdl_version]`. For example, `example_version_1.0`, `example_version_draft-2`.
 
-`--remove` can be provided to delete all other WDL files that aren't the base WDL file, and `--rename` can be used to rename the base WDL file to the same name as the directory (These options are not necessary).
+`--remove` can be provided to delete all other WDL files that aren't the base WDL file, and `--rename` can be used to rename the base WDL file to the same name as the directory. (These options are not necessary.)
 
 For example, if making a new test called `basic_stdout` for all 3 versions:
 First create the directory `tests/basic_stdout`. Create the 3 different WDL files, one for each version, and name them appropriately
@@ -260,7 +260,7 @@ Then add the tests to `conformance.yaml`.
   outputs:
     ...
 ```
-The runner will find and apply the patch files at runtime (This will take priority over the automatic WDL version conversion).
+The runner will find and apply the patch files at runtime. (This will take priority over the automatic WDL version conversion.)
 
 To reverse this process, another program `unpatch.py` will do the opposite of `patch.py`. This is useful if new patch files need to be created, but the original WDL files were deleted:
 ```commandline
@@ -327,7 +327,7 @@ Arguments for graphing runtimes of WDL tests:
 ```
 By default, separate graphs will be created for every 30 tests.
 
-This can be controlled with `--display-num`, which overrides the number of tests to display per graph. `--display-all` forces all tests in a single graph.
+This can be controlled with `--display-num`, which overrides the number of tests to display per graph. `--display-all` forces all tests onto a single graph.
 
 `--graph-type` specifies the type of graph to create. The supported options are `box` and `bar`.
 `box` will create a traditional box plot and `bar` will create a bar graph with error bars representing standard deviation. 

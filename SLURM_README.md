@@ -1,4 +1,4 @@
-# Running Conformance Tests on Slulrm Clusters
+# Running Conformance Tests on Slurm Clusters
 ## Singularity Cache
 Note: For Singularity, Singularity Cache directories may need to be specified:\
 [toil-wdl-runner](https://giwiki.gi.ucsc.edu/index.php?title=Slurm_Tips_for_Toil)\
@@ -28,13 +28,12 @@ MiniWDL then needs to be [configured](https://github.com/miniwdl-ext/miniwdl-slu
 An example configuration file is in [miniwdl-config.cfg](examples/miniwdl-config.cfg). 
 
 No extra arguments are needed for MiniWDL as long as MiniWDL is able to read the new configuration.
-
-However, if wanted, arguments can be used instead:
+Alternatively, arguments can be used instead:
 ```commandline
 python run.py --runner miniwdl --id tut01 --miniwdl-args="--no-outside-imports"
 ```
-However, if running the script under an `srun`-launched interactive session, this will not work.
 
+However, if running the script under an `srun`-launched interactive session, MiniWDL's Slurm plugin will not work.
 This is likely because `miniwdl_slurm` [runs `srun` itself](https://github.com/miniwdl-ext/miniwdl-slurm/blob/624ab390ea872082798733fefbb327dec99e2cde/src/miniwdl_slurm/__init__.py#L97-L100) instead of `sbatch`, and nested `srun`s dont appear to work (likely something related to the nested `srun` asking for more resources beyond the scope of the parent `srun`).
 
 Thus, the performance tests should be invoked on a head or external node. [(An example for Phoenix cluster.)](SLURM_PHOENIX_README.md#under-miniwdl).
