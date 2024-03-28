@@ -43,6 +43,38 @@ def get_wdl_version_from_file(filename: str) -> str:
         return "draft-2"
 
 
+def generate_change_container_specifier(lines, to_replace="container", replace_with="docker"):
+    """
+    Generator to change the container specifier from WDL 1.1 to a docker specifier for WDL 1.0 and draft-2
+    ex:
+    runtime {
+        container: ubuntu:latest
+    }
+    turns into
+    runtime {
+        docker: ubuntu:latest
+    }
+    This gets around cromwell not supporting the container specifier. WDL 2.0 will remove the docker specifier,
+    so this can also be used in the future.
+    This requires a specifically formatted runtime section, similar to the command section generator
+    """
+    iterator = iter(lines)
+    in_runtime = False
+    for line in iterator:
+        if in_runtime is False:
+            if line.strip() == "runtime {":
+                in_runtime = True
+            yield line
+        else:
+            i = line.find(to_replace)
+            if line.strip() == "}":
+                in_runtime = False
+            if i > 0:
+                yield line[:i] + replace_with + line[i+len(to_replace):]
+            else:
+                yield line
+
+
 def generate_change_command_string(lines):
     """
     Generator to change the expression placeholder syntax in command strings for draft-2
@@ -154,6 +186,9 @@ def generate_wdl(filename: str, wdl_dir: str, target_version: str, outfile_name:
             # if draft-2, remove input section and change command section syntax
             if target_version == "draft-2":
                 gen = generate_change_command_string(generate_remove_input(gen))
+            # to get around cromwell not supporting the container specifier, for both 1.0 and draft-2, convert to docker
+            if target_version == "1.0" or target_version == "draft-2":
+                gen = generate_change_container_specifier(gen)
             for line in gen:
                 out.write(line)
     return outfile_path
