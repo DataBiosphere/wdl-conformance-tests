@@ -30,6 +30,9 @@ def get_wdl_version_from_file(filename: str) -> str:
     Find the wdl version of a wdl file through parsing
     """
     line = get_first_wdl_line(filename)
+    if line is None:
+        # if None, then nothing was found, so it is draft-2
+        return "draft-2"
 
     # get version
     if "version 1.0" in line:
@@ -273,20 +276,22 @@ def get_specific_tests(conformance_tests, tag_argument, number_argument, exclude
     given_tags = get_tags(tag_argument)
     ids_to_test = None if id_argument is None else set(id_argument.split(','))
     tests = set()
-    given_indices = given_indices or [i for i in range(len(conformance_tests))]
+    given_indices = given_indices or []
     for test_number in range(len(conformance_tests)):
         if exclude_indices is not None and test_number in exclude_indices:
             continue
         test_tags = conformance_tests[test_number]['tags']
         test_id = conformance_tests[test_number]['id']
         if test_number in given_indices:
-            if given_tags is None and ids_to_test is None:
+            tests.add(test_number)
+        if given_tags is None and ids_to_test is None and len(given_indices) == 0:
+            # no test specification, so run all
+            tests.add(test_number)
+        else:
+            if ids_to_test is not None and test_id in ids_to_test:
                 tests.add(test_number)
-            else:
-                if ids_to_test is not None and test_id in ids_to_test:
-                    tests.add(test_number)
-                if given_tags is not None and any(tag in given_tags for tag in test_tags):
-                    tests.add(test_number)
+            if given_tags is not None and any(tag in given_tags for tag in test_tags):
+                tests.add(test_number)
     return sorted(list(tests))
 
 
