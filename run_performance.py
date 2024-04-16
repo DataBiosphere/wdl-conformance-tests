@@ -13,8 +13,6 @@ import timeit
 from typing import Dict, Any, List
 
 import argcomplete
-import regex
-import subprocess
 import sys
 
 from lib import parse_time

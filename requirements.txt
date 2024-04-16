@@ -3,3 +3,4 @@ miniwdl>=1.11.0,<2
 pandas>=2.1.4,<3
 numpy>=1.26.2,<2
 matplotlib>=3.8.2,<4
+argcomplete

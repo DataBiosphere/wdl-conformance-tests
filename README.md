@@ -50,20 +50,20 @@ Testing runner toil-wdl-runner on WDL versions: 1.1
 
 ```
 (venv) quokka@qcore ~/$ python3 run.py --help
-usage: run.py [-h] [--verbose] [--versions VERSIONS] [--tags TAGS]
-              [--numbers NUMBERS] [--runner RUNNER] [--threads THREADS]
+usage: run.py [-h] [--verbose] [--versions VERSIONS] [--tags TAGS] [--numbers NUMBERS] [--runner {cromwell,toil-wdl-runner,miniwdl}] [--threads THREADS] [--time] [--quiet] [--exclude-numbers EXCLUDE_NUMBERS]
+              [--toil-args TOIL_ARGS] [--miniwdl-args MINIWDL_ARGS] [--cromwell-args CROMWELL_ARGS] [--cromwell-pre-args CROMWELL_PRE_ARGS] [--id ID] [--repeat REPEAT] [--jobstore-path JOBSTORE_PATH] [--progress]
 
 Run WDL conformance tests.
 
 options:
   -h, --help            show this help message and exit
   --verbose             Print more information about a test
-  --versions {1.0,1.1,draft-2}, -v {1.0,1.1,draft-2}
-                        Select the WDL versions you wish to test against.
+  --versions VERSIONS, -v VERSIONS
+                        Select the WDL versions you wish to test against. Ex: -v=draft-2,1.0
   --tags TAGS, -t TAGS  Select the tags to run specific tests
   --numbers NUMBERS, -n NUMBERS
                         Select the WDL test numbers you wish to run. Can be a comma separated list or hyphen separated inclusive ranges. Ex: -n=1-4,6,8-10
-  --runner RUNNER, -r RUNNER
+  --runner {cromwell,toil-wdl-runner,miniwdl}, -r {cromwell,toil-wdl-runner,miniwdl}
                         Select the WDL runner to use.
   --threads THREADS     Number of tests to run in parallel. The maximum should be the number of CPU cores (not threads due to wall clock timing).
   --time                Time the conformance test run.
@@ -76,6 +76,8 @@ options:
                         Arguments to pass into miniwdl. Ex: --miniwdl-args="--no-outside-imports"
   --cromwell-args CROMWELL_ARGS
                         Arguments to pass into cromwell. Ex: --cromwell-args="--options=[OPTIONS]"
+  --cromwell-pre-args CROMWELL_PRE_ARGS
+                        Arguments to set java system properties before calling cromwell. This allows things such as setting cromwell config files with --cromwell-pre-args="-Dconfig.file=build/overrides.conf".
   --id ID               Specify WDL tests by ID.
   --repeat REPEAT       Specify how many times to run each test.
   --jobstore-path JOBSTORE_PATH, -j JOBSTORE_PATH

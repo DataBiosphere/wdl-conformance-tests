@@ -12,20 +12,19 @@ import sys
 import hashlib
 import argparse
 import argcomplete
-import subprocess
 import threading
 import timeit
 
 from ruamel.yaml import YAML
 
-from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
+from concurrent.futures import as_completed, ProcessPoolExecutor
 from shutil import which
 from uuid import uuid4
 
 from WDL.Type import Float as WDLFloat, String as WDLString, File as WDLFile, Int as WDLInt, Boolean as WDLBool, \
     Array as WDLArray, Map as WDLMap, Pair as WDLPair, StructInstance as WDLStruct
 
-from typing import Optional, Iterable, Any, Dict, Tuple, List
+from typing import Optional, Any, Dict, Tuple, List
 from WDL.Type import Base as WDLBase
 
 from lib import run_cmd, py_type_of_wdl_class, verify_failure, announce_test, print_response, convert_type, run_setup, \

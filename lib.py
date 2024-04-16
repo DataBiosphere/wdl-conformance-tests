@@ -6,7 +6,7 @@ import subprocess
 from WDL.Type import Float as WDLFloat, String as WDLString, File as WDLFile, Int as WDLInt, Boolean as WDLBool, \
     Array as WDLArray, Map as WDLMap, Pair as WDLPair, StructInstance as WDLStruct
 
-from typing import Optional, Iterable, Any, Dict, Tuple, List
+from typing import Optional, Any
 from WDL.Type import Base as WDLBase
 
 

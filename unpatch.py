@@ -1,7 +1,14 @@
+#!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
+"""
+Reverse the effects of patch.py from the generated base WDL file and the existing patchfiles (when the original WDL files were deleted).
+"""
 import argparse
 import os
 import subprocess
 import sys
+
+import argcomplete
 
 from lib import get_wdl_version_from_file
 
@@ -87,6 +94,7 @@ def main(argv=None):
     parser.add_argument("--file", "-f", default=None,
                         help="File name of base WDL file. If specified, it will use it to create patched files from."
                              "Takes priority over --version")
+    argcomplete.autocomplete(parser)
     args = parser.parse_args(argv)
 
     unpatch(args.directory, args.version, args.file)
