@@ -30,6 +30,10 @@ from WDL.Type import Base as WDLBase
 from lib import run_cmd, py_type_of_wdl_class, verify_failure, announce_test, print_response, convert_type, run_setup, \
     get_specific_tests, get_wdl_file
 
+
+WDL_VERSIONS = ["draft-2", "1.0", "1.1"]
+
+
 class WDLRunner:
     """
     A class describing how to invoke a WDL runner to run a workflow.
@@ -285,11 +289,7 @@ class WDLConformanceTestRunner:
         wdl_input = inputs.get('wdl', f'{wdl_dir}.wdl')  # default wdl name
         json_input = inputs.get('json', f'{wdl_dir}.json')  # default json name
         abs_wdl_dir = os.path.abspath(wdl_dir)
-        if version == "draft-2":
-            wdl_input = f'{wdl_dir}/{wdl_input}'
-        elif version == "1.0":
-            wdl_input = f'{wdl_dir}/{wdl_input}'
-        elif version == "1.1":
+        if version in WDL_VERSIONS
             wdl_input = f'{wdl_dir}/{wdl_input}'
         else:
             return {'status': 'FAILED', 'reason': f'WDL version {version} is not supported!'}
@@ -468,7 +468,7 @@ def add_options(parser) -> None:
     """
     parser.add_argument("--verbose", default=False, action='store_true',
                         help='Print more information about a test')
-    parser.add_argument("--versions", "-v", default="1.0",
+    parser.add_argument("--versions", "-v", default="1.0", choices=WDL_VERSIONS,
                         help='Select the WDL versions you wish to test against. Ex: -v=draft-2,1.0')
     parser.add_argument("--tags", "-t", default=None,
                         help='Select the tags to run specific tests')
