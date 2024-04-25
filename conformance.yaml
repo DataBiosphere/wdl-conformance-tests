@@ -1060,6 +1060,19 @@
       type: File
       value: {regex: '^B$'}
 - description: |
+    Test that symlinks to input files can be used as output files
+  versions: ["draft-2", "1.0", "1.1"]
+  id: symlink_output
+  tags: ["symlinks", "behavior"]
+  inputs:
+    dir: tests/symlink_output
+    wdl: symlink_output.wdl
+    json: symlink_output.json
+  outputs:
+    wf.outfile:
+      type: File
+      value: {regex: '^A$'}
+- description: |
     Test that files with special characters in their names are supported
   versions: ["draft-2", "1.0", "1.1"]
   id: special_character_files
