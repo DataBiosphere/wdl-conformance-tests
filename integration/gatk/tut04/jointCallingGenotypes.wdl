@@ -220,7 +220,7 @@ task validate_and_gather_the_output {
             print("success")
         except AssertionError as e:
             print("fail", e)
-    CODE
+        CODE
     >>>
 
     output {
