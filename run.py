@@ -289,7 +289,7 @@ class WDLConformanceTestRunner:
         wdl_input = inputs.get('wdl', f'{wdl_dir}.wdl')  # default wdl name
         json_input = inputs.get('json', f'{wdl_dir}.json')  # default json name
         abs_wdl_dir = os.path.abspath(wdl_dir)
-        if version in WDL_VERSIONS
+        if version in WDL_VERSIONS:
             wdl_input = f'{wdl_dir}/{wdl_input}'
         else:
             return {'status': 'FAILED', 'reason': f'WDL version {version} is not supported!'}
