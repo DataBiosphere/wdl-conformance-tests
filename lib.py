@@ -1,12 +1,13 @@
 # generic helper functions
 
 import os
+import re
 import subprocess
 
 from WDL.Type import Float as WDLFloat, String as WDLString, File as WDLFile, Int as WDLInt, Boolean as WDLBool, \
     Array as WDLArray, Map as WDLMap, Pair as WDLPair, StructInstance as WDLStruct
 
-from typing import Optional, Any
+from typing import Optional, Any, Dict, Union
 from WDL.Type import Base as WDLBase
 
 
@@ -215,6 +216,7 @@ def get_wdl_file(wdl_file: str, wdl_dir: str, version: str) -> str:
 
 
 def run_cmd(cmd, cwd):
+    print(" ".join(cmd))
     p = subprocess.Popen(cmd, stdout=-1, stderr=-1, cwd=cwd)
     stdout, stderr = p.communicate()
 
@@ -302,13 +304,14 @@ def get_test_indices(number_argument):
     return tests
 
 
-def get_specific_tests(conformance_tests, tag_argument, number_argument, exclude_number_argument, id_argument):
+def get_specific_tests(conformance_tests, tag_argument, number_argument, id_argument, exclude_number_argument=None, exclude_tags_argument=None):
     """
     Given the expected tests, tag argument, and number argument, return a list of all test numbers/indices to run
     """
     given_indices = get_test_indices(number_argument)
     exclude_indices = get_test_indices(exclude_number_argument)
     given_tags = get_tags(tag_argument)
+    exclude_tags = get_tags(exclude_tags_argument)
     ids_to_test = None if id_argument is None else set(id_argument.split(','))
     tests = set()
     given_indices = given_indices or []
@@ -316,6 +319,8 @@ def get_specific_tests(conformance_tests, tag_argument, number_argument, exclude
         if exclude_indices is not None and test_number in exclude_indices:
             continue
         test_tags = conformance_tests[test_number]['tags']
+        if exclude_tags is not None and not set(test_tags).isdisjoint(exclude_tags):
+            continue
         test_id = conformance_tests[test_number]['id']
         if test_number in given_indices:
             tests.add(test_number)
@@ -330,14 +335,15 @@ def get_specific_tests(conformance_tests, tag_argument, number_argument, exclude
     return sorted(list(tests))
 
 
-def verify_failure(ret_code: int) -> dict:
+def verify_failure(expected: Dict[str, Any], ret_code: int) -> dict:
     """
     Verify that the workflow did fail
 
     ret_code should be the status code WDL runner outputs when running the test
+    :param expected: Expected failure outpute, ex: return_code: 42
     :param ret_code: return code from WDL runner
 
-    If ret_code is fail (>0 or True), then return success
+    If ret_code is fail (>0 or True) and expected return code matches or doesn't exist, then return success
     If ret_code is success (0 or False), then return failure
     """
     # This currently only tests if the workflow simply failed to run or not. It cannot differentiate
@@ -349,8 +355,22 @@ def verify_failure(ret_code: int) -> dict:
         return {'status': 'FAILED',
                 'reason': f"Workflow did not fail!"}
 
-    # proper failure, return success
-    return {'status': f'SUCCEEDED'}
+    # proper failure, if expected return code is empty, return success
+    expected_ret_code = expected["fail"].get("return_code")
+    success = {'status': f'SUCCEEDED'}
+    if expected_ret_code is None:
+        return success
+    if not isinstance(expected_ret_code, list):
+        expected_ret_code = [expected_ret_code]
+    for rc in expected_ret_code:
+        if rc == "*":
+            # this stands for any return code
+            return success
+        if rc == ret_code:
+            return success
+    # else, the workflow return code does not match the expected return code
+    return {'status': 'FAILED',
+            'reason': f"Workflow did not return the correct return code! Got: {ret_code}. Expected: {','.join(expected_ret_code)}."}
 
 
 def py_type_of_wdl_class(wdl_type: WDLBase):
@@ -372,7 +392,10 @@ def wdl_inner_type(wdl_type):
     Get the interior type of a WDL type. So "Array[String]" gives "String".
     """
     if '[' in wdl_type:
-        return '['.join(wdl_type.split('[')[1:])[:-1]
+        remaining = '['.join(wdl_type.split('[')[1:])  # get remaining string starting from open bracket
+        end_idx = len(remaining) - remaining[::-1].index(']') - 1  # find index of closing bracket
+        # remove postfix quantifiers
+        return remaining[:end_idx]
     else:
         return wdl_type
 
@@ -387,7 +410,7 @@ def wdl_outer_type(wdl_type):
     return wdl_type.split('[')[0]
 
 
-def wdl_type_to_miniwdl_class(wdl_type: Any) -> Optional[WDLBase]:
+def wdl_type_to_miniwdl_class(wdl_type: Union[Dict[str, Any], str]) -> Optional[WDLBase]:
     """
     Given a WDL type name, return a MiniWDL class.
 
@@ -398,6 +421,10 @@ def wdl_type_to_miniwdl_class(wdl_type: Any) -> Optional[WDLBase]:
     :param wdl_type: representation of WDL type
     """
 
+    if isinstance(wdl_type, dict):
+        return WDLStruct
+    # remove postfix quantifiers
+    wdl_type = re.sub('[?+]', '', wdl_type)
     if wdl_type == 'File':
         return WDLFile
     elif wdl_type == 'Int':
@@ -414,8 +441,6 @@ def wdl_type_to_miniwdl_class(wdl_type: Any) -> Optional[WDLBase]:
         return WDLMap
     elif wdl_type == 'Pair':
         return WDLPair
-    elif isinstance(wdl_type, dict):
-        return WDLStruct
     else:
         raise NotImplementedError
         # return None
@@ -428,11 +453,14 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
 
     :param wdl_type: representation of wdl type
     """
-    outer_py_typ = wdl_type_to_miniwdl_class(wdl_outer_type(wdl_type))
+    output_str_typ = wdl_outer_type(wdl_type)
+    outer_py_typ = wdl_type_to_miniwdl_class(output_str_typ)
 
     if outer_py_typ is WDLStruct:
+        optional = '?' in output_str_typ
+
         # objects currently forced to be typed just like structs
-        struct_type = WDLStruct("Struct")
+        struct_type = WDLStruct("Struct", optional=optional)
         members = {}
 
         for k, v in wdl_type.items():
@@ -446,6 +474,8 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
         return struct_type
 
     if outer_py_typ is WDLPair:
+        optional = '?' in output_str_typ
+
         inner_type = wdl_inner_type(wdl_type)
 
         key_and_value_type = inner_type.split(',')
@@ -456,9 +486,11 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
         value_type = key_and_value_type[1].strip()
         left_type = convert_type(key_type)
         right_type = convert_type(value_type)
-        return WDLPair(left_type, right_type)
+        return WDLPair(left_type, right_type, optional=optional)
 
     if outer_py_typ is WDLMap:
+        optional = '?' in output_str_typ
+
         inner_type = wdl_inner_type(wdl_type)
 
         key_and_value_type = inner_type.split(',')
@@ -474,15 +506,18 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
         if None in (converted_key_type, converted_value_type):
             return None
 
-        return WDLMap((converted_key_type, converted_value_type))
+        return WDLMap((converted_key_type, converted_value_type), optional=optional)
 
     if outer_py_typ is WDLArray:
+        optional = '?' in output_str_typ
+        nonempty = '+' in output_str_typ
+
         inner_type = wdl_inner_type(wdl_type)
         if inner_type in ('Array', ''):
             # no given inner type
             return None
         converted_inner_type = convert_type(inner_type)
         # if inner type conversion failed, then type is invalid, so return None
-        return outer_py_typ(converted_inner_type) if converted_inner_type is not None else None
+        return WDLArray(converted_inner_type, optional=optional, nonempty=nonempty) if converted_inner_type is not None else None
     # primitives remaining
     return wdl_type_to_miniwdl_class(wdl_type)()

@@ -40,7 +40,7 @@ class WDLRunner:
     """
     runner: str
 
-    def format_command(self, wdl_file, json_file, results_file, args, verbose, pre_args=None):
+    def format_command(self, wdl_file, json_file, json_string, results_file, args, verbose, pre_args=None):
         raise NotImplementedError
 
 
@@ -48,8 +48,12 @@ class CromwellStyleWDLRunner(WDLRunner):
     def __init__(self, runner):
         self.runner = runner
 
-    def format_command(self, wdl_file, json_file, results_file, args, verbose, pre_args=None):
-        return list(filter(None, self.runner.split(" "))) + [wdl_file, "-i", json_file, "-m", results_file] + args
+    def format_command(self, wdl_file: str, json_file: Optional[str], json_string: Optional[str], results_file: str,
+                       args: List[str], verbose: bool, pre_args: Optional[List[str]] = None) -> List[str]:
+        # One or the other is guaranteed to exist in the prior branch
+        json_input = json_file or json_string
+        json_arg = ["-i", json_input] if json_input is not None else []
+        return list(filter(None, self.runner.split(" "))) + [wdl_file, "-m", results_file] + json_arg + args
 
 
 class CromwellWDLRunner(CromwellStyleWDLRunner):
@@ -58,7 +62,8 @@ class CromwellWDLRunner(CromwellStyleWDLRunner):
     def __init__(self):
         super().__init__('cromwell')
 
-    def format_command(self, wdl_file, json_file, results_file, args, verbose, pre_args=None):
+    def format_command(self, wdl_file: str, json_file: Optional[str], json_string: Optional[str], results_file: str,
+                       args: List[str], verbose: bool, pre_args: Optional[List[str]] = None) -> List[str]:
         if self.runner == 'cromwell' and not which('cromwell'):
             with CromwellWDLRunner.download_lock:
                 if self.runner == 'cromwell':
@@ -72,16 +77,19 @@ class CromwellWDLRunner(CromwellStyleWDLRunner):
                         run_cmd(cmd='make cromwell'.split(" "), cwd=os.getcwd())
                     self.runner = f'java {log_level} {pre_args} -jar {cromwell} run'
 
-        return super().format_command(wdl_file, json_file, results_file, args, verbose)
+        return super().format_command(wdl_file, json_file, json_string, results_file, args, verbose)
 
 
 class MiniWDLStyleWDLRunner(WDLRunner):
     def __init__(self, runner):
         self.runner = runner
 
-    def format_command(self, wdl_file, json_file, results_file, args, verbose, pre_args=None):
-        return self.runner.split(" ") + [wdl_file, "-i", json_file, "-o", results_file, "-d", "miniwdl-logs",
-                                         "--verbose"] + args
+    def format_command(self, wdl_file: str, json_file: Optional[str], json_string: Optional[str], results_file: str,
+                       args: List[str], verbose: bool, pre_args: Optional[List[str]] = None) -> List[str]:
+        json_input = json_file or json_string
+        json_arg = ["-i", json_input] if json_input is not None else []
+        return self.runner.split(" ") + [wdl_file, "-o", results_file, "-d", "miniwdl-logs",
+                                         "--verbose"] + json_arg + args
 
 
 RUNNERS = {
@@ -213,20 +221,20 @@ class WDLConformanceTestRunner:
                                                       f"Actual output: {result}"}
         return {'status': f'SUCCEEDED'}
 
-    def run_verify(self, expected: dict, results_file: str, ret_code: int) -> dict:
+    def run_verify(self, expected: dict, results_file: str, ret_code: int, exclude_outputs: Optional[list]) -> dict:
         """
         Check either for proper output or proper success/failure of WDL program, depending on if 'fail' is included in
         the conformance test
         """
         if 'fail' in expected.keys():
             # workflow is expected to fail
-            response = verify_failure(ret_code)
+            response = verify_failure(expected, ret_code)
         else:
             # workflow is expected to run
-            response = self.verify_outputs(expected, results_file, ret_code)
+            response = self.verify_outputs(expected, results_file, ret_code, exclude_outputs)
         return response
 
-    def verify_outputs(self, expected: dict, results_file: str, ret_code: int) -> dict:
+    def verify_outputs(self, expected: dict, results_file: str, ret_code: int, exclude_outputs: Optional[list]) -> dict:
         """
         Verify that the test result outputs are the same as the expected output from the conformance file
 
@@ -245,12 +253,32 @@ class WDLConformanceTestRunner:
         except json.JSONDecodeError:
             return {'status': 'FAILED', 'reason': f'Results file at {results_file} is not JSON'}
 
-        if len(test_results['outputs']) != len(expected):
+        if exclude_outputs is not None:
+            # I'm not sure if it is possible but the wdl-tests spec seems to say the type can also be a string
+            exclude_outputs = list(exclude_outputs) if not isinstance(exclude_outputs, list) else exclude_outputs
+            # remove the outputs that we are not allowed to compare
+            test_result_outputs = dict()
+            for k, v in test_results['outputs'].items():
+                for excluded in exclude_outputs:
+                    if k.endswith(excluded):
+                        # we first check that an output variable ends with the excluded name
+                        # ex: got: output.csvs, omit: csvs      so omit
+                        # then we check that the length of the two match
+                        # or that the character right before the endswith match is a namespace separator
+                        # ex: got: output.csvs, omit: output.csvs       so omit
+                        # ex: got: output.not_csvs, omit: csvs      so don't omit as '_' != '.'
+                        if len(k) == len(excluded) or k[::-1][len(excluded)] == ".":
+                            continue
+                    test_result_outputs[k] = v
+
+        else:
+            test_result_outputs = test_results['outputs']
+        if len(test_result_outputs) != len(expected):
             return {'status': 'FAILED',
                     'reason': f"'outputs' section expected {len(expected)} results ({list(expected.keys())}), got "
-                              f"{len(test_results['outputs'])} instead ({list(test_results['outputs'].keys())})"}
+                              f"{len(test_result_outputs)} instead ({list(test_result_outputs.keys())})"}
 
-        result_outputs = test_results['outputs']
+        result_outputs = test_result_outputs
 
         result = {'status': f'SUCCEEDED', 'reason': None}
 
@@ -287,17 +315,27 @@ class WDLConformanceTestRunner:
         inputs = test['inputs']
         wdl_dir = inputs['dir']
         wdl_input = inputs.get('wdl', f'{wdl_dir}.wdl')  # default wdl name
-        json_input = inputs.get('json', f'{wdl_dir}.json')  # default json name
         abs_wdl_dir = os.path.abspath(wdl_dir)
         if version in WDL_VERSIONS:
             wdl_input = f'{wdl_dir}/{wdl_input}'
         else:
             return {'status': 'FAILED', 'reason': f'WDL version {version} is not supported!'}
-
-        json_path = f'{wdl_dir}/{json_input}'  # maybe return failing result if no json file found
-
         wdl_file = os.path.abspath(get_wdl_file(wdl_input, abs_wdl_dir, version))
-        json_file = os.path.abspath(json_path)
+
+        json_input = inputs.get('json')
+        if json_input is None:
+            json_file = None
+        else:
+            json_path = f'{wdl_dir}/{json_input}'
+            json_file = os.path.abspath(json_path)
+
+        json_string = json.dumps(inputs['json_string']) if inputs.get('json_string') else None
+
+        # Only one of json_string or input json file can exist
+        if json_string is not None and json_file is not None:
+            return {'status': 'FAILED', 'reason': f'Config file specifies both a json string and json input file! Only one can be supplied! '
+                                                  f'Check the input section for test id {test["id"]}.'}
+
         test_args = args[runner].split(" ") if args[runner] is not None else []
         unique_id = uuid4()
         # deal with jobstore_path argument for toil
@@ -305,13 +343,14 @@ class WDLConformanceTestRunner:
             unique_jobstore_path = os.path.join(jobstore_path, f"wdl-jobstore-{unique_id}")
             test_args.extend(["--jobstore", unique_jobstore_path])
         outputs = test['outputs']
+        exclude_outputs = test.get('exclude_output')
         results_file = os.path.abspath(f'results-{unique_id}.json')
         wdl_runner = RUNNERS[runner]
         # deal with cromwell arguments to define java system properties
         pre_args = None
         if runner == "cromwell":
             pre_args = args["cromwell_pre_args"]
-        cmd = wdl_runner.format_command(wdl_file, json_file, results_file, test_args, verbose, pre_args)
+        cmd = wdl_runner.format_command(wdl_file, json_file, json_string, results_file, test_args, verbose, pre_args)
 
         realtime = None
         if time:
@@ -325,7 +364,11 @@ class WDLConformanceTestRunner:
         if verbose:
             with self.LOG_LOCK:
                 announce_test(test_index, test, version, runner)
-        response = self.run_verify(outputs, results_file, ret_code)
+        response = self.run_verify(outputs, results_file, ret_code, exclude_outputs)
+
+        if response["status"] == "FAILED" and test.get("priority") == "optional":
+            # an optional test can be reported as a warning if it fails
+            response["status"] = "WARNING"
 
         if time:
             response['time'] = {"real": realtime}
@@ -343,6 +386,13 @@ class WDLConformanceTestRunner:
         Returns a result that can have status SKIPPED, SUCCEEDED, or FAILED.
         """
         response = {'description': test.get('description'), 'number': test_index, 'id': test.get('id')}
+        if test.get("priority") == "ignore":
+            # config specifies to ignore this test, so skip
+            if progress:
+                print(f"Ignoring test {test_index} (ID: {test['id']}) with runner {runner} on WDL version {version}.")
+            response.update({'status': 'IGNORED'})
+            if verbose:
+                response.update({'reason': f'Priority of the test is set to ignore.'})
         if version not in test['versions']:
             # Test to skip, if progress is true, then output
             if progress:
@@ -365,8 +415,9 @@ class WDLConformanceTestRunner:
     def run_and_generate_tests_args(self, tags: Optional[str], numbers: Optional[str], versions: str, runner: str,
                                     threads: int = 1, time: bool = False, verbose: bool = False, quiet: bool = False,
                                     args: Optional[Dict[str, Any]] = None, jobstore_path: Optional[str] = None,
-                                    exclude_numbers: Optional[str] = None, ids: Optional[str] = None,
-                                    repeat: Optional[int] = None, progress: bool = False) -> Tuple[List[Any], bool]:
+                                    exclude_numbers: Optional[str] = None, exclude_tags: Optional[str] = None,
+                                    ids: Optional[str] = None, repeat: Optional[int] = None, progress: bool = False)\
+            -> Tuple[List[Any], bool]:
         # Get all the versions to test.
         # Unlike with CWL, WDL requires a WDL file to declare a specific version,
         # and prohibits mixing file versions in a workflow, although some runners
@@ -374,10 +425,13 @@ class WDLConformanceTestRunner:
         # But the tests all need to be for single WDL versions.
         versions_to_test = set(versions.split(','))
         selected_tests = get_specific_tests(conformance_tests=self.tests, tag_argument=tags, number_argument=numbers,
-                                            exclude_number_argument=exclude_numbers, id_argument=ids)
+                                            id_argument=ids, exclude_number_argument=exclude_numbers, exclude_tags_argument=exclude_tags)
         selected_tests_amt = len(selected_tests) * len(versions_to_test) * repeat
         successes = 0
         skips = 0
+        ignored = 0
+        warnings = 0
+        failed = 0
         test_responses = list()
         print(f'Testing runner {runner} on WDL versions: {",".join(versions_to_test)}\n')
         with ProcessPoolExecutor(max_workers=threads) as executor:  # process instead of thread so realtime works
@@ -427,19 +481,27 @@ class WDLConformanceTestRunner:
                 successes += 1
             elif response['status'] == 'SKIPPED':
                 skips += 1
+            elif response['status'] == 'IGNORED':
+                ignored += 1
+            elif response['status'] == 'WARNING':
+                warnings += 1
+            elif response['status'] == 'FAILED':
+                failed += 1
 
         print(
-            f'{selected_tests_amt - skips} tests run, {successes} succeeded, {selected_tests_amt - skips - successes} '
-            f'failed, {skips} skipped'
+            f'{selected_tests_amt - skips} tests run, {successes} succeeded, {failed} '
+            f'failed, {skips} skipped, {ignored} ignored, {warnings} warnings'
         )
 
-        if successes < selected_tests_amt - skips:
-            # identify the failing tests
-            failed_ids = [str(response['number']) for response in test_responses if
-                          response['status'] not in {'SUCCEEDED', 'SKIPPED'}]
-            print(f"\tFailures: {','.join(failed_ids)}")
+
+        # identify the failing tests
+        failed_ids = [str(response['number']) for response in test_responses if
+                      response['status'] not in {'SUCCEEDED', 'SKIPPED'}]
+        print(f"\tFailures: {','.join(failed_ids)}")
+        if len(failed_ids) > 0:
             return test_responses, False
-        return test_responses, True
+        else:
+            return test_responses, True
 
     def run_and_generate_tests(self, options: argparse.Namespace) -> Tuple[List[Any], bool]:
         """
@@ -458,7 +520,8 @@ class WDLConformanceTestRunner:
                                                 runner=options.runner, time=options.time, verbose=options.verbose,
                                                 quiet=options.quiet, threads=options.threads, args=args,
                                                 jobstore_path=options.jobstore_path,
-                                                exclude_numbers=options.exclude_numbers, ids=options.id,
+                                                exclude_numbers=options.exclude_numbers,
+                                                exclude_tags=options.exclude_tags, ids=options.id,
                                                 repeat=options.repeat, progress=options.progress)
 
 
@@ -484,6 +547,7 @@ def add_options(parser) -> None:
                         help="Time the conformance test run.")
     parser.add_argument("--quiet", default=False, action="store_true")
     parser.add_argument("--exclude-numbers", default=None, help="Exclude certain test numbers.")
+    parser.add_argument("--exclude-tags", default=None, help="Exclude certain test tags.")
     parser.add_argument("--toil-args", default=None, help="Arguments to pass into toil-wdl-runner. Ex: "
                                                           "--toil-args=\"caching=False\"")
     parser.add_argument("--miniwdl-args", default=None, help="Arguments to pass into miniwdl. Ex: "
@@ -498,7 +562,7 @@ def add_options(parser) -> None:
     parser.add_argument("--id", default=None, help="Specify WDL tests by ID.")
     parser.add_argument("--repeat", default=1, type=int, help="Specify how many times to run each test.")
     # This is to deal with jobstores being created in the /data/tmp directory on Phoenix, which appears to be unique
-    # per worker, thus causing JobstoreNotFound exceptions when delegating to many workers at a time
+    # per worker, thus causing JobstoreNotFound exceptions when delegating too many workers at a time
     parser.add_argument("--jobstore-path", "-j", default=None, help="Specify the PARENT directory for the jobstores to "
                                                                     "be created in.")
     # Test responses are collected and sorted, so this option allows the script to print out the current progress
