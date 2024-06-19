@@ -30,7 +30,6 @@ from WDL.Type import Base as WDLBase
 from lib import run_cmd, py_type_of_wdl_class, verify_failure, announce_test, print_response, convert_type, run_setup, \
     get_specific_tests, get_wdl_file
 
-
 WDL_VERSIONS = ["draft-2", "1.0", "1.1"]
 
 
@@ -149,9 +148,10 @@ class WDLConformanceTestRunner:
         # WDLStruct also represents WDLObject
         # Objects in conformance will be forced to be typed, same as Structs
         if isinstance(typ, WDLStruct):
+            nonoptional_result = {k: v for k, v in result.items() if not typ.members[k].optional}
             try:
-                if len(expected) != len(result):
-                    return {'status': 'FAILED', 'reason': f"Size of expected and result do not match!\n"
+                if len(expected) < len(nonoptional_result) or len(expected) > len(result):
+                    return {'status': 'FAILED', 'reason': f"Size of expected and result are invalid! The outputs likely don't match.\n"
                                                           f"Expected output: {expected}\n"
                                                           f"Actual output: {result}!"}
                 for key in expected.keys():
@@ -241,6 +241,7 @@ class WDLConformanceTestRunner:
         :param expected: expected value object
         :param results_file: filepath of resulting output file from the WDL runner
         :param ret_code: return code from WDL runner
+        :param exclude_outputs: outputs to exclude when comparing
         """
         if ret_code:
             return {'status': 'FAILED', 'reason': f"Workflow failed to run!"}
@@ -253,7 +254,7 @@ class WDLConformanceTestRunner:
         except json.JSONDecodeError:
             return {'status': 'FAILED', 'reason': f'Results file at {results_file} is not JSON'}
 
-        if exclude_outputs is not None:
+        if exclude_outputs is not None and len(exclude_outputs) > 0:
             # I'm not sure if it is possible but the wdl-tests spec seems to say the type can also be a string
             exclude_outputs = list(exclude_outputs) if not isinstance(exclude_outputs, list) else exclude_outputs
             # remove the outputs that we are not allowed to compare
@@ -278,12 +279,10 @@ class WDLConformanceTestRunner:
                     'reason': f"'outputs' section expected {len(expected)} results ({list(expected.keys())}), got "
                               f"{len(test_result_outputs)} instead ({list(test_result_outputs.keys())})"}
 
-        result_outputs = test_result_outputs
-
         result = {'status': f'SUCCEEDED', 'reason': None}
 
         # compare expected output to result output
-        for identifier, output in result_outputs.items():
+        for identifier, output in test_result_outputs.items():
             try:
                 python_type = convert_type(expected[identifier]['type'])
             except KeyError:
@@ -412,12 +411,63 @@ class WDLConformanceTestRunner:
             response["repeat"] = repeat
         return response
 
-    def run_and_generate_tests_args(self, tags: Optional[str], numbers: Optional[str], versions: str, runner: str,
-                                    threads: int = 1, time: bool = False, verbose: bool = False, quiet: bool = False,
-                                    args: Optional[Dict[str, Any]] = None, jobstore_path: Optional[str] = None,
-                                    exclude_numbers: Optional[str] = None, exclude_tags: Optional[str] = None,
-                                    ids: Optional[str] = None, repeat: Optional[int] = None, progress: bool = False)\
-            -> Tuple[List[Any], bool]:
+    def _run_debug(self, options: argparse.Namespace, args: Optional[Dict[str, Any]]) -> None:
+        tags = options.tags
+        numbers = options.numbers
+        versions = options.versions
+        runner = options.runner
+        time = options.time
+        verbose = options.verbose
+        quiet = options.quiet
+        jobstore_path = options.jobstore_path
+        exclude_numbers = options.exclude_numbers
+        exclude_tags = options.exclude_tags
+        ids = options.id
+        repeat = options.repeat
+        progress = options.progress
+        # To be used with pycharm's debugger which is currently broken if there is concurrency
+        versions_to_test = set(versions.split(','))
+        selected_tests = get_specific_tests(conformance_tests=self.tests, tag_argument=tags, number_argument=numbers,
+                                            id_argument=ids, exclude_number_argument=exclude_numbers, exclude_tags_argument=exclude_tags)
+        print(f"===DEBUG===")
+        print(f'Testing runner {runner} on WDL versions: {",".join(versions_to_test)}\n')
+        for test_index in selected_tests:
+            try:
+                test = self.tests[test_index]
+            except KeyError:
+                print(f'ERROR: Provided test [{test_index}] do not exist.')
+                sys.exit(1)
+            for version in versions_to_test:
+                for iteration in range(repeat):
+                    # Handle each test as a concurrent job
+                    self.handle_test(
+                        test_index,
+                        test,
+                        runner,
+                        version,
+                        time,
+                        verbose,
+                        quiet,
+                        args,
+                        jobstore_path,
+                        iteration + 1 if repeat is not None else None,
+                        progress)
+
+    def run_and_generate_tests_args(self, options: argparse.Namespace, args: Optional[Dict[str, Any]]) -> Tuple[List[Any], bool]:
+        tags = options.tags
+        numbers = options.numbers
+        versions = options.versions
+        runner = options.runner
+        time = options.time
+        verbose = options.verbose
+        quiet = options.quiet
+        threads = options.threads
+        jobstore_path = options.jobstore_path
+        exclude_numbers = options.exclude_numbers
+        exclude_tags = options.exclude_tags
+        ids = options.id
+        repeat = options.repeat
+        progress = options.progress
         # Get all the versions to test.
         # Unlike with CWL, WDL requires a WDL file to declare a specific version,
         # and prohibits mixing file versions in a workflow, although some runners
@@ -493,7 +543,6 @@ class WDLConformanceTestRunner:
             f'failed, {skips} skipped, {ignored} ignored, {warnings} warnings'
         )
 
-
         # identify the failing tests
         failed_ids = [str(response['number']) for response in test_responses if
                       response['status'] not in {'SUCCEEDED', 'SKIPPED'}]
@@ -516,13 +565,11 @@ class WDLConformanceTestRunner:
             if runner == "cromwell":
                 args[runner] = options.cromwell_args
                 args["cromwell_pre_args"] = options.cromwell_pre_args
-        return self.run_and_generate_tests_args(tags=options.tags, numbers=options.numbers, versions=options.versions,
-                                                runner=options.runner, time=options.time, verbose=options.verbose,
-                                                quiet=options.quiet, threads=options.threads, args=args,
-                                                jobstore_path=options.jobstore_path,
-                                                exclude_numbers=options.exclude_numbers,
-                                                exclude_tags=options.exclude_tags, ids=options.id,
-                                                repeat=options.repeat, progress=options.progress)
+        if options.debug:
+            self._run_debug(options=options, args=args)
+            return [], False
+
+        return self.run_and_generate_tests_args(options=options, args=args)
 
 
 def add_options(parser) -> None:
@@ -568,6 +615,7 @@ def add_options(parser) -> None:
     # Test responses are collected and sorted, so this option allows the script to print out the current progress
     parser.add_argument("--progress", default=False, action="store_true", help="Print the progress of the test suite "
                                                                                "as it runs.")
+    parser.add_argument("--debug", default=False)
 
 
 def main(argv=None):

@@ -216,7 +216,6 @@ def get_wdl_file(wdl_file: str, wdl_dir: str, version: str) -> str:
 
 
 def run_cmd(cmd, cwd):
-    print(" ".join(cmd))
     p = subprocess.Popen(cmd, stdout=-1, stderr=-1, cwd=cwd)
     stdout, stderr = p.communicate()
 
@@ -456,9 +455,10 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
     output_str_typ = wdl_outer_type(wdl_type)
     outer_py_typ = wdl_type_to_miniwdl_class(output_str_typ)
 
-    if outer_py_typ is WDLStruct:
-        optional = '?' in output_str_typ
+    optional = '?' in output_str_typ
+    nonempty = '+' in output_str_typ
 
+    if outer_py_typ is WDLStruct:
         # objects currently forced to be typed just like structs
         struct_type = WDLStruct("Struct", optional=optional)
         members = {}
@@ -474,8 +474,6 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
         return struct_type
 
     if outer_py_typ is WDLPair:
-        optional = '?' in output_str_typ
-
         inner_type = wdl_inner_type(wdl_type)
 
         key_and_value_type = inner_type.split(',')
@@ -489,8 +487,6 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
         return WDLPair(left_type, right_type, optional=optional)
 
     if outer_py_typ is WDLMap:
-        optional = '?' in output_str_typ
-
         inner_type = wdl_inner_type(wdl_type)
 
         key_and_value_type = inner_type.split(',')
@@ -509,9 +505,6 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
         return WDLMap((converted_key_type, converted_value_type), optional=optional)
 
     if outer_py_typ is WDLArray:
-        optional = '?' in output_str_typ
-        nonempty = '+' in output_str_typ
-
         inner_type = wdl_inner_type(wdl_type)
         if inner_type in ('Array', ''):
             # no given inner type
@@ -520,4 +513,4 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
         # if inner type conversion failed, then type is invalid, so return None
         return WDLArray(converted_inner_type, optional=optional, nonempty=nonempty) if converted_inner_type is not None else None
     # primitives remaining
-    return wdl_type_to_miniwdl_class(wdl_type)()
+    return wdl_type_to_miniwdl_class(wdl_type)(optional=optional)
