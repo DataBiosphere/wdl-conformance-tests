@@ -28,7 +28,7 @@ from typing import Optional, Any, Dict, Tuple, List
 from WDL.Type import Base as WDLBase
 
 from lib import run_cmd, py_type_of_wdl_class, verify_failure, announce_test, print_response, convert_type, run_setup, \
-    get_specific_tests, get_wdl_file
+    get_specific_tests, get_wdl_file, verify_return_code
 
 WDL_VERSIONS = ["draft-2", "1.0", "1.1"]
 
@@ -116,6 +116,9 @@ class WDLConformanceTestRunner:
         :param result: result value object from WDL runner
         :param typ: type of output from conformance file
         """
+        if typ.optional and expected is None and result is None:
+            # an optional result does not need to exist
+            return {'status': f'SUCCEEDED'}
         if isinstance(typ, WDLArray):
             try:
                 if len(expected) != len(result):
@@ -137,8 +140,15 @@ class WDLConformanceTestRunner:
                     return {'status': 'FAILED', 'reason': f"Size of expected and result do not match!\n"
                                                           f"Expected output: {expected}\n"
                                                           f"Actual result was: {result}!"}
-                for key in expected.keys():
-                    status_result = self.compare_outputs(expected[key], result[key], typ.item_type[1])
+                # compare both the key and values of the map
+                expected_map_keys, result_map_keys = list(expected.keys()), list(result.keys())
+                for i in range(len(expected)):
+                    expected_key = expected_map_keys[i]
+                    result_key = result_map_keys[i]
+                    status_result = self.compare_outputs(expected_key, result_key, typ.item_type[0])
+                    if status_result['status'] == 'FAILED':
+                        return status_result
+                    status_result = self.compare_outputs(expected[expected_key], result[result_key], typ.item_type[1])
                     if status_result['status'] == 'FAILED':
                         return status_result
             except (KeyError, TypeError):
@@ -169,12 +179,38 @@ class WDLConformanceTestRunner:
                                                       f"Expected output: {expected}\n"
                                                       f"Actual output: {result}!"}
             # check that output types are correct
-            if not isinstance(expected, py_type_of_wdl_class(typ)) or not isinstance(result,
-                                                                                     py_type_of_wdl_class(
-                                                                                         typ)):
-                return {'status': 'FAILED', 'reason': f"Incorrect types!\n"
-                                                      f"Expected output: {expected}\n"
-                                                      f"Actual output: {result}!"}
+            if not isinstance(expected, py_type_of_wdl_class(typ)) or not isinstance(result, py_type_of_wdl_class(typ)):
+                # When outputting in both miniwdl and toil, Map keys are always strings regardless of the specified type
+                # When Map[Int, Int], the output will be {"1": 1}
+                # Or when Map[Float, Int], the output will be {"1.000000": 1}
+                # This only applies to Int and Float types, as Boolean key types don't seem to be supported in miniwdl
+                if isinstance(typ, WDLInt):
+                    try:
+                        # ensure the stringified version is equivalent to an int
+                        py_type_of_wdl_class(typ)(result)
+                        py_type_of_wdl_class(typ)(expected)
+                    except ValueError:
+                        # the string representation does not represent the right type
+                        return {'status': 'FAILED', 'reason': f"Incorrect types when expecting type {typ}! Most likely a Map key type is incorrect.\n"
+                                                              f"Expected output: {expected}\n"
+                                                              f"Actual output: {result}!"}
+                elif isinstance(typ, WDLFloat):
+                    try:
+                        # ensure the stringified version is equivalent to an int
+                        py_type_of_wdl_class(typ)(result)
+                        py_type_of_wdl_class(typ)(expected)
+                        if not ("." in result and "." in expected):
+                            # the string representation is not a float but an int
+                            raise ValueError
+                    except ValueError:
+                        # the string representation does not represent the right type
+                        return {'status': 'FAILED', 'reason': f"Incorrect types when expecting type {typ}! Most likely a Map key type is incorrect.\n"
+                                                              f"Expected output: {expected}\n"
+                                                              f"Actual output: {result}!"}
+                else:
+                    return {'status': 'FAILED', 'reason': f"Incorrect types when expecting type {typ}!\n"
+                                                          f"Expected output: {expected}\n"
+                                                          f"Actual output: {result}!"}
 
         if isinstance(typ, WDLFile):
             # check file path exists
@@ -221,17 +257,25 @@ class WDLConformanceTestRunner:
                                                       f"Actual output: {result}"}
         return {'status': f'SUCCEEDED'}
 
-    def run_verify(self, expected: dict, results_file: str, ret_code: int, exclude_outputs: Optional[list]) -> dict:
+    def run_verify(self, expected: dict, results_file: str, ret_code: int) -> dict:
         """
         Check either for proper output or proper success/failure of WDL program, depending on if 'fail' is included in
         the conformance test
         """
-        if 'fail' in expected.keys():
+        outputs = expected['outputs']
+        exclude_outputs = expected.get('exclude_output')
+
+        if expected.get("fail"):
             # workflow is expected to fail
-            response = verify_failure(expected, ret_code)
+            response = verify_failure(ret_code)
         else:
             # workflow is expected to run
-            response = self.verify_outputs(expected, results_file, ret_code, exclude_outputs)
+            response = self.verify_outputs(outputs, results_file, ret_code, exclude_outputs)
+
+        if response["status"] == "SUCCEEDED" and expected.get("return_code") is not None:
+            # check return code if it exists
+            response.update(verify_return_code(expected["return_code"], ret_code))
+
         return response
 
     def verify_outputs(self, expected: dict, results_file: str, ret_code: int, exclude_outputs: Optional[list]) -> dict:
@@ -243,14 +287,14 @@ class WDLConformanceTestRunner:
         :param ret_code: return code from WDL runner
         :param exclude_outputs: outputs to exclude when comparing
         """
-        if ret_code:
-            return {'status': 'FAILED', 'reason': f"Workflow failed to run!"}
-
         try:
             with open(results_file, 'r') as f:
                 test_results = json.load(f)
         except OSError:
-            return {'status': 'FAILED', 'reason': f'Results file at {results_file} cannot be opened'}
+            # some runners won't create a results file on workflow failure
+            # this may not necessarily be an error; failure is only ensured when the config specifies failure
+            # and a nonzero exit code is possible on both a failing and successful task
+            test_results = {}
         except json.JSONDecodeError:
             return {'status': 'FAILED', 'reason': f'Results file at {results_file} is not JSON'}
 
@@ -259,7 +303,7 @@ class WDLConformanceTestRunner:
             exclude_outputs = list(exclude_outputs) if not isinstance(exclude_outputs, list) else exclude_outputs
             # remove the outputs that we are not allowed to compare
             test_result_outputs = dict()
-            for k, v in test_results['outputs'].items():
+            for k, v in test_results.get('outputs', {}).items():
                 for excluded in exclude_outputs:
                     if k.endswith(excluded):
                         # we first check that an output variable ends with the excluded name
@@ -273,11 +317,11 @@ class WDLConformanceTestRunner:
                     test_result_outputs[k] = v
 
         else:
-            test_result_outputs = test_results['outputs']
+            test_result_outputs = test_results.get('outputs', {})
         if len(test_result_outputs) != len(expected):
             return {'status': 'FAILED',
                     'reason': f"'outputs' section expected {len(expected)} results ({list(expected.keys())}), got "
-                              f"{len(test_result_outputs)} instead ({list(test_result_outputs.keys())})"}
+                              f"{len(test_result_outputs)} instead ({list(test_result_outputs.keys())}) with return code {ret_code}"}
 
         result = {'status': f'SUCCEEDED', 'reason': None}
 
@@ -303,7 +347,7 @@ class WDLConformanceTestRunner:
     LOG_LOCK = threading.Lock()
 
     def run_single_test(self, test_index: int, test: dict, runner: str, version: str, time: bool, verbose: bool,
-                        quiet: bool, args: Optional[Dict[str, Any]], jobstore_path: Optional[str]) -> dict:
+                        quiet: bool, args: Optional[Dict[str, Any]], jobstore_path: Optional[str], debug: bool) -> dict:
         """
         Run a test and log success or failure.
 
@@ -341,8 +385,6 @@ class WDLConformanceTestRunner:
         if runner == "toil-wdl-runner" and jobstore_path is not None:
             unique_jobstore_path = os.path.join(jobstore_path, f"wdl-jobstore-{unique_id}")
             test_args.extend(["--jobstore", unique_jobstore_path])
-        outputs = test['outputs']
-        exclude_outputs = test.get('exclude_output')
         results_file = os.path.abspath(f'results-{unique_id}.json')
         wdl_runner = RUNNERS[runner]
         # deal with cromwell arguments to define java system properties
@@ -354,16 +396,16 @@ class WDLConformanceTestRunner:
         realtime = None
         if time:
             realtime_start = timeit.default_timer()
-            (ret_code, stdout, stderr) = run_cmd(cmd=cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
+            (ret_code, stdout, stderr) = run_cmd(cmd=cmd, cwd=os.path.dirname(os.path.abspath(__file__)), debug=debug)
             realtime_end = timeit.default_timer()
             realtime = realtime_end - realtime_start
         else:
-            (ret_code, stdout, stderr) = run_cmd(cmd=cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
+            (ret_code, stdout, stderr) = run_cmd(cmd=cmd, cwd=os.path.dirname(os.path.abspath(__file__)), debug=debug)
 
         if verbose:
             with self.LOG_LOCK:
                 announce_test(test_index, test, version, runner)
-        response = self.run_verify(outputs, results_file, ret_code, exclude_outputs)
+        response = self.run_verify(test, results_file, ret_code)
 
         if response["status"] == "FAILED" and test.get("priority") == "optional":
             # an optional test can be reported as a warning if it fails
@@ -378,7 +420,7 @@ class WDLConformanceTestRunner:
 
     def handle_test(self, test_index: int, test: Dict[str, Any], runner: str, version: str, time: bool,
                     verbose: bool, quiet: bool, args: Optional[Dict[str, Any]], jobstore_path: Optional[str],
-                    repeat: Optional[int] = None, progress: bool = False) -> Dict[str, Any]:
+                    repeat: Optional[int] = None, progress: bool = False, debug: bool = False) -> Dict[str, Any]:
         """
         Decide if the test should be skipped. If not, run it.
 
@@ -406,31 +448,18 @@ class WDLConformanceTestRunner:
             if progress:
                 print(f"Running test {test_index} (ID: {test['id']}) with runner {runner} on WDL version {version}.")
             response.update(
-                self.run_single_test(test_index, test, runner, version, time, verbose, quiet, args, jobstore_path))
+                self.run_single_test(test_index, test, runner, version, time, verbose, quiet, args, jobstore_path, debug))
         if repeat is not None:
             response["repeat"] = repeat
         return response
 
     def _run_debug(self, options: argparse.Namespace, args: Optional[Dict[str, Any]]) -> None:
-        tags = options.tags
-        numbers = options.numbers
-        versions = options.versions
-        runner = options.runner
-        time = options.time
-        verbose = options.verbose
-        quiet = options.quiet
-        jobstore_path = options.jobstore_path
-        exclude_numbers = options.exclude_numbers
-        exclude_tags = options.exclude_tags
-        ids = options.id
-        repeat = options.repeat
-        progress = options.progress
         # To be used with pycharm's debugger which is currently broken if there is concurrency
-        versions_to_test = set(versions.split(','))
-        selected_tests = get_specific_tests(conformance_tests=self.tests, tag_argument=tags, number_argument=numbers,
-                                            id_argument=ids, exclude_number_argument=exclude_numbers, exclude_tags_argument=exclude_tags)
+        versions_to_test = set(options.versions.split(','))
+        selected_tests = get_specific_tests(conformance_tests=self.tests, tag_argument=options.tags, number_argument=options.numbers,
+                                            id_argument=options.id, exclude_number_argument=options.exclude_numbers, exclude_tags_argument=options.exclude_tags)
         print(f"===DEBUG===")
-        print(f'Testing runner {runner} on WDL versions: {",".join(versions_to_test)}\n')
+        print(f'Testing runner {options.runner} on WDL versions: {",".join(versions_to_test)}\n')
         for test_index in selected_tests:
             try:
                 test = self.tests[test_index]
@@ -438,53 +467,40 @@ class WDLConformanceTestRunner:
                 print(f'ERROR: Provided test [{test_index}] do not exist.')
                 sys.exit(1)
             for version in versions_to_test:
-                for iteration in range(repeat):
+                for iteration in range(options.repeat):
                     # Handle each test as a concurrent job
                     self.handle_test(
                         test_index,
                         test,
-                        runner,
+                        options.runner,
                         version,
-                        time,
-                        verbose,
-                        quiet,
+                        options.time,
+                        options.verbose,
+                        options.quiet,
                         args,
-                        jobstore_path,
-                        iteration + 1 if repeat is not None else None,
-                        progress)
+                        options.jobstore_path,
+                        iteration + 1 if options.repeat is not None else None,
+                        options.progress,
+                        options.debug)
 
     def run_and_generate_tests_args(self, options: argparse.Namespace, args: Optional[Dict[str, Any]]) -> Tuple[List[Any], bool]:
-        tags = options.tags
-        numbers = options.numbers
-        versions = options.versions
-        runner = options.runner
-        time = options.time
-        verbose = options.verbose
-        quiet = options.quiet
-        threads = options.threads
-        jobstore_path = options.jobstore_path
-        exclude_numbers = options.exclude_numbers
-        exclude_tags = options.exclude_tags
-        ids = options.id
-        repeat = options.repeat
-        progress = options.progress
         # Get all the versions to test.
         # Unlike with CWL, WDL requires a WDL file to declare a specific version,
         # and prohibits mixing file versions in a workflow, although some runners
         # might allow it.
         # But the tests all need to be for single WDL versions.
-        versions_to_test = set(versions.split(','))
-        selected_tests = get_specific_tests(conformance_tests=self.tests, tag_argument=tags, number_argument=numbers,
-                                            id_argument=ids, exclude_number_argument=exclude_numbers, exclude_tags_argument=exclude_tags)
-        selected_tests_amt = len(selected_tests) * len(versions_to_test) * repeat
+        versions_to_test = set(options.versions.split(','))
+        selected_tests = get_specific_tests(conformance_tests=self.tests, tag_argument=options.tags, number_argument=options.numbers,
+                                            id_argument=options.id, exclude_number_argument=options.exclude_numbers, exclude_tags_argument=options.exclude_tags)
+        selected_tests_amt = len(selected_tests) * len(versions_to_test) * options.repeat
         successes = 0
         skips = 0
         ignored = 0
         warnings = 0
         failed = 0
         test_responses = list()
-        print(f'Testing runner {runner} on WDL versions: {",".join(versions_to_test)}\n')
-        with ProcessPoolExecutor(max_workers=threads) as executor:  # process instead of thread so realtime works
+        print(f'Testing runner {options.runner} on WDL versions: {",".join(versions_to_test)}\n')
+        with ProcessPoolExecutor(max_workers=options.threads) as executor:  # process instead of thread so realtime works
             pending_futures = []
             for test_index in selected_tests:
                 try:
@@ -493,20 +509,21 @@ class WDLConformanceTestRunner:
                     print(f'ERROR: Provided test [{test_index}] do not exist.')
                     sys.exit(1)
                 for version in versions_to_test:
-                    for iteration in range(repeat):
+                    for iteration in range(options.repeat):
                         # Handle each test as a concurrent job
                         result_future = executor.submit(self.handle_test,
                                                         test_index,
                                                         test,
-                                                        runner,
+                                                        options.runner,
                                                         version,
-                                                        time,
-                                                        verbose,
-                                                        quiet,
+                                                        options.time,
+                                                        options.verbose,
+                                                        options.quiet,
                                                         args,
-                                                        jobstore_path,
-                                                        iteration + 1 if repeat is not None else None,
-                                                        progress)
+                                                        options.jobstore_path,
+                                                        iteration + 1 if options.repeat is not None else None,
+                                                        options.progress,
+                                                        options.debug)
                         pending_futures.append(result_future)
             completed_count = 0
             for result_future in as_completed(pending_futures):
@@ -514,7 +531,7 @@ class WDLConformanceTestRunner:
                 # Go get each result
                 result = result_future.result()
                 test_responses.append(result)
-                if progress:
+                if options.progress:
                     # if progress is true, then print a summarized output of the completed test and current status
                     print(
                         f"{completed_count}/{selected_tests_amt}. Test {result['number']} (ID: {result['id']}) completed "
@@ -545,8 +562,16 @@ class WDLConformanceTestRunner:
 
         # identify the failing tests
         failed_ids = [str(response['number']) for response in test_responses if
-                      response['status'] not in {'SUCCEEDED', 'SKIPPED'}]
-        print(f"\tFailures: {','.join(failed_ids)}")
+                      response['status'] in {'FAILED'}]
+        warn_ids = [str(response['number']) for response in test_responses if
+                    response['status'] in {'WARNING'}]
+        if len(failed_ids) > 0:
+            print(f"\tFailures: {','.join(failed_ids)}")
+        else:
+            print("\tNo failures!")
+        if len(warn_ids) > 0:
+            print(f"\tWarnings: {','.join(warn_ids)}")
+
         if len(failed_ids) > 0:
             return test_responses, False
         else:
@@ -615,7 +640,7 @@ def add_options(parser) -> None:
     # Test responses are collected and sorted, so this option allows the script to print out the current progress
     parser.add_argument("--progress", default=False, action="store_true", help="Print the progress of the test suite "
                                                                                "as it runs.")
-    parser.add_argument("--debug", default=False)
+    parser.add_argument("--debug", action="store_true", default=False)
 
 
 def main(argv=None):

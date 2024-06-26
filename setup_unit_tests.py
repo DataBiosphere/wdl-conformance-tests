@@ -4,6 +4,7 @@
 """
 Extract unit tests from the WDL spec (1.1+) and create a conformance file that is conformance to our representation for this test suite
 """
+import hashlib
 import subprocess
 import regex as re
 import os
@@ -17,6 +18,8 @@ from pathlib import Path
 import re
 import shutil
 from typing import Optional, Union, List, Set, Callable, Any, Dict
+
+from lib import convert_type
 
 import WDL
 
@@ -110,7 +113,61 @@ def extract_output_types(wdl_file, fail):
     return var_types
 
 
-def recursive_json_apply(json_obj: Union[Dict[Any, Any], List[Any], bool, int, str, float, None], func: Callable[[Any], Any])\
+def convert_typed_output_values(output_values: Union[None, str, Dict[str, Any], List[Any]], output_type: WDL.Type.Base, data_dir: Optional[Path]):
+    """
+    Get the expected output values with respect to the output types.
+    This is done to get the md5sum of files when converting unit tests.
+
+    Ex: If given hello.txt and type File, try to get the regex of the file
+    If given "hello" and type String, return string
+    """
+    if output_values is None and output_type.optional:
+        return output_values
+    if isinstance(output_type, WDL.Type.File):
+        # this will only populate md5sum if the files exist recursively in the data directory
+        for path in glob.glob(str(data_dir / "**"), recursive=True):
+            if path.endswith(output_values) and os.path.exists(path):
+                with open(path, "rb") as f:
+                    md5sum = hashlib.md5(f.read()).hexdigest()
+                return {'md5sum': md5sum}
+    if isinstance(output_type, WDL.Type.StructInstance):
+        converted_output = dict()
+        for i, (output_key, output_value) in enumerate(output_values.items()):
+            try:
+                output_value_type = output_type.members[output_key]
+            except KeyError:
+                # coercion from map to struct can cause some weird type behavior
+                # since dictionaries passt python 3.6 are ordered, find the corresponding type from the current output's position
+                output_value_type = list(output_type.members.values())[i]
+            converted_output[output_key] = convert_typed_output_values(output_value, output_value_type, data_dir)
+        return converted_output
+    if isinstance(output_type, WDL.Type.Map):
+        converted_output = dict()
+        for output_key, output_value in output_values.items():
+            new_output_key = convert_typed_output_values(output_key, output_type.item_type[0], data_dir)
+            new_output_value = convert_typed_output_values(output_value, output_type.item_type[1], data_dir)
+            converted_output[new_output_key] = new_output_value
+    if isinstance(output_type, WDL.Type.Pair):
+        converted_output = dict()
+        # key should be left or right
+        converted_output["left"] = convert_typed_output_values(output_values["left"], output_type.left_type, data_dir)
+        converted_output["right"] - convert_typed_output_values(output_values["right"], output_type.right_type, data_dir)
+        return converted_output
+    if isinstance(output_type, WDL.Type.Array):
+        converted_output = list()
+        for output in output_values:
+            converted_output.append(convert_typed_output_values(output, output_type.item_type, data_dir))
+        return converted_output
+    # else this is a primitive type
+    return output_values
+
+
+def convert_typed_output_values_from_string(output_values: Union[None, str, Dict[str, Any], List[Any]], output_type: Union[str, Dict[str, Any]], data_dir: Optional[Path]):
+    output_type_wdl = convert_type(output_type)
+    return convert_typed_output_values(output_values, output_type_wdl, data_dir)
+
+
+def recursive_json_apply(json_obj: Union[Dict[Any, Any], List[Any], bool, int, str, float, None], func: Callable[[Any], Any]) \
         -> Union[Dict[Any, Any], List[Any], bool, int, str, float, None]:
     if isinstance(json_obj, dict):
         return {k: recursive_json_apply(v, func) for k, v in json_obj.items()}
@@ -123,7 +180,7 @@ def recursive_json_apply(json_obj: Union[Dict[Any, Any], List[Any], bool, int, s
         return func(json_obj)
 
 
-def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_files: Optional[Set[str]], output_data_dir: Optional[Path], config: list):
+def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_files: Optional[Set[str]], data_dir: Optional[Path], output_data_dir: Optional[Path], config: list):
     """
     Given the regex, create the corresponding config entry for conformance.yaml.
 
@@ -183,15 +240,15 @@ def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_f
         config_entry["return_code"] = [config_entry["return_code"]]
 
     if bool(is_fail):
-        config_entry["outputs"] = {"fail": {}}
-        config_entry["outputs"]["fail"] = {"return_code": config_entry["return_code"]}
+        config_entry["outputs"] = {}
     else:
         if output_json is not None:
             for k, v in json.loads(output_json.strip()).items():
                 k_base = k.split(".")[-1]
+                output_type = output_var_types[k_base]
                 config_entry["outputs"][k] = {
-                    "type": output_var_types[k_base],
-                    "value": v
+                    "type": output_type,
+                    "value": convert_typed_output_values_from_string(v, output_type, data_dir)
                 }
 
     if "type" not in config_entry:
@@ -288,7 +345,7 @@ def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, versio
         output_data_dir = None
 
     for m in all_m:
-        generate_config_file(m, output_dir, version, all_data_files, output_data_dir, config)
+        generate_config_file(m, output_dir, version, all_data_files, data_dir, output_data_dir, config)
 
     if output_type == "json":
         config_file = output_dir / "test_config.json"

@@ -7,7 +7,7 @@ import subprocess
 from WDL.Type import Float as WDLFloat, String as WDLString, File as WDLFile, Int as WDLInt, Boolean as WDLBool, \
     Array as WDLArray, Map as WDLMap, Pair as WDLPair, StructInstance as WDLStruct
 
-from typing import Optional, Any, Dict, Union
+from typing import Optional, Any, Dict, Union, List, Type
 from WDL.Type import Base as WDLBase
 
 
@@ -215,7 +215,9 @@ def get_wdl_file(wdl_file: str, wdl_dir: str, version: str) -> str:
     return generate_wdl(wdl_file, wdl_dir, version, outfile_name=outfile_name)
 
 
-def run_cmd(cmd, cwd):
+def run_cmd(cmd: List[str], cwd: str, debug: bool = False):
+    if debug:
+        print(" ".join(cmd))
     p = subprocess.Popen(cmd, stdout=-1, stderr=-1, cwd=cwd)
     stdout, stderr = p.communicate()
 
@@ -333,13 +335,25 @@ def get_specific_tests(conformance_tests, tag_argument, number_argument, id_argu
                 tests.add(test_number)
     return sorted(list(tests))
 
+def verify_return_code(expected_ret_code: Union[int, List[int], str], got_ret_code: int):
+    if not isinstance(expected_ret_code, list):
+        expected_ret_code = [expected_ret_code]
+    success = {'status': 'SUCCEEDED'}
+    for rc in expected_ret_code:
+        if rc == "*":
+            # this stands for any return code
+            return success
+        if got_ret_code == rc:
+            return success
+    return {'status': 'FAILED',
+            'reason': f"Workflow did not return the correct return code! Got: {got_ret_code}. Expected: {','.join(expected_ret_code)}."}
 
-def verify_failure(expected: Dict[str, Any], ret_code: int) -> dict:
+
+def verify_failure(ret_code: int) -> dict:
     """
     Verify that the workflow did fail
 
     ret_code should be the status code WDL runner outputs when running the test
-    :param expected: Expected failure outpute, ex: return_code: 42
     :param ret_code: return code from WDL runner
 
     If ret_code is fail (>0 or True) and expected return code matches or doesn't exist, then return success
@@ -354,25 +368,10 @@ def verify_failure(expected: Dict[str, Any], ret_code: int) -> dict:
         return {'status': 'FAILED',
                 'reason': f"Workflow did not fail!"}
 
-    # proper failure, if expected return code is empty, return success
-    expected_ret_code = expected["fail"].get("return_code")
-    success = {'status': f'SUCCEEDED'}
-    if expected_ret_code is None:
-        return success
-    if not isinstance(expected_ret_code, list):
-        expected_ret_code = [expected_ret_code]
-    for rc in expected_ret_code:
-        if rc == "*":
-            # this stands for any return code
-            return success
-        if rc == ret_code:
-            return success
-    # else, the workflow return code does not match the expected return code
-    return {'status': 'FAILED',
-            'reason': f"Workflow did not return the correct return code! Got: {ret_code}. Expected: {','.join(expected_ret_code)}."}
+    return {'status': f'SUCCEEDED'}
 
 
-def py_type_of_wdl_class(wdl_type: WDLBase):
+def py_type_of_wdl_class(wdl_type: WDLBase) -> Union[Type[int], Type[float], Type[bool], Type[str]]:
     """
     Return python equivalent type for a given WDL.Type class
     """
@@ -393,7 +392,7 @@ def wdl_inner_type(wdl_type):
     if '[' in wdl_type:
         remaining = '['.join(wdl_type.split('[')[1:])  # get remaining string starting from open bracket
         end_idx = len(remaining) - remaining[::-1].index(']') - 1  # find index of closing bracket
-        # remove postfix quantifiers
+        # remove outer type postfix quantifiers
         return remaining[:end_idx]
     else:
         return wdl_type
@@ -406,7 +405,12 @@ def wdl_outer_type(wdl_type):
     # deal with structs
     if isinstance(wdl_type, dict):
         return wdl_type
-    return wdl_type.split('[')[0]
+    if '[' in wdl_type:
+        reverse_idx = wdl_type[::-1].index(']')
+        postfix = wdl_type[len(wdl_type) - reverse_idx:]
+        return wdl_type.split('[')[0] + postfix
+    else:
+        return wdl_type
 
 
 def wdl_type_to_miniwdl_class(wdl_type: Union[Dict[str, Any], str]) -> Optional[WDLBase]:
@@ -440,6 +444,8 @@ def wdl_type_to_miniwdl_class(wdl_type: Union[Dict[str, Any], str]) -> Optional[
         return WDLMap
     elif wdl_type == 'Pair':
         return WDLPair
+    elif wdl_type == 'Object':
+        return WDLString
     else:
         raise NotImplementedError
         # return None
