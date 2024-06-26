@@ -204,7 +204,7 @@
    limitations under the License.
 
 All files in this repository excluding files under the integration/gatk directory are under the Apache license.
-All files under the integration/gatk directory are under the BSD 3-Clause license from OpenWDL, copied below.
+All files under the integration/gatk directory and the setup_unit_tests.py script are under the BSD 3-Clause license from OpenWDL, copied below.
 
 BSD 3-Clause License
 
