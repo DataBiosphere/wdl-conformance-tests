@@ -6,6 +6,8 @@ Extract unit tests from the WDL spec (1.1+) and create a conformance file that i
 """
 import hashlib
 import subprocess
+import sys
+
 import regex as re
 import os
 import glob
@@ -33,6 +35,17 @@ VERSION_RE = re.compile(r"version ([\d.]+)")
 regex_output_section_str = r"(?<=output)(?:\s*{\s*)([\s\S]+?)(?:})"
 regex_var_types_str = r"([\w\[\]+?]+)\s(\w+)(?:[\s\S]*?(?= =))"
 
+
+def get_not_none(d: Optional[Dict[Any, Any]], k: str) -> Any:
+    # same as d.get(k) but return None if d is None
+    if d is not None:
+        return d.get(k)
+    return None
+
+def index_not_none(l: Optional[List[Any]], i: int) -> Any:
+    if l is not None:
+        return l[i]
+    return None
 
 def extract_output_types_defer(wdl_file):
     """
@@ -113,7 +126,8 @@ def extract_output_types(wdl_file, fail):
     return var_types
 
 
-def convert_typed_output_values(output_values: Union[None, str, Dict[str, Any], List[Any]], output_type: WDL.Type.Base, data_dir: Optional[Path]):
+def convert_typed_output_values(output_values: Union[None, str, Dict[str, Any], List[Any]], output_type: WDL.Type.Base,
+                                data_dir: Optional[Path], metadata: Union[List[Any], Dict[str, Any]]):
     """
     Get the expected output values with respect to the output types.
     This is done to get the md5sum of files when converting unit tests.
@@ -130,6 +144,12 @@ def convert_typed_output_values(output_values: Union[None, str, Dict[str, Any], 
                 with open(path, "rb") as f:
                     md5sum = hashlib.md5(f.read()).hexdigest()
                 return {'md5sum': md5sum}
+            # else check if there is extra metadata to read from
+            if get_not_none(metadata, "md5sum") is not None:
+                return {'md5sum': metadata.get("md5sum")}
+            if get_not_none(metadata, "regex") is not None:
+                return {'regex': metadata.get("regex")}
+
     if isinstance(output_type, WDL.Type.StructInstance):
         converted_output = dict()
         for i, (output_key, output_value) in enumerate(output_values.items()):
@@ -137,34 +157,35 @@ def convert_typed_output_values(output_values: Union[None, str, Dict[str, Any], 
                 output_value_type = output_type.members[output_key]
             except KeyError:
                 # coercion from map to struct can cause some weird type behavior
-                # since dictionaries passt python 3.6 are ordered, find the corresponding type from the current output's position
+                # since dictionaries past python 3.6 are ordered, find the corresponding type from the current output's position
                 output_value_type = list(output_type.members.values())[i]
-            converted_output[output_key] = convert_typed_output_values(output_value, output_value_type, data_dir)
+            converted_output[output_key] = convert_typed_output_values(output_value, output_value_type, data_dir, get_not_none(metadata, output_value))
         return converted_output
     if isinstance(output_type, WDL.Type.Map):
         converted_output = dict()
         for output_key, output_value in output_values.items():
-            new_output_key = convert_typed_output_values(output_key, output_type.item_type[0], data_dir)
-            new_output_value = convert_typed_output_values(output_value, output_type.item_type[1], data_dir)
+            new_output_key = convert_typed_output_values(output_key, output_type.item_type[0], data_dir, get_not_none(metadata, output_key))
+            new_output_value = convert_typed_output_values(output_value, output_type.item_type[1], data_dir, get_not_none(metadata, output_value))
             converted_output[new_output_key] = new_output_value
     if isinstance(output_type, WDL.Type.Pair):
         converted_output = dict()
         # key should be left or right
-        converted_output["left"] = convert_typed_output_values(output_values["left"], output_type.left_type, data_dir)
-        converted_output["right"] - convert_typed_output_values(output_values["right"], output_type.right_type, data_dir)
+        converted_output["left"] = convert_typed_output_values(output_values["left"], output_type.left_type, data_dir, get_not_none(metadata, output_values["left"]))
+        converted_output["right"] - convert_typed_output_values(output_values["right"], output_type.right_type, data_dir, get_not_none(metadata, output_values["right"]))
         return converted_output
     if isinstance(output_type, WDL.Type.Array):
         converted_output = list()
-        for output in output_values:
-            converted_output.append(convert_typed_output_values(output, output_type.item_type, data_dir))
+        for i, output in enumerate(output_values):
+            converted_output.append(convert_typed_output_values(output, output_type.item_type, data_dir, index_not_none(metadata, i)))
         return converted_output
     # else this is a primitive type
     return output_values
 
 
-def convert_typed_output_values_from_string(output_values: Union[None, str, Dict[str, Any], List[Any]], output_type: Union[str, Dict[str, Any]], data_dir: Optional[Path]):
+def convert_typed_output_values_from_string(output_values: Union[None, str, Dict[str, Any], List[Any]], output_type: Union[str, Dict[str, Any]],
+                                            data_dir: Optional[Path], metadata: Optional[Dict[str, Any]]):
     output_type_wdl = convert_type(output_type)
-    return convert_typed_output_values(output_values, output_type_wdl, data_dir)
+    return convert_typed_output_values(output_values, output_type_wdl, data_dir, metadata)
 
 
 def recursive_json_apply(json_obj: Union[Dict[Any, Any], List[Any], bool, int, str, float, None], func: Callable[[Any], Any]) \
@@ -180,7 +201,8 @@ def recursive_json_apply(json_obj: Union[Dict[Any, Any], List[Any], bool, int, s
         return func(json_obj)
 
 
-def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_files: Optional[Set[str]], data_dir: Optional[Path], output_data_dir: Optional[Path], config: list):
+def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_files: Optional[Set[str]], data_dir: Optional[Path],
+                         output_data_dir: Optional[Path], config: list, metadata: Optional[Dict[str, Any]]) -> None:
     """
     Given the regex, create the corresponding config entry for conformance.yaml.
 
@@ -204,6 +226,12 @@ def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_f
     is_fail = is_fail or config_entry.get("fail", False)  # failure can also be specified in the json
 
     config_entry["id"] = target
+
+    target_metadata = None
+    for m in metadata:
+        if m.get("id") == target:
+            target_metadata = m
+            break
 
     wdl_dir, wdl_base = os.path.split(wdl_file)
 
@@ -243,12 +271,13 @@ def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_f
         config_entry["outputs"] = {}
     else:
         if output_json is not None:
+            target_output_metadata = get_not_none(target_metadata, "outputs")
             for k, v in json.loads(output_json.strip()).items():
                 k_base = k.split(".")[-1]
                 output_type = output_var_types[k_base]
                 config_entry["outputs"][k] = {
                     "type": output_type,
-                    "value": convert_typed_output_values_from_string(v, output_type, data_dir)
+                    "value": convert_typed_output_values_from_string(v, output_type, data_dir, get_not_none(get_not_none(target_output_metadata, k), "value"))
                 }
 
     if "type" not in config_entry:
@@ -307,7 +336,7 @@ def write_test_files(m: re.Match, output_dir: Path, version: str):
         o.write(wdl)
 
 
-def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, version: str, output_type: str):
+def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, version: str, output_type: str, extra_metadata: Optional[Path]):
     if not output_dir.exists():
         output_dir.mkdir(parents=True)
 
@@ -344,8 +373,14 @@ def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, versio
     else:
         output_data_dir = None
 
+    metadata = None
+    if extra_metadata is not None:
+        with open(extra_metadata, "r") as e:
+            yaml = YAML()
+            metadata = yaml.load(e)
+
     for m in all_m:
-        generate_config_file(m, output_dir, version, all_data_files, data_dir, output_data_dir, config)
+        generate_config_file(m, output_dir, version, all_data_files, data_dir, output_data_dir, config, metadata)
 
     if output_type == "json":
         config_file = output_dir / "test_config.json"
@@ -361,7 +396,9 @@ def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, versio
         shutil.copytree(data_dir, output_data_dir, symlinks=True, dirs_exist_ok=False)
 
 
-def main():
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
     parser = argparse.ArgumentParser(
         usage="%(prog)s [options]",
         description=(
@@ -389,11 +426,18 @@ def main():
         action="store_true",
         help="Default behavior does not pull the spec repo if it was already pulled. Specify this argument to force a refresh."
     )
+    parser.add_argument(
+        "--extra-metadata", "-e",
+        default="unit_tests_metadata.yaml",
+        help="Include extra metadata when extracting the unit tests into the config. "
+             "Since we have our own method of testing file outputs, this is mostly used for file hashes/regexes."
+    )
     argcomplete.autocomplete(parser)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     spec_dir = f"wdl-{args.version}-spec"
     if not os.path.exists(spec_dir) or args.force_pull is True:
+        print("Pulling SPEC from repo...")
         # while the WDL spec has its bugs, use a fixed version
         # see openwdl issues #653, #654, #661, #662, #663, #664, #665, #666
         # cmd = f"git clone https://github.com/openwdl/wdl.git {spec_dir}"
@@ -413,7 +457,8 @@ def main():
     cmd = f"rm -rf unit_tests"
     subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
-    extract_tests(Path(spec_dir) / Path("SPEC.md"), Path(spec_dir) / Path("tests/data"), Path("unit_tests"), args.version, args.output_type)
+    print("Extracting tests...")
+    extract_tests(Path(spec_dir) / Path("SPEC.md"), Path(spec_dir) / Path("tests/data"), Path("unit_tests"), args.version, args.output_type, args.extra_metadata)
 
 
 if __name__ == "__main__":

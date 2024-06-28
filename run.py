@@ -321,7 +321,7 @@ class WDLConformanceTestRunner:
         if len(test_result_outputs) != len(expected):
             return {'status': 'FAILED',
                     'reason': f"'outputs' section expected {len(expected)} results ({list(expected.keys())}), got "
-                              f"{len(test_result_outputs)} instead ({list(test_result_outputs.keys())}) with return code {ret_code}"}
+                              f"{len(test_result_outputs)} instead ({list(test_result_outputs.keys())}) with exit code {ret_code}"}
 
         result = {'status': f'SUCCEEDED', 'reason': None}
 

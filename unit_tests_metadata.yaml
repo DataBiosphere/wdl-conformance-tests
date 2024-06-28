@@ -1,0 +1,11 @@
+# this should have the same structure as the expected yaml configs, ex conformance.yaml
+- id: optional_output
+  outputs:
+    optional_output.example1:
+      type: File
+      value: { md5sum: c4ca4238a0b923820dcc509a6f75849b }
+    optional_output.file_array:
+      type: Array[File?]
+      value:
+      - md5sum: c4ca4238a0b923820dcc509a6f75849b
+      -
