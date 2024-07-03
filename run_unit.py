@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # PYTHON_ARGCOMPLETE_OK
+"""
+run_unit.py: Run the WDL specification/unit tests.
+"""
 import argparse
+import os
 import sys
 
 import argcomplete
@@ -21,15 +25,16 @@ def main():
     parser.add_argument("--force-pull", default=False, action="store_true",
                         help="Specify whether to use the cached SPEC or to force a pull."
                              "The setup script will be run as well.")
-    parser.set_defaults(version="1.1")  # override default to 1.1
+    parser.set_defaults(versions="1.1")  # override default to 1.1
     parser.set_defaults(runner="toil-wdl-runner")  # cromwell doesn't support 1.1+
 
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
-    if args.reset:
+    spec_dir = f"wdl-{args.versions}-spec"  # there may be a better way to detect that setup_unit_tests.py was ran before than checking a hard coded directory
+    if args.reset or not os.path.exists(spec_dir):
         from setup_unit_tests import main as setup_unit_tests_main
-        argv = ["--version=1.1", "--output-type=yaml"]
+        argv = [args.versions, "--output-type=yaml"]
         if args.force_pull:
             argv.append("--force-pull")
         setup_unit_tests_main(argv)

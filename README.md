@@ -20,6 +20,9 @@ Runners this has been evaluated against:
  - [miniwdl](https://github.com/chanzuckerberg/miniwdl)
  - [Cromwell](https://github.com/broadinstitute/cromwell)
 
+## WDL Specification Unit Tests
+For information about running specification tests from the WDL spec, calling a separate script is required. [See `README_UNIT.md`](README_UNIT.md)
+
 ## Note
 
 The tests in this directory are incomplete and are in the process of being added to.  If you'd like 
