@@ -28,9 +28,13 @@ clean:
 clean-csv:
 	rm csv_output_*
 
-clean-unit:
+clean-unit: clean-unit-setup
 	rm -rf wdl-1.1-spec
 	rm -rf unit_tests
+
+clean-unit-setup:
+	rm -rf /mnt/outputs
+	rm -rf /mnt/tmp
 
 cromwell:
 	mkdir -p build

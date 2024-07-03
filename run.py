@@ -28,7 +28,7 @@ from typing import Optional, Any, Dict, Tuple, List
 from WDL.Type import Base as WDLBase
 
 from lib import run_cmd, py_type_of_wdl_class, verify_failure, announce_test, print_response, convert_type, run_setup, \
-    get_specific_tests, get_wdl_file, verify_return_code
+    get_specific_tests, get_wdl_file, verify_return_code, test_dependencies
 
 WDL_VERSIONS = ["draft-2", "1.0", "1.1"]
 
@@ -391,6 +391,14 @@ class WDLConformanceTestRunner:
         pre_args = None
         if runner == "cromwell":
             pre_args = args["cromwell_pre_args"]
+
+        # todo: it seems odd that I'm looking for a dependency when the test spec says its supposed to be used to turn failing tests into warnings
+        # this also isn't the most efficient
+        if test.get('dependencies') is not None and runner == "toil-wdl-runner":
+            if "docker" in test["dependencies"]:
+                test_args.extend(["--container", "docker"])
+            if "singularity" in test["dependencies"]:
+                test_args.extend(["--container", "singularity"])
         cmd = wdl_runner.format_command(wdl_file, json_file, json_string, results_file, test_args, verbose, pre_args)
 
         realtime = None
@@ -451,6 +459,8 @@ class WDLConformanceTestRunner:
                 self.run_single_test(test_index, test, runner, version, time, verbose, quiet, args, jobstore_path, debug))
         if repeat is not None:
             response["repeat"] = repeat
+        # Turn failing tests to warnings if they violate a test dependency
+        test_dependencies(dependencies=test.get("dependencies"), response=response)
         return response
 
     def _run_debug(self, options: argparse.Namespace, args: Optional[Dict[str, Any]]) -> None:

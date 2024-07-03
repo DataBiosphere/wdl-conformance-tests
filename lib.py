@@ -71,7 +71,7 @@ def generate_change_container_specifier(lines, to_replace="container", replace_w
             if line.strip() == "}":
                 in_runtime = False
             if i > 0:
-                yield line[:i] + replace_with + line[i+len(to_replace):]
+                yield line[:i] + replace_with + line[i + len(to_replace):]
             else:
                 yield line
 
@@ -335,6 +335,7 @@ def get_specific_tests(conformance_tests, tag_argument, number_argument, id_argu
                 tests.add(test_number)
     return sorted(list(tests))
 
+
 def verify_return_code(expected_ret_code: Union[int, List[int], str], got_ret_code: int):
     if not isinstance(expected_ret_code, list):
         expected_ret_code = [expected_ret_code]
@@ -520,3 +521,81 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
         return WDLArray(converted_inner_type, optional=optional, nonempty=nonempty) if converted_inner_type is not None else None
     # primitives remaining
     return wdl_type_to_miniwdl_class(wdl_type)(optional=optional)
+
+
+def test_gpu_available():
+    if bool(os.getenv("WDL_CONFORMANCE_TESTS__GPU")):
+        # override
+        return True
+    try:
+        p = subprocess.run("nvidia-smi".split(" "))
+    except (FileNotFoundError, subprocess.SubprocessError):
+        pass
+    else:
+        # we have an nvidia gpu
+        if p.returncode == 0:
+            return True
+    # This is copied from how Toil checks for amd gpus
+    # This may not work, I'm not sure what the current conventions for getting amd gpu data is
+    # see comment in src/toil/lib/accelerators.py::count_amd_gpus
+    try:
+        p = subprocess.run(["amd-smi", "static"])
+    except (FileNotFoundError, subprocess.SubprocessError):
+        pass
+    else:
+        if p.returncode == 0:
+            # we (maybe) have an amd gpu
+            return True
+    return False
+
+
+IGNORE_DEPENDENCIES = ["docker", "root", "singularity"]
+
+
+def test_dependencies(dependencies: Optional[List[str]], response: Dict[str, Any]) -> None:
+    """
+    Given a set of dependencies for a test, see if any of those dependencies are violated.
+    If so, change a failing test to a warning and update the reason.
+    """
+    # todo: maybe there is a better way to deal with dependencies
+    if dependencies is None:
+        return
+    for d in dependencies:
+        if d == "gpu":
+            if not test_gpu_available() and response['status'] == 'FAILED':
+                response["status"] = "WARNING"
+                response["reason"] = (f"Some GPU dependency is necessary but is not available on machine. "
+                                      f"Either run the test on a GPU supported system or set 'WDL_CONFORMANCE_TESTS__GPU=True' to override. "
+                                      f"\nFailing reason:\n") + response["reason"]
+        elif d == "disks":
+            # todo: I'm not really sure how to test for a disk specific error
+            # i could try to check if all mount disks are available but that requires the mount points to be given in advance
+            # toil will return NotImplementedError for a missing mount point, so just catch that as miniwdl does not support this functionality yet
+            # and cromwell is stuck at wdl 1.0
+            if response['status'] == 'FAILED' and "NotImplementedError" in response['stderr']:
+                response["status"] = "WARNING"
+                response["reason"] = (f"Some disk dependency is necessary but is not available on machine."
+                                      f"Check that all the mount points specified in the WDL tasks exist."
+                                      f"\nFailing reason:\n") + response["reason"]
+        elif d == "cpu":
+            # todo: figure out better way to detect cpu errors too
+            if response['status'] == 'FAILED':
+                # miniwdl adjusts cpus to host limit so itll never error
+                # so just deal with toil
+                to_match = re.compile(r"is requesting [0-9.]+ cores, more than the maximum of [0-9.]+ cores")
+                if re.search(to_match, response['stderr']):
+                    response["status"] = "WARNING"
+                    response["reason"] = (f"Some CPU dependency is necessary but is not available on machine."
+                                          f"A WDL task likely requested more CPUs than available."
+                                          f"\nFailing reason:\n") + response["reason"]
+        elif d == "memory":
+            # todo: better, same as cpu above
+            if response['status'] == 'FAILED':
+                to_match = re.compile(r"is requesting [0-9.]+ bytes of memory, more than the maximum of [0-9.]+ bytes of memory")
+                if re.search(to_match, response['stderr']):
+                    response["status"] = "WARNING"
+                    response["reason"] = (f"Some memory dependency is necessary but is not available on machine."
+                                          f"A WDL task likely requested more memory than available."
+                                          f"\nFailing reason:\n") + response["reason"]
+        elif d not in IGNORE_DEPENDENCIES:
+            print(f"Warning: Test framework encountered unsupported dependency {d}. Ignoring...")

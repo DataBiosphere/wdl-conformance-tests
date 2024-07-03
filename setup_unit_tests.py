@@ -106,7 +106,9 @@ def extract_output_types(wdl_file, fail):
             # defer to the other more simpler parser
             return extract_output_types_defer(wdl_file)
         else:
-            raise
+            raise RuntimeError("Likely unsupported type. Failed to parse WDL file %s!", wdl_file) from e
+    except Exception as e:
+        raise RuntimeError(f"Failed to parse WDL file {str(wdl_file)}!") from e
 
     target: Union[WDL.Tree.Workflow, WDL.Tree.Task]
 
@@ -191,7 +193,7 @@ def convert_typed_output_values_from_string(output_values: Union[None, str, Dict
 def recursive_json_apply(json_obj: Union[Dict[Any, Any], List[Any], bool, int, str, float, None], func: Callable[[Any], Any]) \
         -> Union[Dict[Any, Any], List[Any], bool, int, str, float, None]:
     if isinstance(json_obj, dict):
-        return {k: recursive_json_apply(v, func) for k, v in json_obj.items()}
+        return {func(k): recursive_json_apply(v, func) for k, v in json_obj.items()}
     elif isinstance(json_obj, list):
         return [recursive_json_apply(v, func) for v in json_obj]
     elif json_obj is None:
@@ -227,7 +229,7 @@ def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_f
 
     config_entry["id"] = target
 
-    target_metadata = None
+    target_metadata: Optional[Dict[str, Any]] = None
     for m in metadata:
         if m.get("id") == target:
             target_metadata = m
@@ -247,7 +249,7 @@ def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_f
                 return maybe_file
 
         for k, v in json.loads(input_json.strip()).items():
-            input_json_dict[k] = recursive_json_apply(v, if_file_convert)
+            input_json_dict[if_file_convert(k)] = recursive_json_apply(v, if_file_convert)
 
     config_entry["inputs"] = {
         "dir": wdl_dir,
@@ -294,6 +296,9 @@ def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_f
         config_entry["dependencies"] = []
     elif isinstance(config_entry["dependencies"], str):
         config_entry["dependencies"] = [config_entry["dependencies"]]
+    # add metadata dependencies
+    if get_not_none(target_metadata, "dependencies") is not None:
+        config_entry["dependencies"].extend(target_metadata["dependencies"])
     if "tags" not in config_entry:
         config_entry["tags"] = []
     elif isinstance(config_entry["tags"], str):
@@ -432,6 +437,13 @@ def main(argv=None):
         help="Include extra metadata when extracting the unit tests into the config. "
              "Since we have our own method of testing file outputs, this is mostly used for file hashes/regexes."
     )
+    parser.add_argument(
+        "--script",
+        # default="unit_tests_script.sh",
+        default=None,
+        help="Bash script to run alongside. This is to set up the environment for the test suite, ex mount points and files tests may depend on."
+             "(Probably need to run with root)."
+    )
     argcomplete.autocomplete(parser)
     args = parser.parse_args(argv)
 
@@ -459,6 +471,13 @@ def main(argv=None):
 
     print("Extracting tests...")
     extract_tests(Path(spec_dir) / Path("SPEC.md"), Path(spec_dir) / Path("tests/data"), Path("unit_tests"), args.version, args.output_type, args.extra_metadata)
+
+    if args.script is not None:
+        # assume it needs to run as root
+        if os.geteuid() == 0:
+            subprocess.run(["bash", "{args.script}"], shell=True)
+        else:
+            subprocess.run(["sudo", "bash", "{args.script}"], shell=True)
 
 
 if __name__ == "__main__":
