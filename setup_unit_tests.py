@@ -444,16 +444,20 @@ def main(argv=None):
         help="Bash script to run alongside. This is to set up the environment for the test suite, ex mount points and files tests may depend on."
              "(Probably need to run with root)."
     )
+    parser.add_argument(
+        "--repo",
+        # while the WDL spec has its bugs, use a fixed version
+        # see openwdl issues #653, #654, #661, #662, #663, #664, #665, #666
+        default="https://github.com/stxue1/wdl.git",
+        help="Repository to pull from."
+    )
     argcomplete.autocomplete(parser)
     args = parser.parse_args(argv)
 
     spec_dir = f"wdl-{args.version}-spec"
     if not os.path.exists(spec_dir) or args.force_pull is True:
-        print("Pulling SPEC from repo...")
-        # while the WDL spec has its bugs, use a fixed version
-        # see openwdl issues #653, #654, #661, #662, #663, #664, #665, #666
-        # cmd = f"git clone https://github.com/openwdl/wdl.git {spec_dir}"
-        cmd = f"git clone https://github.com/stxue1/wdl.git"
+        print(f"Pulling SPEC from repo {args.repo}...")
+        cmd = f"git clone {args.repo}"
         subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
     os.chdir(spec_dir)
