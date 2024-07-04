@@ -6,6 +6,7 @@ This test suite allows for those tests to be extracted and tested against a vari
 - Specification tests are only available for [WDL versions 1.1.1 and above](https://github.com/openwdl/wdl-tests/blob/58ff36209586ed69c9a64d3e0b151a343f12a4eb/README.md?plain=1#L7).
     > Starting with WDL 1.1.1, nearly all the examples in the WDL specification are also test cases that conform to the WDL markdown test specification.
 - If running locally, it is **not** recommended to run test IDs `hisat2` and `gatk_haplotype_caller` (test indices 66 and 67). These tests will take a lot of network bandwidth and require a large amount of resources.
+- The test ID `relative_and_absolute` (test index 52) needs to be run with root as it will read a root owned file
 - Cromwell is not supported as Cromwell cannot run WDL 1.1+
 - MiniWDL cannot run all tests, at least until [this issue is resolved](https://github.com/chanzuckerberg/miniwdl/issues/693)
 
