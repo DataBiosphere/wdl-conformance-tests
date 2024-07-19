@@ -1148,4 +1148,17 @@
     inputOverride.result:
       type: Int
       value: 7
+- description: |
+     Test for glob order
+  tags: ["behavior"]
+  versions: ["draft-2", "1.0", "1.1"]
+  id: glob_order
+  inputs:
+    dir: tests/glob_order
+    wdl: glob_order.wdl
+    json: glob_order.json
+  outputs:
+    globOrder.result:
+      type: Array[File]
+      value: [{regex: '^1$'}, {regex: '^2$'}, {regex: '^3$'}]
 
