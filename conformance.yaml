@@ -1136,18 +1136,16 @@
   outputs:
     fail: {}
 - description: |
-     Test for externally overriding task inputs 
+     Test for externally overriding task inputs being disallowed
   tags: ["input", "behavior"]
-  versions: ["draft-2", "1.0", "1.1"]
+  versions: ["1.1"]
   id: input_override
   inputs:
     dir: tests/input_override
     wdl: input_override.wdl
     json: input_override.json
   outputs:
-    inputOverride.result:
-      type: Int
-      value: 7
+    fail: {}
 - description: |
      Test for glob order
   tags: ["behavior"]
