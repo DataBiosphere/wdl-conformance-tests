@@ -1,0 +1,70 @@
+- description: |
+    Test ENCODE
+  versions: ["draft-2", "1.0"]
+  id: encode
+  tags: ["encode", "integration"]
+  setup: integration/setup.sh
+  inputs:
+    dir: integration/gatk/encode
+    wdl: encode_mapping_workflow.wdl
+    json: encode_mapping_workflow.wdl.json
+  outputs:
+    encode_mapping_workflow.result:
+      type: String
+      value: success
+- description: |
+    Test GATK tutorial 1
+  versions: ["draft-2", "1.0"]
+  id: tut01
+  tags: ["gatk", "integration"]
+  setup: integration/setup.sh
+  inputs:
+    dir: integration/gatk/tut01
+    wdl: helloHaplotypeCaller.wdl
+    json: helloHaplotypeCaller_inputs.json
+  outputs:
+    helloHaplotypeCaller.result:
+      type: String
+      value: success
+- description: |
+    Test GATK tutorial 2
+  versions: ["draft-2", "1.0"]
+  id: tut02
+  tags: ["gatk", "integration"]
+  setup: integration/setup.sh
+  inputs:
+    dir: integration/gatk/tut02
+    wdl: simpleVariantSelection.wdl
+    json: simpleVariantSelection_inputs.json
+  outputs:
+    SimpleVariantSelection.result:
+      type: String
+      value: success
+- description: |
+    Test GATK tutorial 3
+  versions: ["draft-2", "1.0"]
+  id: tut03
+  tags: ["gatk", "integration"]
+  setup: integration/setup.sh
+  inputs:
+    dir: integration/gatk/tut03
+    wdl: simpleVariantDiscovery.wdl
+    json: simpleVariantDiscovery_inputs.json
+  outputs:
+    SimpleVariantDiscovery.result:
+      type: String
+      value: success
+- description: |
+    Test GATK tutorial 4
+  versions: ["draft-2", "1.0"]
+  id: tut04
+  tags: ["gatk", "integration"]
+  setup: integration/setup.sh
+  inputs:
+    dir: integration/gatk/tut04
+    wdl: jointCallingGenotypes.wdl
+    json: jointCallingGenotypes_inputs.json
+  outputs:
+    jointCallingGenotypes.result:
+      type: String
+      value: success

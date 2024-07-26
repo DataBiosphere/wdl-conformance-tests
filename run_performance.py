@@ -32,8 +32,7 @@ def call_test(options: argparse.Namespace) -> Dict[str, Any]:
     """
     Run all tests and record times
     """
-    conformance_file = "conformance.yaml"
-    conformance_runner = WDLConformanceTestRunner(conformance_file)
+    conformance_runner = WDLConformanceTestRunner(options.conformance_file)
     runners = get_runners(options)
     all_responses = {}
     for runner in runners:
