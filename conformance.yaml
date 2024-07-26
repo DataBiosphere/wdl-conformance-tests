@@ -1148,7 +1148,7 @@
     fail: {}
 - description: |
      Test for glob order
-  tags: ["behavior"]
+  tags: ["behavior", "glob"]
   versions: ["draft-2", "1.0", "1.1"]
   id: glob_order
   inputs:
@@ -1159,4 +1159,30 @@
     globOrder.result:
       type: Array[File]
       value: [{regex: '^1$'}, {regex: '^2$'}, {regex: '^3$'}]
+- description: |
+     Test for glob expression support
+  tags: ["behavior", "glob"]
+  versions: ["draft-2", "1.0", "1.1"]
+  id: glob_logic
+  inputs:
+    dir: tests/glob_logic
+    wdl: glob_logic.wdl
+    json: glob_logic.json
+  outputs:
+    globLogic.result:
+      type: Array[File]
+      value: [{regex: '^yum$'}]
+- description: |
+     Test for globs depending on other globs
+  tags: ["behavior", "glob"]
+  versions: ["draft-2", "1.0", "1.1"]
+  id: glob_recursion
+  inputs:
+    dir: tests/glob_recursion
+    wdl: glob_recursion.wdl
+    json: glob_recursion.json
+  outputs:
+    globRecursion.result:
+      type: Array[File]
+      value: [{regex: '^yum$'}]
 
