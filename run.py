@@ -300,7 +300,7 @@ class WDLConformanceTestRunner:
 
         if exclude_outputs is not None and len(exclude_outputs) > 0:
             # I'm not sure if it is possible but the wdl-tests spec seems to say the type can also be a string
-            exclude_outputs = list(exclude_outputs) if not isinstance(exclude_outputs, list) else exclude_outputs
+            exclude_outputs = [exclude_outputs] if not isinstance(exclude_outputs, list) else exclude_outputs
             # remove the outputs that we are not allowed to compare
             test_result_outputs = dict()
             for k, v in test_results.get('outputs', {}).items():
