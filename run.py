@@ -303,11 +303,12 @@ class WDLConformanceTestRunner:
         except json.JSONDecodeError:
             return {'status': 'FAILED', 'reason': f'Results file at {results_file} is not JSON'}
 
+        # todo: simplify logic into one branch
         if exclude_outputs is not None and len(exclude_outputs) > 0:
             # I'm not sure if it is possible but the wdl-tests spec seems to say the type can also be a string
             exclude_outputs = [exclude_outputs] if not isinstance(exclude_outputs, list) else exclude_outputs
             # remove the outputs that we are not allowed to compare
-            excluded = set(excluded_outputs)
+            excluded = set(exclude_outputs)
             test_result_outputs = {k: v for k, v in test_results.get('outputs', {}).items() if k.split(".")[-1] not in excluded}
 
         else:
@@ -370,8 +371,8 @@ class WDLConformanceTestRunner:
 
         # Only one of json_string or input json file can exist
         if json_string is not None and json_file is not None:
-            return {'status': 'FAILED', 'reason': f'Config file specifies both a json string and json input file! Only one can be supplied! '
-                                                  f'Check the input section for test id {test["id"]}.'}
+            raise RuntimeError(f'Config file specifies both a json string and json input file! Only one can be supplied! '
+                               f'Check the input section for test id {test["id"]}.')
 
         test_args = args[runner].split(" ") if args[runner] is not None else []
         unique_id = uuid4()
@@ -386,8 +387,9 @@ class WDLConformanceTestRunner:
         if runner == "cromwell":
             pre_args = args["cromwell_pre_args"]
 
-        # todo: it seems odd that I'm looking for a dependency when the test spec says its supposed to be used to turn failing tests into warnings
-        # this also isn't the most efficient
+        # todo: it seems odd that I'm looking for a dependency before running when the test spec says test frameworks are supposed to be used to turn failing tests into warnings
+        # this is mainly because the docker and singularity strings are custom dependencies that aren't (explicitly) part of the WDL test spec
+        # they mainly tell how toil should run to pass the test
         if runner == "toil-wdl-runner" and "dependencies" in test:
             if "docker" in test["dependencies"]:
                 test_args.extend(["--container", "docker"])
@@ -429,6 +431,7 @@ class WDLConformanceTestRunner:
         Returns a result that can have status SKIPPED, SUCCEEDED, or FAILED.
         """
         response = {'description': test.get('description'), 'number': test_index, 'id': test.get('id')}
+        # priority flag is defined in https://github.com/openwdl/wdl-tests/blob/main/docs/Specification.md#test-configuration
         if test.get("priority") == "ignore":
             # config specifies to ignore this test, so skip
             if progress:
@@ -494,8 +497,7 @@ class WDLConformanceTestRunner:
         # might allow it.
         # But the tests all need to be for single WDL versions.
         versions_to_test = set(options.versions.split(','))
-        selected_tests = get_specific_tests(conformance_tests=self.tests, tag_argument=options.tags, number_argument=options.numbers,
-                                            id_argument=options.id, exclude_number_argument=options.exclude_numbers, exclude_tags_argument=options.exclude_tags)
+        selected_tests = get_specific_tests(conformance_tests=self.tests, options=options)
         selected_tests_amt = len(selected_tests) * len(versions_to_test) * options.repeat
         successes = 0
         skips = 0
@@ -638,13 +640,14 @@ def add_options(parser) -> None:
     parser.add_argument("--id", default=None, help="Specify WDL tests by ID.")
     parser.add_argument("--repeat", default=1, type=int, help="Specify how many times to run each test.")
     # This is to deal with jobstores being created in the /data/tmp directory on Phoenix, which appears to be unique
-    # per worker, thus causing JobstoreNotFound exceptions when delegating too many workers at a time
+    # per worker, thus causing JobstoreNotFound exceptions when running across multiple workers
     parser.add_argument("--jobstore-path", "-j", default=None, help="Specify the PARENT directory for the jobstores to "
                                                                     "be created in.")
     # Test responses are collected and sorted, so this option allows the script to print out the current progress
     parser.add_argument("--progress", default=False, action="store_true", help="Print the progress of the test suite "
                                                                                "as it runs.")
-    parser.add_argument("--debug", action="store_true", default=False)
+    parser.add_argument("--debug", action="store_true", default=False, help="Specifically to be used with Pycharm's debugger (or a pgdb based debugger)."
+                                                                            "This makes everything run on the same thread.")
 
 
 def main(argv=None):

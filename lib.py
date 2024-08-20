@@ -3,6 +3,8 @@
 import os
 import re
 import subprocess
+from argparse import Namespace
+from distutils.util import strtobool
 
 from WDL.Type import Float as WDLFloat, String as WDLString, File as WDLFile, Int as WDLInt, Boolean as WDLBool, \
     Array as WDLArray, Map as WDLMap, Pair as WDLPair, StructInstance as WDLStruct
@@ -305,10 +307,15 @@ def get_test_indices(number_argument):
     return tests
 
 
-def get_specific_tests(conformance_tests, tag_argument, number_argument, id_argument, exclude_number_argument=None, exclude_tags_argument=None):
+def get_specific_tests(conformance_tests, options: Namespace):
     """
     Given the expected tests, tag argument, and number argument, return a list of all test numbers/indices to run
     """
+    tag_argument = options.tags
+    number_argument = options.numbers
+    id_argument = options.id
+    exclude_number_argument = options.exclude_numbers
+    exclude_tags_argument = options.exclude_tags
     given_indices = get_test_indices(number_argument)
     exclude_indices = get_test_indices(exclude_number_argument)
     given_tags = get_tags(tag_argument)
@@ -446,6 +453,9 @@ def wdl_type_to_miniwdl_class(wdl_type: Union[Dict[str, Any], str]) -> Optional[
     elif wdl_type == 'Pair':
         return WDLPair
     elif wdl_type == 'Object':
+        # MiniWDL doesn't support objects
+        # See https://github.com/chanzuckerberg/miniwdl/issues/694
+        # So replace with a placeholder type so the file will at least parse
         return WDLString
     else:
         raise NotImplementedError
@@ -524,9 +534,10 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
 
 
 def test_gpu_available():
-    if bool(os.getenv("WDL_CONFORMANCE_TESTS__GPU")):
+    gpu_env_var = os.getenv("WDL_CONFORMANCE_TESTS_GPU")
+    if gpu_env_var is not None:
         # override
-        return True
+        return bool(strtobool(gpu_env_var))
     try:
         p = subprocess.run("nvidia-smi".split(" "))
     except (FileNotFoundError, subprocess.SubprocessError):
@@ -552,14 +563,17 @@ def test_gpu_available():
 IGNORE_DEPENDENCIES = ["docker", "root", "singularity"]
 
 
-def test_dependencies(dependencies: Optional[List[str]], response: Dict[str, Any]) -> None:
+def test_dependencies(dependencies: Optional[List[str]]) -> Dict[str, Any]:
     """
     Given a set of dependencies for a test, see if any of those dependencies are violated.
     If so, change a failing test to a warning and update the reason.
+
+    The list of dependencies are at https://github.com/openwdl/wdl-tests/blob/main/docs/Specification.md#test-configuration
     """
     # todo: maybe there is a better way to deal with dependencies
+    response = {}
     if dependencies is None:
-        return
+        return response
     for d in dependencies:
         if d == "gpu":
             if not test_gpu_available() and response['status'] == 'FAILED':
@@ -599,3 +613,4 @@ def test_dependencies(dependencies: Optional[List[str]], response: Dict[str, Any
                                           f"\nFailing reason:\n") + response["reason"]
         elif d not in IGNORE_DEPENDENCIES:
             print(f"Warning: Test framework encountered unsupported dependency {d}. Ignoring...")
+    return response
