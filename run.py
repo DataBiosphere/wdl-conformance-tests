@@ -24,7 +24,7 @@ from uuid import uuid4
 from WDL.Type import Float as WDLFloat, String as WDLString, File as WDLFile, Int as WDLInt, Boolean as WDLBool, \
     Array as WDLArray, Map as WDLMap, Pair as WDLPair, StructInstance as WDLStruct
 
-from typing import Optional, Any, Dict, Tuple, List
+from typing import Optional, Any, Dict, Tuple, List, Union
 from WDL.Type import Base as WDLBase
 
 from lib import run_cmd, py_type_of_wdl_class, verify_failure, announce_test, print_response, convert_type, run_setup, \
@@ -39,7 +39,7 @@ class WDLRunner:
     """
     runner: str
 
-    def format_command(self, wdl_file, json_file, json_string, results_file, args, verbose, pre_args=None):
+    def format_command(self, wdl_file, json_input, results_file, args, verbose, pre_args=None):
         raise NotImplementedError
 
 
@@ -47,10 +47,10 @@ class CromwellStyleWDLRunner(WDLRunner):
     def __init__(self, runner):
         self.runner = runner
 
-    def format_command(self, wdl_file: str, json_file: Optional[str], json_string: Optional[str], results_file: str,
+    def format_command(self, wdl_file: str, json_input: Union[str, Dict[str, Any]], results_file: str,
                        args: List[str], verbose: bool, pre_args: Optional[List[str]] = None) -> List[str]:
-        # One or the other is guaranteed to exist in the prior branch
-        json_input = json_file or json_string
+        if isinstance(json_input, dict):
+            json_input = json.dumps(json_input)
         json_arg = ["-i", json_input] if json_input is not None else []
         return list(filter(None, self.runner.split(" "))) + [wdl_file, "-m", results_file] + json_arg + args
 
@@ -61,7 +61,7 @@ class CromwellWDLRunner(CromwellStyleWDLRunner):
     def __init__(self):
         super().__init__('cromwell')
 
-    def format_command(self, wdl_file: str, json_file: Optional[str], json_string: Optional[str], results_file: str,
+    def format_command(self, wdl_file: str, json_input: Union[str, Dict[str, Any]], results_file: str,
                        args: List[str], verbose: bool, pre_args: Optional[List[str]] = None) -> List[str]:
         if self.runner == 'cromwell' and not which('cromwell'):
             with CromwellWDLRunner.download_lock:
@@ -76,16 +76,17 @@ class CromwellWDLRunner(CromwellStyleWDLRunner):
                         run_cmd(cmd='make cromwell'.split(" "), cwd=os.getcwd())
                     self.runner = f'java {log_level} {pre_args} -jar {cromwell} run'
 
-        return super().format_command(wdl_file, json_file, json_string, results_file, args, verbose)
+        return super().format_command(wdl_file, json_input, results_file, args, verbose)
 
 
 class MiniWDLStyleWDLRunner(WDLRunner):
     def __init__(self, runner):
         self.runner = runner
 
-    def format_command(self, wdl_file: str, json_file: Optional[str], json_string: Optional[str], results_file: str,
+    def format_command(self, wdl_file: str, json_input: Union[str, Dict[str, Any]], results_file: str,
                        args: List[str], verbose: bool, pre_args: Optional[List[str]] = None) -> List[str]:
-        json_input = json_file or json_string
+        if isinstance(json_input, dict):
+            json_input = json.dumps(json_input)
         json_arg = ["-i", json_input] if json_input is not None else []
         return self.runner.split(" ") + [wdl_file, "-o", results_file, "-d", "miniwdl-logs",
                                          "--verbose"] + json_arg + args
@@ -112,7 +113,7 @@ class WDLConformanceTestRunner:
 
         In the future, make this return where it failed instead to give less generic error messages
 
-        :param expected: expected value object
+        :param expected: expected value object from conformance file
         :param result: result value object from WDL runner
         :param typ: type of output from conformance file
         """
@@ -179,38 +180,42 @@ class WDLConformanceTestRunner:
                                                       f"Expected output: {expected}\n"
                                                       f"Actual output: {result}!"}
             # check that output types are correct
-            if not isinstance(expected, py_type_of_wdl_class(typ)) or not isinstance(result, py_type_of_wdl_class(typ)):
+            expected_type = py_type_of_wdl_class(typ)
+            if not isinstance(expected, expected_type) or not isinstance(result, expected_type):
                 # When outputting in both miniwdl and toil, Map keys are always strings regardless of the specified type
                 # When Map[Int, Int], the output will be {"1": 1}
                 # Or when Map[Float, Int], the output will be {"1.000000": 1}
                 # This only applies to Int and Float types, as Boolean key types don't seem to be supported in miniwdl
                 if isinstance(typ, WDLInt):
                     try:
-                        # ensure the stringified version is equivalent to an int
-                        py_type_of_wdl_class(typ)(result)
-                        py_type_of_wdl_class(typ)(expected)
+                        # ensure the stringified version of the runner output is equivalent to an int
+                        expected_type(result)
                     except ValueError:
                         # the string representation does not represent the right type
-                        return {'status': 'FAILED', 'reason': f"Incorrect types when expecting type {typ}! Most likely a Map key type is incorrect.\n"
-                                                              f"Expected output: {expected}\n"
-                                                              f"Actual output: {result}!"}
+                        return {'status': 'FAILED', 'reason': f"Runner output {result} is not type Int from the conformance file."}
+                    try:
+                        # ensure the stringified version of the conformance output is equivalent to an int
+                        expected_type(expected)
+                    except ValueError:
+                        return {'status': 'FAILED', 'reason': f"Conformance output and type does not match. Expected output {expected} with expected type Int"}
+
                 elif isinstance(typ, WDLFloat):
                     try:
-                        # ensure the stringified version is equivalent to an int
-                        py_type_of_wdl_class(typ)(result)
-                        py_type_of_wdl_class(typ)(expected)
-                        if not ("." in result and "." in expected):
-                            # the string representation is not a float but an int
-                            raise ValueError
+                        # ensure the stringified version of the runner output is equivalent to an float
+                        expected_type(result)
                     except ValueError:
                         # the string representation does not represent the right type
-                        return {'status': 'FAILED', 'reason': f"Incorrect types when expecting type {typ}! Most likely a Map key type is incorrect.\n"
-                                                              f"Expected output: {expected}\n"
-                                                              f"Actual output: {result}!"}
+                        return {'status': 'FAILED', 'reason': f"Runner output {result} is not type Float from the conformance file."}
+                    try:
+                        # ensure the stringified version of the conformance output is equivalent to an float
+                        expected_type(expected)
+                    except ValueError:
+                        return {'status': 'FAILED', 'reason': f"Conformance output and type does not match. Expected output {expected} with expected type Float"}
                 else:
-                    return {'status': 'FAILED', 'reason': f"Incorrect types when expecting type {typ}!\n"
-                                                          f"Expected output: {expected}\n"
-                                                          f"Actual output: {result}!"}
+                    if not isinstance(expected, expected_type):
+                        return {'status': 'FAILED', 'reason': f"Incorrect types! Runner output {expected} is not of type {str(typ)}\n"}
+                    elif not isinstance(result, expected_type):
+                        return {'status': 'FAILED', 'reason': f"Incorrect types! Runner output {result} is not of type {str(typ)}\n"}
 
         if isinstance(typ, WDLFile):
             # check file path exists
@@ -460,7 +465,7 @@ class WDLConformanceTestRunner:
         if repeat is not None:
             response["repeat"] = repeat
         # Turn failing tests to warnings if they violate a test dependency
-        test_dependencies(dependencies=test.get("dependencies"), response=response)
+        response.update(test_dependencies(dependencies=test.get("dependencies")))
         return response
 
     def _run_debug(self, options: argparse.Namespace, args: Optional[Dict[str, Any]]) -> None:
