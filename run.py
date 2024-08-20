@@ -383,7 +383,7 @@ class WDLConformanceTestRunner:
 
         # todo: it seems odd that I'm looking for a dependency when the test spec says its supposed to be used to turn failing tests into warnings
         # this also isn't the most efficient
-        if test.get('dependencies') is not None and runner == "toil-wdl-runner":
+        if runner == "toil-wdl-runner" and "dependencies" in test:
             if "docker" in test["dependencies"]:
                 test_args.extend(["--container", "docker"])
             if "singularity" in test["dependencies"]:
