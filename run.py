@@ -302,19 +302,8 @@ class WDLConformanceTestRunner:
             # I'm not sure if it is possible but the wdl-tests spec seems to say the type can also be a string
             exclude_outputs = [exclude_outputs] if not isinstance(exclude_outputs, list) else exclude_outputs
             # remove the outputs that we are not allowed to compare
-            test_result_outputs = dict()
-            for k, v in test_results.get('outputs', {}).items():
-                for excluded in exclude_outputs:
-                    if k.endswith(excluded):
-                        # we first check that an output variable ends with the excluded name
-                        # ex: got: output.csvs, omit: csvs      so omit
-                        # then we check that the length of the two match
-                        # or that the character right before the endswith match is a namespace separator
-                        # ex: got: output.csvs, omit: output.csvs       so omit
-                        # ex: got: output.not_csvs, omit: csvs      so don't omit as '_' != '.'
-                        if len(k) == len(excluded) or k[::-1][len(excluded)] == ".":
-                            continue
-                    test_result_outputs[k] = v
+            excluded = set(excluded_outputs)
+            test_result_outputs = {k: v for k, v in test_results.get('outputs', {}).items() if k.split(".")[-1] not in excluded}
 
         else:
             test_result_outputs = test_results.get('outputs', {})
