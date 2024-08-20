@@ -5,6 +5,7 @@ run_unit.py: Run the WDL specification/unit tests.
 """
 import argparse
 import os
+import subprocess
 import sys
 
 import argcomplete
@@ -25,6 +26,13 @@ def main():
     parser.add_argument("--force-pull", default=False, action="store_true",
                         help="Specify whether to use the cached SPEC or to force a pull."
                              "The setup script will be run as well.")
+    parser.add_argument(
+        "--script",
+        # default="unit_tests_script.sh",
+        default=None,
+        help="Bash script to run after extracting the tests. Runs relative to this file. This is to set up the environment for the test suite,"
+             "ex mount points and files tests may depend on. (Probably need to run with root)."
+    )
     parser.set_defaults(versions="1.1")  # override default to 1.1
     parser.set_defaults(runner="toil-wdl-runner")  # cromwell doesn't support 1.1+
 
@@ -41,6 +49,13 @@ def main():
 
     if args.versions not in ["1.1", "1.2"]:
         raise RuntimeError(f"WDL version is not valid; unit tests are only supported on WDL 1.1+.")
+
+    if args.script is not None:
+        # assume it needs to run as root
+        if os.geteuid() == 0:
+            subprocess.run(["bash", "{args.script}"], shell=True)
+        else:
+            subprocess.run(["sudo", "bash", "{args.script}"], shell=True)
 
     conformance_runner = WDLConformanceTestRunner(conformance_file=args.config)
     _, successful_run = conformance_runner.run_and_generate_tests(args)

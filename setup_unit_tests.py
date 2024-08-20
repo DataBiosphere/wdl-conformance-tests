@@ -477,13 +477,6 @@ def main(argv=None):
              "Since we have our own method of testing file outputs, this is mostly used for file hashes/regexes."
     )
     parser.add_argument(
-        "--script",
-        # default="unit_tests_script.sh",
-        default=None,
-        help="Bash script to run after extracting the tests. Runs relative to this file. This is to set up the environment for the test suite, ex mount points and files tests may depend on."
-             "(Probably need to run with root)."
-    )
-    parser.add_argument(
         "--repo",
         # while the WDL spec has its bugs, use a fixed version
         # see openwdl issues #653, #654, #661, #662, #663, #664, #665, #666
@@ -518,13 +511,6 @@ def main(argv=None):
 
     print("Extracting tests...")
     extract_tests(Path(spec_dir) / Path("SPEC.md"), Path(spec_dir) / Path("tests/data"), Path("unit_tests"), args.version, args.output_type, args.extra_patch_data)
-
-    if args.script is not None:
-        # assume it needs to run as root
-        if os.geteuid() == 0:
-            subprocess.run(["bash", "{args.script}"], shell=True)
-        else:
-            subprocess.run(["sudo", "bash", "{args.script}"], shell=True)
 
 
 if __name__ == "__main__":
