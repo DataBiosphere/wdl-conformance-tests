@@ -43,7 +43,7 @@ Before running the test suite, the shell script `unit_tests_script.sh` may need 
 To remove these directories and anything else that the script may create, call `make clean-unit-setup`.
 
 ### Running Tests
-THen, use the script `run_unit.py` to actually run the tests according to the configuration file. If the default setup was performed,
+Then, use the script `run_unit.py` to actually run the tests according to the configuration file. If the default setup was performed,
 the script can be used as if using `run.py`.
 
 For example: `python run_unit.py --runner toil-wdl-runner --version 1.1 -n 105-109 --quiet --threads=4 --progress`
