@@ -388,7 +388,9 @@ class WDLConformanceTestRunner:
             pre_args = args["cromwell_pre_args"]
 
         # todo: it seems odd that I'm looking for a dependency before running when the test spec says test frameworks are supposed to be used to turn failing tests into warnings
-        # this is mainly because the docker and singularity strings are custom dependencies that aren't (explicitly) part of the WDL test spec
+        # this is mainly because the docker and singularity strings that I use are custom dependency values that I use
+        # but I use it to carry data through on how to run the runner rather than using it to turn failing tests into warnings
+        # (one of the tests depends on findmnt on /, which differs between singularity and docker
         # they mainly tell how toil should run to pass the test
         if runner == "toil-wdl-runner" and "dependencies" in test:
             if "docker" in test["dependencies"]:
