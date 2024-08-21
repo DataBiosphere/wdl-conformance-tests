@@ -192,12 +192,15 @@ class WDLConformanceTestRunner:
                 # Or when Map[Float, Int], the output will be {"1.000000": 1}
                 # This only applies to Int and Float types, as Boolean key types don't seem to be supported in miniwdl
                 if isinstance(typ, WDLInt):
+                    # Ensure the actual result is parseable as the correct type
                     try:
                         # ensure the stringified version of the runner output is equivalent to an int
                         expected_type(result)
                     except ValueError:
                         # the string representation does not represent the right type
                         return {'status': 'FAILED', 'reason': f"Runner output {result} is not type Int from the conformance file."}
+                    # For good measure, ensure the expected result is as well.
+                    # TODO: If a test fails because of this it is really a bug in the test definition. (also mirrored below)
                     try:
                         # ensure the stringified version of the conformance output is equivalent to an int
                         expected_type(expected)
@@ -205,12 +208,14 @@ class WDLConformanceTestRunner:
                         return {'status': 'FAILED', 'reason': f"Conformance output and type does not match. Expected output {expected} with expected type Int"}
 
                 elif isinstance(typ, WDLFloat):
+                    # Ensure the actual result is parseable as the correct type
                     try:
                         # ensure the stringified version of the runner output is equivalent to an float
                         expected_type(result)
                     except ValueError:
                         # the string representation does not represent the right type
                         return {'status': 'FAILED', 'reason': f"Runner output {result} is not type Float from the conformance file."}
+                    # For good measure, ensure the expected result is as well.
                     try:
                         # ensure the stringified version of the conformance output is equivalent to an float
                         expected_type(expected)
