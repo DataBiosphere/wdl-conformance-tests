@@ -156,16 +156,20 @@ def extract_output_types_regex(wdl_file) -> Dict[str, str]:
 
 
 def convert_typed_output_values(output_values: Union[None, str, Dict[str, Any], List[Any]], output_type: WDL.Type.Base,
-                                data_dir: Optional[Path], extra_patch_data: Union[List[Any], Dict[str, Any]]):
+                                data_dir: Optional[Path], extra_patch_data: Union[List[Any], Dict[str, Any]]) -> Optional[Union[str, Dict[str, Any], List[Any]]]:
     """
-    Get the expected output object (in our conformance representation) with respect to the output types. Do so by searching
-    the extra yaml/configuration file for an associated key value pair. Can also test if the
-    wanted file exists recursively in data_dir. Descend recursively down the type
+    Get the expected output object (in our conformance representation) with respect to the output types. Convert/add extra fields when needed
+    to matched our conformance test suite.
+    Do so by searching the extra yaml/configuration file for an associated key value pair. Can also test if the
+    wanted file exists recursively in data_dir. Descends recursively down the type alongside the object.
 
-    This is done to get the md5sum of files when converting unit tests.
+    This is done to get and add the md5sum of files when converting unit tests.
 
-    Ex: If given hello.txt and type File, try to get the md5sum of the file.
+    Ex: If given hello.txt and type File, try to get the md5sum of the file. Then returns the md5sum as {"md5sum": md5sum}
     If given "hello" and type String, don't do anything and just return the string value "hello"
+
+    Returns a json/yaml parseable object with the expected values represented as a string or a compound type with leafs of strings.
+
     """
     if output_values is None and output_type.optional:
         return output_values
