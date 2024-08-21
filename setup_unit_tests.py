@@ -26,6 +26,7 @@ from lib import convert_type
 
 import WDL
 
+# Use the same parsing regex as https://github.com/openwdl/wdl-tests/blob/58ff36209586ed69c9a64d3e0b151a343f12a4eb/scripts/extract_tests.py#L10-L13
 TEST_RE = re.compile(
     r"^<details>\s*<summary>\s*Example: (.+?)\s*```wdl(.+?)```\s*</summary>\s*(?:<p>\s*(?:Example input:\s*```json(.*?)```)?\s*(?:Example output:\s*```json(.*?)```)?\s*(?:Test config:\s*```json(.*)```)?\s*</p>\s*)?</details>$",
     re.I | re.S,
