@@ -196,6 +196,7 @@ def convert_typed_output_values(output_values: Union[None, str, Dict[str, Any], 
                 # in the map_to_struct.wdl test, when parsing the output types, the miniwdl parser outputs a struct with the right types
                 # but the wrong keys (right member types but wrong member names)
                 # So the key lookup will fail even though the corresponding types are actually there
+                # See https://github.com/chanzuckerberg/miniwdl/issues/712
                 # Since dictionaries past python 3.6 are ordered, find the corresponding type from the current output's position
                 output_value_type = list(output_type.members.values())[i]
             converted_output[output_key] = convert_typed_output_values(output_value, output_value_type, data_dir, get_from(extra_patch_data, output_value))
