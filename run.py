@@ -49,6 +49,11 @@ class CromwellStyleWDLRunner(WDLRunner):
 
     def format_command(self, wdl_file: str, json_input: Union[str, Dict[str, Any]], results_file: str,
                        args: List[str], verbose: bool, pre_args: Optional[List[str]] = None) -> List[str]:
+        """
+        Make a list of command parts to invoke a WDL runner that uses Cromwell-style arguments.
+
+        :param json_input: Can either be a json as a string or a dictionary that is json parseable
+        """
         if isinstance(json_input, dict):
             json_input = json.dumps(json_input)
         json_arg = ["-i", json_input] if json_input is not None else []
