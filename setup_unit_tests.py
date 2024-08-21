@@ -166,7 +166,7 @@ def convert_typed_output_values(output_values: Union[None, str, Dict[str, Any], 
 
     This is done to get and add the md5sum of files when converting unit tests.
 
-    Ex: If given hello.txt and type File, try to get the md5sum of the file. Then returns the md5sum as {"md5sum": md5sum}
+    Ex: If given hello.txt and type File, try to get the md5sum of the file. Then returns the md5sum as {"md5sum": md5sum} (If regex is in the patch file, can use that too)
     If given "hello" and type String, don't do anything and just return the string value "hello"
 
     Returns a json/yaml parseable object with the expected values represented as a string or a compound type with leafs of strings.
