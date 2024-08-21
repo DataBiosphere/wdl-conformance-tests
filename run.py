@@ -465,8 +465,7 @@ class WDLConformanceTestRunner:
     def _run_debug(self, options: argparse.Namespace, args: Optional[Dict[str, Any]]) -> None:
         # To be used with pycharm's debugger which is currently broken if there is concurrency
         versions_to_test = set(options.versions.split(','))
-        selected_tests = get_specific_tests(conformance_tests=self.tests, tag_argument=options.tags, number_argument=options.numbers,
-                                            id_argument=options.id, exclude_number_argument=options.exclude_numbers, exclude_tags_argument=options.exclude_tags)
+        selected_tests = get_specific_tests(conformance_tests=self.tests, options=options)
         print(f"===DEBUG===")
         print(f'Testing runner {options.runner} on WDL versions: {",".join(versions_to_test)}\n')
         for test_index in selected_tests:

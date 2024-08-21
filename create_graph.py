@@ -299,10 +299,7 @@ def create_graph(from_file: str, options: argparse.Namespace) -> None:
         with open(options.conformance_file, "r") as f:
             data = yaml.safe_load(f)
             # this also allows specifying which tests to graph by tag/id/numbers
-            all_test_idx_to_graph = get_specific_tests(conformance_tests=data, tag_argument=options.tags,
-                                                       number_argument=options.numbers,
-                                                       exclude_number_argument=options.exclude_numbers,
-                                                       id_argument=options.id)
+            all_test_idx_to_graph = get_specific_tests(conformance_tests=data, options=options)
             all_test_ids_to_graph = list_of_idx_to_ids(data, all_test_idx_to_graph)
         num_unique_tests_to_display = len(all_test_ids_to_graph)
         iterations = num_unique_tests_to_display // number_of_entries_per_graph + (
