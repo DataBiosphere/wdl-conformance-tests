@@ -476,7 +476,7 @@ def main(argv=None):
         help="Default behavior does not pull the spec repo if it was already pulled. Specify this argument to force a refresh."
     )
     parser.add_argument(
-        "--extra-patch_data", "-e",
+        "--extra-patch-data", "-e",
         default="unit_tests_patch_data.yaml",
         help="Include extra patch data when extracting the unit tests into the config. "
              "Since we have our own method of testing file outputs, this is mostly used for file hashes/regexes."
