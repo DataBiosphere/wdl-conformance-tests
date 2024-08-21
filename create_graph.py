@@ -9,8 +9,7 @@ By default, it graphs boxplots with a new matplotlib window per 30 tests. Grapht
 and number of tests per window can be changed with --display-num or --display-all. Runners to display can be altered
 with --ignore-runner.
 
-Specifying an input conformance file (ex: conformance.yaml) will allow displaying only certain tests with options -n,
--t, and --id.
+Display only certain tests with options -n, -t, and --id.
 
 Writing the graph to a PNG file works by specifying --output [filename.png] and the image dimensions can be specified
 with --dimensions x,y in inches.
@@ -279,6 +278,8 @@ def create_graph(from_file: str, options: argparse.Namespace) -> None:
 
     unique_tests = df["Test ID"].unique()
     if options.conformance_file is None:
+        # TODO: We can't actualy not have a conformance file; it has a default value.
+
         # if test IDs are specified on command line, graph those only
         test_ids_to_graph = options.id.split(",") if options.id is not None else None
 
@@ -359,10 +360,6 @@ def add_create_graph_args(parser: argparse.ArgumentParser) -> None:
     graph_args.add_argument("--no-labels", default=False, action="store_true", help="Specify to not display extra "
                                                                                     "labels on the graph.")
     graph_args.add_argument("--graph-type", default="box", choices=["box", "bar"])
-    graph_args.add_argument("--conformance-file", default="conformance.yaml", action="store",
-                            help="Specify the conformance file to read from. This will specify whether to grab/graph "
-                                 "tests by conformance file or by CSV file test IDs only. Specifying this will make "
-                                 "the graph accept -n, -t, -id and other related arguments.")
     graph_args.add_argument("--ignore-skipped", default=False, action="store_true", help="Specify whether to not graph "
                                                                                         "skipped conformance tests in "
                                                                                         "the graph.")

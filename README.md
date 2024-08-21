@@ -51,15 +51,8 @@ Testing runner toil-wdl-runner on WDL versions: 1.1
 
 ## Options
 
+The `run.py` script, and most other included scripts, support the followign options:
 ```
-(venv) quokka@qcore ~/$ python3 run.py --help
-usage: run.py [-h] [--verbose] [--versions {draft-2,1.0,1.1}] [--tags TAGS] [--numbers NUMBERS] [--runner {cromwell,toil-wdl-runner,miniwdl}] [--threads THREADS] [--time] [--quiet]
-              [--exclude-numbers EXCLUDE_NUMBERS] [--toil-args TOIL_ARGS] [--miniwdl-args MINIWDL_ARGS] [--cromwell-args CROMWELL_ARGS] [--cromwell-pre-args CROMWELL_PRE_ARGS] [--id ID]
-              [--repeat REPEAT] [--jobstore-path JOBSTORE_PATH] [--progress]
-
-Run WDL conformance tests.
-
-options:
   -h, --help            show this help message and exit
   --verbose             Print more information about a test
   --versions {draft-2,1.0,1.1}, -v {draft-2,1.0,1.1}
@@ -74,6 +67,8 @@ options:
   --quiet
   --exclude-numbers EXCLUDE_NUMBERS
                         Exclude certain test numbers.
+  --conformance-file CONFORMANCE_FILE
+                       Run the given test suite. 
   --toil-args TOIL_ARGS
                         Arguments to pass into toil-wdl-runner. Ex: --toil-args="caching=False"
   --miniwdl-args MINIWDL_ARGS
@@ -89,7 +84,7 @@ options:
                         Specify the PARENT directory for the jobstores to be created in.
   --progress            Print the progress of the test suite as it runs.
 ```
-Invoking `run.py` with no options will result in the entire test suite being run, which can take a long time.
+Invoking `run.py` with no options will result in the entire `conformance.yaml` test suite being run, which can take a long time.
 Including `--progress` is recommended when running over a long period of time.
 
 The tests to run can be specified with `--id`, `--tags`, and `--numbers`. Tests matching any of the selectors will be run:
@@ -117,7 +112,7 @@ By default, runner logs are only printed for failed tests. `--verbose` forces lo
 
 If running tests on a cluster, [extra arguments may be necessary](SLURM_README.md).
 ## Adding Tests
-Tests can be added by editing `conformance.yaml`.
+Tests can be added by editing the test suite file: `conformance.yaml` for conformance tests, or `integration.yaml` for longer integration tests.
 
 For example, a new test can be added as follows:
 ```yaml
@@ -127,7 +122,7 @@ For example, a new test can be added as follows:
   id: example_test_id # unique ID of test, no 2 tests should have the same id
   tags: ["examples", "behavior"] # specify tags, these don't need to be unique
   inputs:
-    dir: tests/example_files # path to directory where test is, can be an absolute or relative path (to conformance.yaml)
+    dir: tests/example_files # path to directory where test is, can be an absolute or relative path (from the test suite file)
     wdl: example.wdl # wdl file name
     json: example.json # json file describing test workflow inputs
   outputs:
@@ -252,7 +247,7 @@ tests/basic_stdout
 └── version_draft-2.patch # new file
 ```
 
-Then add the tests to `conformance.yaml`.
+Then add the tests to the test suite file.
 ```yaml
 - description: |
     Example stdout test
@@ -327,9 +322,6 @@ Arguments for graphing runtimes of WDL tests:
                         Specify the precision when outputting float values. Ex: Default=0 will result in 1 for float value 1.4...
   --no-labels           Specify to not display extra labels on the graph.
   --graph-type GRAPH_TYPE
-  --conformance-file [CONFORMANCE_FILE]
-                        Specify the conformance file to read from. This will specify whether to grab/graph tests by conformance file or by CSV file test IDs only. Specifying this will make the graph accept -n, -t, -id and
-                        other related arguments.
 ```
 By default, separate graphs will be created for every 30 tests.
 
