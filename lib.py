@@ -344,6 +344,11 @@ def get_specific_tests(conformance_tests, options: Namespace):
 
 
 def verify_return_code(expected_ret_code: Union[int, List[int], str], got_ret_code: int):
+    """
+    Return a test result dict that SUCCEEDED if the return code is on the list, and FAILED otherwise.
+    
+    A "*" string matches any return code.
+    """
     if not isinstance(expected_ret_code, list):
         expected_ret_code = [expected_ret_code]
     success = {'status': 'SUCCEEDED'}
