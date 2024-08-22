@@ -470,7 +470,7 @@ class WDLConformanceTestRunner:
         if repeat is not None:
             response["repeat"] = repeat
         # Turn failing tests to warnings if they violate a test dependency
-        response.update(test_dependencies(dependencies=test.get("dependencies")))
+        response.update(test_dependencies(dependencies=test.get("dependencies"), current_result=response))
         return response
 
     def _run_debug(self, options: argparse.Namespace, args: Optional[Dict[str, Any]]) -> None:
