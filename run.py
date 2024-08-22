@@ -407,7 +407,8 @@ class WDLConformanceTestRunner:
                 test_args.extend(["--container", "docker"])
             if "singularity" in test["dependencies"]:
                 test_args.extend(["--container", "singularity"])
-        cmd = wdl_runner.format_command(wdl_file, json_file, json_string, results_file, test_args, verbose, pre_args)
+        json_input = json_string or json_file
+        cmd = wdl_runner.format_command(wdl_file, json_input, results_file, test_args, verbose, pre_args)
 
         realtime = None
         if time:
