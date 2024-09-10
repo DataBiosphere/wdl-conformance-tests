@@ -13,7 +13,6 @@ workflow globOrder {
 
 task test_task {
     input {
-        Int value_in = 4
     }
 
     command <<<
