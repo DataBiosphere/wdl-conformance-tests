@@ -160,7 +160,7 @@ def convert_typed_output_values(output_values: Union[None, str, Dict[str, Any], 
                                 data_dir: Optional[Path], extra_patch_data: Union[List[Any], Dict[str, Any]]) -> Optional[Union[str, Dict[str, Any], List[Any]]]:
     """
     Get the expected output object (in our conformance representation) with respect to the output types. Convert/add extra fields when needed
-    to matched our conformance test suite.
+    to match our conformance test suite.
     Do so by searching the extra yaml/configuration file for an associated key value pair. Can also test if the
     wanted file exists recursively in data_dir. Descends recursively down the type alongside the object.
 
