@@ -469,7 +469,8 @@ class WDLConformanceTestRunner:
                 self.run_single_test(test_index, test, runner, version, time, verbose, quiet, args, jobstore_path, debug))
         if repeat is not None:
             response["repeat"] = repeat
-        # Turn failing tests to warnings if they violate a test dependency
+        # Turn failing tests to warnings if any of the tests' dependencies were not
+        # actually available.
         response.update(test_dependencies(dependencies=test.get("dependencies"), current_result=response))
         return response
 
