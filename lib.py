@@ -1,12 +1,15 @@
 # generic helper functions
 
 import os
+import re
 import subprocess
+from argparse import Namespace
+from distutils.util import strtobool
 
 from WDL.Type import Float as WDLFloat, String as WDLString, File as WDLFile, Int as WDLInt, Boolean as WDLBool, \
     Array as WDLArray, Map as WDLMap, Pair as WDLPair, StructInstance as WDLStruct
 
-from typing import Optional, Any
+from typing import Optional, Any, Dict, Union, List, Type
 from WDL.Type import Base as WDLBase
 
 
@@ -70,7 +73,7 @@ def generate_change_container_specifier(lines, to_replace="container", replace_w
             if line.strip() == "}":
                 in_runtime = False
             if i > 0:
-                yield line[:i] + replace_with + line[i+len(to_replace):]
+                yield line[:i] + replace_with + line[i + len(to_replace):]
             else:
                 yield line
 
@@ -214,7 +217,9 @@ def get_wdl_file(wdl_file: str, wdl_dir: str, version: str) -> str:
     return generate_wdl(wdl_file, wdl_dir, version, outfile_name=outfile_name)
 
 
-def run_cmd(cmd, cwd):
+def run_cmd(cmd: List[str], cwd: str, debug: bool = False):
+    if debug:
+        print(" ".join(cmd))
     p = subprocess.Popen(cmd, stdout=-1, stderr=-1, cwd=cwd)
     stdout, stderr = p.communicate()
 
@@ -302,13 +307,19 @@ def get_test_indices(number_argument):
     return tests
 
 
-def get_specific_tests(conformance_tests, tag_argument, number_argument, exclude_number_argument, id_argument):
+def get_specific_tests(conformance_tests, options: Namespace):
     """
     Given the expected tests, tag argument, and number argument, return a list of all test numbers/indices to run
     """
+    tag_argument = options.tags
+    number_argument = options.numbers
+    id_argument = options.id
+    exclude_number_argument = options.exclude_numbers
+    exclude_tags_argument = options.exclude_tags
     given_indices = get_test_indices(number_argument)
     exclude_indices = get_test_indices(exclude_number_argument)
     given_tags = get_tags(tag_argument)
+    exclude_tags = get_tags(exclude_tags_argument)
     ids_to_test = None if id_argument is None else set(id_argument.split(','))
     tests = set()
     given_indices = given_indices or []
@@ -316,6 +327,8 @@ def get_specific_tests(conformance_tests, tag_argument, number_argument, exclude
         if exclude_indices is not None and test_number in exclude_indices:
             continue
         test_tags = conformance_tests[test_number]['tags']
+        if exclude_tags is not None and not set(test_tags).isdisjoint(exclude_tags):
+            continue
         test_id = conformance_tests[test_number]['id']
         if test_number in given_indices:
             tests.add(test_number)
@@ -330,6 +343,25 @@ def get_specific_tests(conformance_tests, tag_argument, number_argument, exclude
     return sorted(list(tests))
 
 
+def verify_return_code(expected_ret_code: Union[int, List[int], str], got_ret_code: int):
+    """
+    Return a test result dict that SUCCEEDED if the return code is on the list, and FAILED otherwise.
+    
+    A "*" string matches any return code.
+    """
+    if not isinstance(expected_ret_code, list):
+        expected_ret_code = [expected_ret_code]
+    success = {'status': 'SUCCEEDED'}
+    for rc in expected_ret_code:
+        if rc == "*":
+            # this stands for any return code
+            return success
+        if got_ret_code == rc:
+            return success
+    return {'status': 'FAILED',
+            'reason': f"Workflow did not return the correct return code! Got: {got_ret_code}. Expected: {','.join(expected_ret_code)}."}
+
+
 def verify_failure(ret_code: int) -> dict:
     """
     Verify that the workflow did fail
@@ -337,7 +369,7 @@ def verify_failure(ret_code: int) -> dict:
     ret_code should be the status code WDL runner outputs when running the test
     :param ret_code: return code from WDL runner
 
-    If ret_code is fail (>0 or True), then return success
+    If ret_code is fail (>0 or True) and expected return code matches or doesn't exist, then return success
     If ret_code is success (0 or False), then return failure
     """
     # This currently only tests if the workflow simply failed to run or not. It cannot differentiate
@@ -349,11 +381,10 @@ def verify_failure(ret_code: int) -> dict:
         return {'status': 'FAILED',
                 'reason': f"Workflow did not fail!"}
 
-    # proper failure, return success
     return {'status': f'SUCCEEDED'}
 
 
-def py_type_of_wdl_class(wdl_type: WDLBase):
+def py_type_of_wdl_class(wdl_type: WDLBase) -> Union[Type[int], Type[float], Type[bool], Type[str]]:
     """
     Return python equivalent type for a given WDL.Type class
     """
@@ -372,7 +403,10 @@ def wdl_inner_type(wdl_type):
     Get the interior type of a WDL type. So "Array[String]" gives "String".
     """
     if '[' in wdl_type:
-        return '['.join(wdl_type.split('[')[1:])[:-1]
+        remaining = '['.join(wdl_type.split('[')[1:])  # get remaining string starting from open bracket
+        end_idx = len(remaining) - remaining[::-1].index(']') - 1  # find index of closing bracket
+        # remove outer type postfix quantifiers
+        return remaining[:end_idx]
     else:
         return wdl_type
 
@@ -384,10 +418,15 @@ def wdl_outer_type(wdl_type):
     # deal with structs
     if isinstance(wdl_type, dict):
         return wdl_type
-    return wdl_type.split('[')[0]
+    if '[' in wdl_type:
+        reverse_idx = wdl_type[::-1].index(']')
+        postfix = wdl_type[len(wdl_type) - reverse_idx:]
+        return wdl_type.split('[')[0] + postfix
+    else:
+        return wdl_type
 
 
-def wdl_type_to_miniwdl_class(wdl_type: Any) -> Optional[WDLBase]:
+def wdl_type_to_miniwdl_class(wdl_type: Union[Dict[str, Any], str]) -> Optional[WDLBase]:
     """
     Given a WDL type name, return a MiniWDL class.
 
@@ -398,6 +437,10 @@ def wdl_type_to_miniwdl_class(wdl_type: Any) -> Optional[WDLBase]:
     :param wdl_type: representation of WDL type
     """
 
+    if isinstance(wdl_type, dict):
+        return WDLStruct
+    # remove postfix quantifiers
+    wdl_type = re.sub('[?+]', '', wdl_type)
     if wdl_type == 'File':
         return WDLFile
     elif wdl_type == 'Int':
@@ -414,8 +457,11 @@ def wdl_type_to_miniwdl_class(wdl_type: Any) -> Optional[WDLBase]:
         return WDLMap
     elif wdl_type == 'Pair':
         return WDLPair
-    elif isinstance(wdl_type, dict):
-        return WDLStruct
+    elif wdl_type == 'Object':
+        # MiniWDL doesn't support objects
+        # See https://github.com/chanzuckerberg/miniwdl/issues/694
+        # So replace with a placeholder type so the file will at least parse
+        return WDLString
     else:
         raise NotImplementedError
         # return None
@@ -428,11 +474,15 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
 
     :param wdl_type: representation of wdl type
     """
-    outer_py_typ = wdl_type_to_miniwdl_class(wdl_outer_type(wdl_type))
+    output_str_typ = wdl_outer_type(wdl_type)
+    outer_py_typ = wdl_type_to_miniwdl_class(output_str_typ)
+
+    optional = '?' in output_str_typ
+    nonempty = '+' in output_str_typ
 
     if outer_py_typ is WDLStruct:
         # objects currently forced to be typed just like structs
-        struct_type = WDLStruct("Struct")
+        struct_type = WDLStruct("Struct", optional=optional)
         members = {}
 
         for k, v in wdl_type.items():
@@ -456,7 +506,7 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
         value_type = key_and_value_type[1].strip()
         left_type = convert_type(key_type)
         right_type = convert_type(value_type)
-        return WDLPair(left_type, right_type)
+        return WDLPair(left_type, right_type, optional=optional)
 
     if outer_py_typ is WDLMap:
         inner_type = wdl_inner_type(wdl_type)
@@ -474,7 +524,7 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
         if None in (converted_key_type, converted_value_type):
             return None
 
-        return WDLMap((converted_key_type, converted_value_type))
+        return WDLMap((converted_key_type, converted_value_type), optional=optional)
 
     if outer_py_typ is WDLArray:
         inner_type = wdl_inner_type(wdl_type)
@@ -483,6 +533,91 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
             return None
         converted_inner_type = convert_type(inner_type)
         # if inner type conversion failed, then type is invalid, so return None
-        return outer_py_typ(converted_inner_type) if converted_inner_type is not None else None
+        return WDLArray(converted_inner_type, optional=optional, nonempty=nonempty) if converted_inner_type is not None else None
     # primitives remaining
-    return wdl_type_to_miniwdl_class(wdl_type)()
+    return wdl_type_to_miniwdl_class(wdl_type)(optional=optional)
+
+
+def test_gpu_available():
+    gpu_env_var = os.getenv("WDL_CONFORMANCE_TESTS_GPU")
+    if gpu_env_var is not None:
+        # override
+        return bool(strtobool(gpu_env_var))
+    try:
+        p = subprocess.run("nvidia-smi".split(" "))
+    except (FileNotFoundError, subprocess.SubprocessError):
+        pass
+    else:
+        # we have an nvidia gpu
+        if p.returncode == 0:
+            return True
+    # This is copied from how Toil checks for amd gpus
+    # This may not work, I'm not sure what the current conventions for getting amd gpu data is
+    # see comment in src/toil/lib/accelerators.py::count_amd_gpus
+    try:
+        p = subprocess.run(["amd-smi", "static"])
+    except (FileNotFoundError, subprocess.SubprocessError):
+        pass
+    else:
+        if p.returncode == 0:
+            # we (maybe) have an amd gpu
+            return True
+    return False
+
+
+IGNORE_DEPENDENCIES = ["docker", "root", "singularity"]
+
+
+def test_dependencies(dependencies: Optional[List[str]], current_result: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Given a set of dependencies for a test, see if any of those dependencies are violated.
+    If so, change a failing test to a warning and update the reason.
+
+    The list of dependencies are at https://github.com/openwdl/wdl-tests/blob/main/docs/Specification.md#test-configuration
+
+    Pass in the dictionary of the current processed result of the test run.
+    """
+    # todo: maybe there is a better way to deal with dependencies
+    response = {}
+    if dependencies is None:
+        return response
+    for d in dependencies:
+        if d == "gpu":
+            if not test_gpu_available() and current_result['status'] == 'FAILED':
+                response["status"] = "WARNING"
+                response["reason"] = (f"Some GPU dependency is necessary but is not available on machine. "
+                                      f"Either run the test on a GPU supported system or set 'WDL_CONFORMANCE_TESTS__GPU=True' to override. "
+                                      f"\nFailing reason:\n") + current_result["reason"]
+        elif d == "disks":
+            # todo: I'm not really sure how to test for a disk specific error
+            # i could try to check if all mount disks are available but that requires the mount points to be given in advance
+            # toil will return NotImplementedError for a missing mount point, so just catch that as miniwdl does not support this functionality yet
+            # and cromwell is stuck at wdl 1.0
+            if current_result['status'] == 'FAILED' and "NotImplementedError" in current_result['stderr']:
+                response["status"] = "WARNING"
+                response["reason"] = (f"Some disk dependency is necessary but is not available on machine."
+                                      f"Check that all the mount points specified in the WDL tasks exist."
+                                      f"\nFailing reason:\n") + current_result["reason"]
+        elif d == "cpu":
+            # todo: figure out better way to detect cpu errors too
+            if current_result['status'] == 'FAILED':
+                # miniwdl adjusts cpus to host limit so itll never error
+                # so just deal with toil
+                to_match = re.compile(r"is requesting [0-9.]+ cores, more than the maximum of [0-9.]+ cores")
+                if re.search(to_match, current_result['stderr']):
+                    response["status"] = "WARNING"
+                    response["reason"] = (f"Some CPU dependency is necessary but is not available on machine."
+                                          f"A WDL task likely requested more CPUs than available."
+                                          f"\nFailing reason:\n") + current_result["reason"]
+        elif d == "memory":
+            # todo: better, same as cpu above
+            if current_result['status'] == 'FAILED':
+                to_match = re.compile(r"is requesting [0-9.]+ bytes of memory, more than the maximum of [0-9.]+ bytes of memory")
+                if re.search(to_match, current_result['stderr']):
+                    response["status"] = "WARNING"
+                    response["reason"] = (f"Some memory dependency is necessary but is not available on machine."
+                                          f"A WDL task likely requested more memory than available."
+                                          f"\nFailing reason:\n") + current_result["reason"]
+        elif d not in IGNORE_DEPENDENCIES:
+            print(f"Warning: Test framework encountered unsupported dependency {d}. Ignoring...")
+    return response

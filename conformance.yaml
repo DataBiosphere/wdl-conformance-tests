@@ -210,8 +210,8 @@
     dir: tests/basic_fail
     wdl: basic_fail.wdl
     json: basic_fail.json
-  outputs:
-    fail: {}
+  fail: true
+  outputs: {}
 - description: |
     Basic ceil() test
   tags: ["ceil", "standard_library"]
@@ -802,8 +802,8 @@
     dir: tests/range_as_input
     wdl: range_as_input.wdl
     json: range_invalid.json
-  outputs:
-    fail: {}
+  fail: true
+  outputs: {}
 - description: |
     Legacy test for range_as_input, range=0
   tags: ["range", "legacy"]
@@ -865,8 +865,8 @@
     dir: tests/length_as_input_with_map
     wdl: length_as_input_with_map.wdl
     json: length.json
-  outputs:
-    fail: {}
+  fail: true
+  outputs: {}
 - description: |
     Legacy test for length_as_input, fail
   tags: ["length", "legacy", "fail"]
@@ -876,8 +876,8 @@
     dir: tests/length_as_input
     wdl: length_as_input.wdl
     json: length_invalid.json
-  outputs:
-    fail: {}
+  fail: true
+  outputs: {}
 - description: |
     Legacy test for zip_as_input
   tags: ["zip", "legacy"]
@@ -1133,8 +1133,8 @@
     dir: tests/array_coerce
     wdl: array_coerce.wdl
     json: empty.json
-  outputs:
-    fail: {}
+  fail: true
+  outputs: {}
 - description: |
      Test for externally overriding task inputs being disallowed
   tags: ["input", "behavior"]

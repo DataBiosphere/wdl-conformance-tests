@@ -1,0 +1,18 @@
+# this should have the same structure as the expected yaml configs, ex conformance.yaml
+- id: optional_output
+  outputs:
+    optional_output.example1:
+      type: File
+      value: { md5sum: c4ca4238a0b923820dcc509a6f75849b }
+    optional_output.file_array:
+      type: Array[File?]
+      value:
+      - md5sum: c4ca4238a0b923820dcc509a6f75849b
+      -
+
+- id: multi_mount_points
+  dependencies:
+  - docker # for some reason singularity defaults to 64MB on / with findmnt
+- id: relative_and_absolute
+  dependencies:
+    - root # this test depends on reading something from a root owned file
