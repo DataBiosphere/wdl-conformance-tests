@@ -1185,4 +1185,25 @@
     globRecursion.result:
       type: Array[File]
       value: [{regex: '^yum$'}]
-
+- description: |
+    Test that outputs from conditionals and scatters are promoted to workflow outputs when no output section is used 
+  versions: ["1.0"]
+  id: nested_call_output
+  tags: ["behavior"]
+  inputs:
+    dir: tests/nested_call_output
+    wdl: nested_call_output.wdl
+    json: nested_call_output.json
+  outputs:
+    wf.make_file.outfile:
+      type: File
+      value: {regex: '^toplevel$'}
+    wf.make_file_if.outfile:
+      type: File
+      value: {regex: '^if$'}
+    wf.make_file_deep.outfile:
+      type: Array[File?]
+      value: [null, {regex: '^scatter2$'}, null]
+    wf.make_file_deeper.outfile:
+      type: Array[File?]
+      value: [{regex: '^otherscatter1$'}, null, null]
