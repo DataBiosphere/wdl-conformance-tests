@@ -1144,8 +1144,8 @@
     dir: tests/input_override
     wdl: input_override.wdl
     json: input_override.json
-  outputs:
-    fail: {}
+  fail: true
+  outputs: {}
 - description: |
      Test for glob order
   tags: ["behavior", "glob"]
