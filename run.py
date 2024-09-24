@@ -474,22 +474,28 @@ class WDLConformanceTestRunner:
         response.update(test_dependencies(dependencies=test.get("dependencies"), current_result=response))
         return response
 
-    def _run_debug(self, options: argparse.Namespace, args: Optional[Dict[str, Any]]) -> None:
-        # To be used with pycharm's debugger which is currently broken if there is concurrency
+    def _debug_run_all_tests(self, options: argparse.Namespace, args: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Meant to be called by _run_debug. Runs the tests single-threaded to be compatible with pycharm's debugger.
+        """
+        print(f"===DEBUG===")
         versions_to_test = set(options.versions.split(','))
         selected_tests = get_specific_tests(conformance_tests=self.tests, options=options)
-        print(f"===DEBUG===")
-        print(f'Testing runner {options.runner} on WDL versions: {",".join(versions_to_test)}\n')
+        selected_tests_amt = len(selected_tests) * len(versions_to_test) * options.repeat
+        test_responses = list()
+        completed_count = 0
         for test_index in selected_tests:
             try:
                 test = self.tests[test_index]
             except KeyError:
                 print(f'ERROR: Provided test [{test_index}] do not exist.')
                 sys.exit(1)
+            result = {}
             for version in versions_to_test:
                 for iteration in range(options.repeat):
                     # Handle each test as a concurrent job
-                    self.handle_test(
+                    # todo: abstract below and the other run function so code is deduplicated
+                    result = self.handle_test(
                         test_index,
                         test,
                         options.runner,
@@ -502,23 +508,25 @@ class WDLConformanceTestRunner:
                         iteration + 1 if options.repeat is not None else None,
                         options.progress,
                         options.debug)
+                    test_responses.append(result)
+            completed_count += 1
+            if options.progress:
+                print(
+                    f"{completed_count}/{selected_tests_amt}. Test {result['number']} (ID: {result['id']}) completed "
+                    f"with status {result['status']}. "
+                )
+        print(completed_count, len(test_responses), test_responses)
+        return test_responses
 
-    def run_and_generate_tests_args(self, options: argparse.Namespace, args: Optional[Dict[str, Any]]) -> Tuple[List[Any], bool]:
-        # Get all the versions to test.
-        # Unlike with CWL, WDL requires a WDL file to declare a specific version,
-        # and prohibits mixing file versions in a workflow, although some runners
-        # might allow it.
-        # But the tests all need to be for single WDL versions.
+    def run_all_tests(self, options: argparse.Namespace, args: Optional[Dict[str, Any]]):
+        """
+        Run all tests and capture the test results. Runs in a threaded manner depending on options.threads
+        """
+        test_responses = list()
+
         versions_to_test = set(options.versions.split(','))
         selected_tests = get_specific_tests(conformance_tests=self.tests, options=options)
         selected_tests_amt = len(selected_tests) * len(versions_to_test) * options.repeat
-        successes = 0
-        skips = 0
-        ignored = 0
-        warnings = 0
-        failed = 0
-        test_responses = list()
-        print(f'Testing runner {options.runner} on WDL versions: {",".join(versions_to_test)}\n')
         with ProcessPoolExecutor(max_workers=options.threads) as executor:  # process instead of thread so realtime works
             pending_futures = []
             for test_index in selected_tests:
@@ -556,6 +564,28 @@ class WDLConformanceTestRunner:
                         f"{completed_count}/{selected_tests_amt}. Test {result['number']} (ID: {result['id']}) completed "
                         f"with status {result['status']}. "
                     )
+        return test_responses
+
+    def run_and_generate_tests_args(self, options: argparse.Namespace, args: Optional[Dict[str, Any]]) -> Tuple[List[Any], bool]:
+        # Get all the versions to test.
+        # Unlike with CWL, WDL requires a WDL file to declare a specific version,
+        # and prohibits mixing file versions in a workflow, although some runners
+        # might allow it.
+        # But the tests all need to be for single WDL versions.
+        versions_to_test = set(options.versions.split(','))
+        selected_tests = get_specific_tests(conformance_tests=self.tests, options=options)
+        selected_tests_amt = len(selected_tests) * len(versions_to_test) * options.repeat
+        successes = 0
+        skips = 0
+        ignored = 0
+        warnings = 0
+        failed = 0
+        print(f'Testing runner {options.runner} on WDL versions: {",".join(versions_to_test)}\n')
+
+        if options.debug is True:
+            test_responses = self._debug_run_all_tests(options, args)
+        else:
+            test_responses = self.run_all_tests(options, args)
 
         print("\n=== REPORT ===\n")
 
@@ -609,9 +639,6 @@ class WDLConformanceTestRunner:
             if runner == "cromwell":
                 args[runner] = options.cromwell_args
                 args["cromwell_pre_args"] = options.cromwell_pre_args
-        if options.debug:
-            self._run_debug(options=options, args=args)
-            return [], False
 
         return self.run_and_generate_tests_args(options=options, args=args)
 
