@@ -499,9 +499,12 @@ def main(argv=None):
 
     spec_dir = f"wdl-{args.version}-spec"
     if not os.path.exists(spec_dir) or args.force_pull is True:
-        print(f"Pulling SPEC from repo {args.repo}...")
+        cmd = f"rm -rf {spec_dir}"
+        subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         cmd = f"git clone {args.repo} {spec_dir}"
         subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    else:
+        print(f"Spec dir at {spec_dir} already exists. Specify --force-pull to force a pull.")
 
     os.chdir(spec_dir)
 
@@ -513,6 +516,7 @@ def main(argv=None):
         repo_version = args.version
     repo_branch = args.branch or f"wdl-{repo_version}"
     cmd = f"git checkout {repo_branch}"
+    print(f"Changing to branch {repo_branch}")
     subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
     os.chdir("..")
