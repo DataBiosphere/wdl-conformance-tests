@@ -484,10 +484,15 @@ def main(argv=None):
     )
     parser.add_argument(
         "--repo",
-        # while the WDL spec has its bugs, use a fixed version
+        # WDL spec may have bugs, may want to use a different repo
         # see openwdl issues #653, #654, #661, #662, #663, #664, #665, #666
         default="https://github.com/openwdl/wdl.git",
         help="Repository to pull from."
+    )
+    parser.add_argument(
+        "--branch",
+        default=None,
+        help="Branch of the repository to pull from. Will override the corresponding branch to the --version argument."
     )
     argcomplete.autocomplete(parser)
     args = parser.parse_args(argv)
@@ -501,12 +506,13 @@ def main(argv=None):
     os.chdir(spec_dir)
 
     # may be fragile if WDL changes their branch naming scheme
-    # todo: remove -fixes suffix after wdl fixes their spec, see comment above
+    # test fixes are in the 1.1.3 branch as it has not been merged upstream
     if args.version == "1.1":
         repo_version = "1.1.3"
     else:
         repo_version = args.version
-    cmd = f"git checkout wdl-{repo_version}"
+    repo_branch = args.branch or f"wdl-{repo_version}"
+    cmd = f"git checkout {repo_branch}"
     subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
     os.chdir("..")
