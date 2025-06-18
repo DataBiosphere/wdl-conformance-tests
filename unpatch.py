@@ -10,7 +10,7 @@ import sys
 
 import argcomplete
 
-from lib import get_wdl_version_from_file
+from lib import get_wdl_version_from_file, WDL_VERSIONS
 
 
 def unpatch(directory, version, filename):
@@ -50,7 +50,7 @@ def unpatch(directory, version, filename):
         for patch_file in patch_files:
             output_version = os.path.splitext(os.path.basename(patch_file))[0]
             output_basename = os.path.basename(base_wdl)
-            for version_name in ["_version_1.0", "_version_1.1", "_version_draft-2"]:
+            for version_name in [f"_version_{version}" for version in WDL_VERSIONS]:]:
                 # filename may have a version suffix if --rename was not used, so get rid of it when recreating
                 output_basename = output_basename.replace(version_name, "")
             output_file = os.path.splitext(output_basename)[0] + "_" + output_version + ".wdl"
@@ -88,7 +88,7 @@ def main(argv=None):
                                                  'that invalidates the existing patches is necessary.')
     parser.add_argument("--directory", "-d", default=None, required=True,
                         help='Directory where all at least the base WDL file and patch files are')
-    parser.add_argument("--version", "-v", default=None, choices=["1.0", "1.1", "draft-2"],
+    parser.add_argument("--version", "-v", default=None, choices=WDL_VERSIONS,
                         help="The base WDL file's version. If specified, it will find the first WDL file with this "
                              "version to create patched files from.")
     parser.add_argument("--file", "-f", default=None,
