@@ -28,10 +28,7 @@ from typing import Optional, Any, Dict, Tuple, List, Union
 from WDL.Type import Base as WDLBase
 
 from lib import run_cmd, py_type_of_wdl_class, verify_failure, announce_test, print_response, convert_type, run_setup, \
-    get_specific_tests, get_wdl_file, verify_return_code, test_dependencies
-
-WDL_VERSIONS = ["draft-2", "1.0", "1.1", "1.2", "development"]
-
+    get_specific_tests, get_wdl_file, verify_return_code, test_dependencies, WDL_VERSIONS
 
 class WDLRunner:
     """
