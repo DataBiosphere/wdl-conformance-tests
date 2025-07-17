@@ -105,19 +105,19 @@ task check {
         fi
 
         if [[ ! -z "~{inside_1_file}" ]] ; then
-            if [[ "$(dirname ~{inside_1_file})" != "~{sibling1}" ]] ; then
+            if [[ "$(realpath "$(dirname ~{inside_1_file})")" != "$(realpath "~{sibling1}")" ]] ; then
                 echo >&2 "The file inside sibling 1 needs to actually be there when referenced before it. But ~{inside_1_file} is in $(dirname ~{inside_1_file}) and not ~{sibling1}"
                 echo "FAIL" > output.txt
             fi
         fi
 
-        if [[ "$(dirname ~{sibling1})" != "$(dirname ~{sibling2})" ]] ; then
+        if [[ "$(realpath "$(dirname ~{sibling1})")" != "$(realpath "$(dirname ~{sibling2})")" ]] ; then
             echo >&2 "The sibling directories need to be siblings. But ~{sibling1} is in $(dirname ~{sibling1}) and ~{sibling2} is in $(dirname ~{sibling2})"
             echo "FAIL" > output.txt
         fi
 
         if [[ ! -z "~{inside_2_file}" ]] ; then
-            if [[ "$(dirname ~{inside_2_file})" != "~{sibling2}" ]] ; then
+            if [[ "$(realpath "$(dirname ~{inside_2_file})")" != "$(realpath "~{sibling2}")" ]] ; then
                 echo >&2 "The file inside sibling 2 needs to actually be there when referenced after it. But ~{inside_2_file} is in $(dirname ~{inside_2_file}) and not ~{sibling2}"
                 echo "FAIL" > output.txt
             fi
