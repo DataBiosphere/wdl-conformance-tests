@@ -106,7 +106,7 @@ task check {
     }
 
     command {
-        if [[ ! -z "~{colliding}" ]] ; then
+        if [[ -n "~{colliding}" ]] ; then
             if [[ ! -f "~{colliding}/file.txt" ]] ; then
                 echo >&2 "The colliding directory ~{colliding}, if specified, needs its contents."
                 echo >&2 "Instead it has:"
@@ -115,14 +115,14 @@ task check {
             fi
         fi
 
-        if [[ ! -z "~{inside_1_file}" ]] ; then
+        if [[ -n "~{inside_1_file}" ]] ; then
             if [[ "$(realpath "$(dirname ~{inside_1_file})")" != "$(realpath "~{sibling1}")" ]] ; then
                 echo >&2 "The file inside sibling 1 needs to actually be there when referenced before it. But ~{inside_1_file} is in $(dirname ~{inside_1_file}) and not ~{sibling1}"
                 echo "FAIL" > output.txt
             fi
         fi
 
-        if [[ ! -z "~{inside_1_dir}" ]] ; then
+        if [[ -n "~{inside_1_dir}" ]] ; then
             if [[ "$(realpath "$(dirname ~{inside_1_dir})")" != "$(realpath "~{sibling1}")" ]] ; then
                 echo >&2 "The directory inside sibling 1 needs to actually be there when referenced before it. But ~{inside_1_dir} is in $(dirname ~{inside_1_dir}) and not ~{sibling1}"
                 echo "FAIL" > output.txt
@@ -134,7 +134,7 @@ task check {
             echo "FAIL" > output.txt
         fi
 
-        if [[ ! -z "~{inside_2_file}" ]] ; then
+        if [[ -n "~{inside_2_file}" ]] ; then
             if [[ "$(realpath "$(dirname ~{inside_2_file})")" != "$(realpath "~{sibling2}")" ]] ; then
                 echo >&2 "The file inside sibling 2 needs to actually be there when referenced after it. But ~{inside_2_file} is in $(dirname ~{inside_2_file}) and not ~{sibling2}"
                 echo "FAIL" > output.txt
