@@ -1207,3 +1207,31 @@
     wf.make_file_deeper.outfile:
       type: Array[File?]
       value: [{regex: '^otherscatter1$'}, null, null]
+- description: |
+    Test that sibling directories are kept in the same directory when downloaded, and siblings of their files are in the right place
+  versions: ["1.2", "development"]
+  id: sibling_directories
+  tags: ["sibling_directories", "behavior"]
+  inputs:
+    dir: tests/sibling_directories
+    wdl: sibling_directories.wdl
+    json: sibling_directories.json
+  outputs:
+    wf.result1:
+      type: Boolean
+      value: True
+    wf.result2:
+      type: Boolean
+      value: True
+    wf.result3:
+      type: Boolean
+      value: True
+    wf.result4:
+      type: Boolean
+      value: True
+    wf.result5:
+      type: Boolean
+      value: True
+    wf.result6:
+      type: Boolean
+      value: True

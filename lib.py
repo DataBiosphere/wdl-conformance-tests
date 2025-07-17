@@ -12,6 +12,15 @@ from WDL.Type import Float as WDLFloat, String as WDLString, File as WDLFile, In
 from typing import Optional, Any, Dict, Union, List, Type
 from WDL.Type import Base as WDLBase
 
+# All known WDL versions, in version order.
+WDL_VERSIONS = ["draft-2", "1.0", "1.1", "1.2", "development"]
+
+def version_leq(version: str, target: str):
+    """
+    Returns true if one WDL version is less than or equal to another.
+    """
+    return WDL_VERSIONS.index(version) <= WDL_VERSIONS.index(target)
+
 
 def get_first_wdl_line(filename: str) -> str:
     """
@@ -37,18 +46,20 @@ def get_wdl_version_from_file(filename: str) -> str:
         # if None, then nothing was found, so it is draft-2
         return "draft-2"
 
-    # get version
-    if "version 1.0" in line:
-        return "1.0"
-    elif "version 1.1" in line:
-        return "1.1"
-    else:
-        return "draft-2"
+    for version in WDL_VERSIONS:
+        if version == "draft-2":
+            # This one has no version line
+            continue
+        # Sniff to see which known version this is supposed to be.
+        # TODO: Shouldn't we parse the line instead?
+        if f"version {version}" in line:
+            return version
 
+    raise RuntimeError("Expected WDL version in {filename} near \"{line.strip}\"")
 
 def generate_change_container_specifier(lines, to_replace="container", replace_with="docker"):
     """
-    Generator to change the container specifier from WDL 1.1 to a docker specifier for WDL 1.0 and draft-2
+    Generator to change the container specifier from WDL 1.1+ to a docker specifier for WDL 1.0 and draft-2
     ex:
     runtime {
         container: ubuntu:latest
@@ -146,10 +157,9 @@ def generate_replace_version_wdl(version, lines):
         if line.strip() == '':
             continue
 
-        if version == "1.0":
-            yield "version 1.0\n"
-        elif version == "1.1":
-            yield "version 1.1\n"
+        if version != "draft-2":
+            # All these versions get a version line
+            yield f"version {version}\n"
 
         yield from iterator
         return
@@ -171,15 +181,9 @@ def generate_wdl(filename: str, wdl_dir: str, target_version: str, outfile_name:
 
     # patchfiles for each version
     # if they exist, use patch instead of parsing/generating
-    patch_file_draft2 = f"{wdl_dir}/version_draft-2.patch"  # hardcoded patchfile names
-    patch_file_10 = f"{wdl_dir}/version_1.0.patch"
-    patch_file_11 = f"{wdl_dir}/version_1.1.patch"
-    if target_version == "draft-2" and os.path.exists(patch_file_draft2):
+    target_version_patch_file = f"{wdl_dir}/version_{target_version}.patch"
+    if os.path.exists(target_version_patch_file):
         return patch(filename, patch_file_draft2, wdl_dir, outfile_name=outfile_name)
-    if target_version == "1.0" and os.path.exists(patch_file_10):
-        return patch(filename, patch_file_10, wdl_dir, outfile_name=outfile_name)
-    if target_version == "1.1" and os.path.exists(patch_file_11):
-        return patch(filename, patch_file_11, wdl_dir, outfile_name=outfile_name)
 
     # generate new wdl file
     outfile_path = os.path.join(wdl_dir, outfile_name)
@@ -187,10 +191,11 @@ def generate_wdl(filename: str, wdl_dir: str, target_version: str, outfile_name:
         with open(outfile_path, 'w') as out:
             gen = generate_replace_version_wdl(target_version, f.readlines())
             # if draft-2, remove input section and change command section syntax
-            if target_version == "draft-2":
+            if version_leq(target_version, "draft-2"):
                 gen = generate_change_command_string(generate_remove_input(gen))
-            # to get around cromwell not supporting the container specifier, for both 1.0 and draft-2, convert to docker
-            if target_version == "1.0" or target_version == "draft-2":
+            # to get around cromwell not supporting the container specifier,
+            # for 1.0 and earlier (which Cromwell supports), convert to docker
+            if version_leq(target_version, "1.0"):
                 gen = generate_change_container_specifier(gen)
             for line in gen:
                 out.write(line)
