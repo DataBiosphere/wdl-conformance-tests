@@ -1232,3 +1232,6 @@
     wf.result5:
       type: Boolean
       value: True
+    wf.result6:
+      type: Boolean
+      value: True

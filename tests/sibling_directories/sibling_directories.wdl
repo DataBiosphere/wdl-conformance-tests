@@ -41,12 +41,20 @@ workflow wf {
             inside_1_file=sibling1.first_child1_file,
             inside_2_file=sibling1.first_child2_file
     }
+    call check as check6 {
+        input:
+            colliding=sibling2.first,
+            sibling1=sibling1.first,
+            sibling2=sibling1.second,
+            inside_1_dir=sibling1.first_child1,
+    }
     output {
         Boolean result1 = check1.result
         Boolean result2 = check2.result
         Boolean result3 = check3.result
         Boolean result4 = check4.result
         Boolean result5 = check5.result
+        Boolean result6 = check6.result
     }
 }
 
@@ -90,6 +98,7 @@ task make_directories {
 task check {
     input {
         File? inside_1_file
+        Directory? inside_1_dir
         Directory? colliding
         Directory sibling1
         Directory sibling2
@@ -109,6 +118,13 @@ task check {
         if [[ ! -z "~{inside_1_file}" ]] ; then
             if [[ "$(realpath "$(dirname ~{inside_1_file})")" != "$(realpath "~{sibling1}")" ]] ; then
                 echo >&2 "The file inside sibling 1 needs to actually be there when referenced before it. But ~{inside_1_file} is in $(dirname ~{inside_1_file}) and not ~{sibling1}"
+                echo "FAIL" > output.txt
+            fi
+        fi
+
+        if [[ ! -z "~{inside_1_dir}" ]] ; then
+            if [[ "$(realpath "$(dirname ~{inside_1_dir})")" != "$(realpath "~{sibling1}")" ]] ; then
+                echo >&2 "The directory inside sibling 1 needs to actually be there when referenced before it. But ~{inside_1_dir} is in $(dirname ~{inside_1_dir}) and not ~{sibling1}"
                 echo "FAIL" > output.txt
             fi
         fi
