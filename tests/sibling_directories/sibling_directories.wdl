@@ -63,7 +63,7 @@ task make_directories {
         # it if both it and the directory are referenced.
         touch dir1/otherfile.txt
         touch dir2/file.txt
-        touch dir2/ptherfile.txt
+        touch dir2/otherfile.txt
         mkdir dir1/dir1
         mkdir dir1/dir2
         touch dir1/dir1/file.txt
