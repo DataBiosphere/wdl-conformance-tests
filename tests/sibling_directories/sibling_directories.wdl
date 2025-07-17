@@ -97,14 +97,14 @@ task check {
     }
 
     command {
-        if [[ -d "~{colliding}" ]] ; then
+        if [[ ! -z "~{colliding}" ]] ; then
             if [[ ! -f "~{colliding}/file.txt" ]] ; then
-                echo >&2 "The colliding directory, if specified, needs its contents."
+                echo >&2 "The colliding directory ~{colliding}, if specified, needs its contents."
                 echo "FAIL" > output.txt
             fi
         fi
 
-        if [[ -f "~{inside_1_file}" ]] ; then
+        if [[ ! -z "~{inside_1_file}" ]] ; then
             if [[ "$(dirname ~{inside_1_file})" != "~{sibling1}" ]] ; then
                 echo >&2 "The file inside sibling 1 needs to actually be there when referenced before it. But ~{inside_1_file} is in $(dirname ~{inside_1_file}) and not ~{sibling1}"
                 echo "FAIL" > output.txt
@@ -116,7 +116,7 @@ task check {
             echo "FAIL" > output.txt
         fi
 
-        if [[ -f "~{inside_2_file}" ]] ; then
+        if [[ ! -z "~{inside_2_file}" ]] ; then
             if [[ "$(dirname ~{inside_2_file})" != "~{sibling2}" ]] ; then
                 echo >&2 "The file inside sibling 2 needs to actually be there when referenced after it. But ~{inside_2_file} is in $(dirname ~{inside_2_file}) and not ~{sibling2}"
                 echo "FAIL" > output.txt
