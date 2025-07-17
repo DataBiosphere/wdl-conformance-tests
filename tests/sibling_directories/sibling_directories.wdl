@@ -100,6 +100,8 @@ task check {
         if [[ ! -z "~{colliding}" ]] ; then
             if [[ ! -f "~{colliding}/file.txt" ]] ; then
                 echo >&2 "The colliding directory ~{colliding}, if specified, needs its contents."
+                echo >&2 "Instead it has:"
+                ls -lah "~{colliding}" >&2
                 echo "FAIL" > output.txt
             fi
         fi
