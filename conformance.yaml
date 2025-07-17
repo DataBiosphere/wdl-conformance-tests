@@ -1208,6 +1208,30 @@
       type: Array[File?]
       value: [{regex: '^otherscatter1$'}, null, null]
 - description: |
+    Basic test for Directory
+  versions: ["1.2", "development"]
+  id: basic_directory
+  tags: ["sibling_directories", "behavior"]
+  inputs:
+    dir: tests/basic_directory
+    wdl: basic_directory.wdl
+    json: basic_directory.json
+  outputs:
+    directoryWorkflow.out_dir:
+      type: Directory
+      value:
+        listing:
+          - type: File
+            basename: a.txt
+          - type: Directory
+            basename: subdir
+            listing:
+              - type: File
+                basename: b.txt
+    directoryWorkflow.out_log:
+      type: File
+      value: {regex: "testdir/\n.*testdir/a.txt\n.*testdir/subdir\n.*testdir/subdir/b.txt"}
+- description: |
     Test that sibling directories are kept in the same directory when downloaded, and siblings of their files are in the right place
   versions: ["1.2", "development"]
   id: sibling_directories

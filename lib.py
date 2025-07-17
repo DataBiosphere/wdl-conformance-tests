@@ -6,10 +6,20 @@ import subprocess
 from argparse import Namespace
 from distutils.util import strtobool
 
-from WDL.Type import Float as WDLFloat, String as WDLString, File as WDLFile, Int as WDLInt, Boolean as WDLBool, \
-    Array as WDLArray, Map as WDLMap, Pair as WDLPair, StructInstance as WDLStruct
+from WDL.Type import (
+    Float as WDLFloat,
+    String as WDLString,
+    File as WDLFile,
+    Directory as WDLDirectory,
+    Int as WDLInt,
+    Boolean as WDLBool,
+    Array as WDLArray,
+    Map as WDLMap,
+    Pair as WDLPair,
+    StructInstance as WDLStruct,
+)
 
-from typing import Optional, Any, Dict, Union, List, Type
+from typing import Optional, Any, Dict, Union, List, Literal, Type, TypedDict
 from WDL.Type import Base as WDLBase
 
 # All known WDL versions, in version order.
@@ -56,6 +66,58 @@ def get_wdl_version_from_file(filename: str) -> str:
             return version
 
     raise RuntimeError("Expected WDL version in {filename} near \"{line.strip}\"")
+
+# Tools for working with the WDL extended File/Directory format
+# See <https://github.com/openwdl/wdl/blob/wdl-1.2/SPEC.md#extended-filedirectory-inputoutput-format>
+
+class WDLExtendedFile(TypedDict):
+    type: Literal["Directory"]
+    basename: str
+class WDLExtendedDirectory(TypedDict):
+    type: Literal["File"]
+    basename: str
+    listing: "WDLListing"
+WDLListing = list[Union[WDLExtendedFile, WDLExtendedDirectory]]
+
+def get_listing(path: str) -> WDLListing:
+    """
+    Get an extended WDL file/directory listing for the given directory path.
+    """
+
+    listing = []
+    for item in os.listdir(path):
+        item_path = os.path.join(path, item)
+        if os.path.isdir(item_path):
+            listing.append({"type": "Directory", "basename": item, "listing": get_listing(item_path)})
+        else:
+            listing.append({"type": "File", "basename": item})
+    return listing
+
+def listings_equivalent(a: WDLListing, b: WDLListing) -> bool:
+    """
+    Return True if the two listings are the same.
+
+    Listings are the same if they have the same items with the same names and
+    types and sub-listings, regardless of listing order.
+    """
+
+    if len(a) != len(b):
+        return False
+
+    a_sorted = sorted(a, key=lambda i: i["basename"])
+    b_sorted = sorted(b, key=lambda i: i["basename"])
+
+    for a_item, b_item in zip(a_sorted, b_sorted):
+        if a_item["type"] != b_item["type"]:
+            return False
+        if a_item["basename"] != b_item["basename"]:
+            return False
+        if a_item["type"] == "Directory":
+            if not listings_equivalent(a_item["listing"], b_item["listing"]):
+                return False
+
+    return True
+
 
 def generate_change_container_specifier(lines, to_replace="container", replace_with="docker"):
     """
@@ -351,7 +413,7 @@ def get_specific_tests(conformance_tests, options: Namespace):
 def verify_return_code(expected_ret_code: Union[int, List[int], str], got_ret_code: int):
     """
     Return a test result dict that SUCCEEDED if the return code is on the list, and FAILED otherwise.
-    
+
     A "*" string matches any return code.
     """
     if not isinstance(expected_ret_code, list):
@@ -448,6 +510,8 @@ def wdl_type_to_miniwdl_class(wdl_type: Union[Dict[str, Any], str]) -> Optional[
     wdl_type = re.sub('[?+]', '', wdl_type)
     if wdl_type == 'File':
         return WDLFile
+    if wdl_type == 'Directory':
+        return WDLDirectory
     elif wdl_type == 'Int':
         return WDLInt
     elif wdl_type == 'Boolean':

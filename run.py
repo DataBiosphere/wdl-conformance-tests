@@ -21,14 +21,38 @@ from concurrent.futures import as_completed, ProcessPoolExecutor
 from shutil import which
 from uuid import uuid4
 
-from WDL.Type import Float as WDLFloat, String as WDLString, File as WDLFile, Int as WDLInt, Boolean as WDLBool, \
-    Array as WDLArray, Map as WDLMap, Pair as WDLPair, StructInstance as WDLStruct
+from WDL.Type import (
+    Float as WDLFloat,
+    String as WDLString,
+    File as WDLFile,
+    Directory as WDLDirectory,
+    Int as WDLInt,
+    Boolean as WDLBool,
+    Array as WDLArray,
+    Map as WDLMap,
+    Pair as WDLPair,
+    StructInstance as WDLStruct,
+)
 
 from typing import Optional, Any, Dict, Tuple, List, Union
 from WDL.Type import Base as WDLBase
 
-from lib import run_cmd, py_type_of_wdl_class, verify_failure, announce_test, print_response, convert_type, run_setup, \
-    get_specific_tests, get_wdl_file, verify_return_code, test_dependencies, WDL_VERSIONS
+from lib import (
+    run_cmd,
+    py_type_of_wdl_class,
+    get_listing,
+    listings_equivalent,
+    verify_failure,
+    announce_test,
+    print_response,
+    convert_type,
+    run_setup,
+    get_specific_tests,
+    get_wdl_file,
+    verify_return_code,
+    test_dependencies,
+    WDL_VERSIONS
+)
 
 class WDLRunner:
     """
@@ -228,7 +252,7 @@ class WDLConformanceTestRunner:
             # check file path exists
             if not os.path.exists(result):
                 return {'status': 'FAILED', 'reason': f"Result file does not exist!\n"
-                                                      f"Expected filepath: {result}!"}
+                                                      f"Expected file path: {result}!"}
 
             if not isinstance(expected, dict):
                 return {'status': 'FAILED', 'reason': f"Expected value is not a regex or md5sum!\n"
@@ -244,7 +268,8 @@ class WDLConformanceTestRunner:
                     text = f.read()
                     if not re_c.search(text):
                         return {'status': 'FAILED', 'reason': f"Regex did not match!\n"
-                                                              f"Regex: {regex}\n"}
+                                                              f"Regex: {regex}\n"
+                                                              f"Value: {text}"}
             else:
                 # get md5sum
                 with open(result, "rb") as f:
@@ -254,6 +279,27 @@ class WDLConformanceTestRunner:
                     return {'status': 'FAILED', 'reason': f"Expected file does not match!\n"
                                                           f"Expected md5sum: {expected['md5sum']}\n"
                                                           f"Actual md5sum: {md5sum}!"}
+
+        if isinstance(typ, WDLDirectory):
+            # check directory path exists
+            if not os.path.exists(result):
+                return {'status': 'FAILED', 'reason': f"Result directory does not exist!\n"
+                                                      f"Expected directory path: {result}!"}
+
+            if not isinstance(expected, dict):
+                return {'status': 'FAILED', 'reason': f"Expected value is not a listing!\n"
+                                                      f"Expected result was: {expected}"}
+            listing = expected.get('listing')
+            if not isinstance(listing, list):
+                return {'status': 'FAILED', 'reason': f"Expected listing value is not a list!\n"
+                                                      f"Expected result was: {expected}"}
+
+            result_listing = get_listing(result)
+            if not listings_equivalent(result_listing, listing):
+                return {'status': 'FAILED', 'reason': f"Expected listing does not match!\n"
+                                                      f"Expected listing: {expected['listing']}\n"
+                                                      f"Actual listing: {listing}!"}
+
 
         if isinstance(typ, WDLPair):
             try:
