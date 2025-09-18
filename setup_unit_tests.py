@@ -321,7 +321,11 @@ def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_f
             target_output_data = get_from(target_data, "outputs")
             for k, v in json.loads(output_json.strip()).items():
                 k_base = k.split(".")[-1]
-                output_type = output_var_types[k_base]
+                try:
+                    output_type = output_var_types[k_base]
+                except KeyError as e:
+                    # This happens if the example output mentions a field that doesn't really exist.
+                    raise RuntimeError(f"Expected output contains a \"{k_base}\" field that is not an output of the workflow.")
                 config_entry["outputs"][k] = {
                     "type": output_type,
                     "value": convert_typed_output_values_from_string(v, output_type, data_dir, get_from(get_from(target_output_data, k), "value"))
@@ -377,7 +381,7 @@ def write_test_files(m: re.Match, output_dir: Path, version: str):
     if v is None:
         raise Exception("WDL does not contain version statement")
     elif v.group(1) != version:
-        raise Exception(f"Invalid WDL version {wdl}")
+        raise Exception(f"WDL version {v.group(1)} is not expected version {version} in: {wdl}")
 
     wdl_file = output_dir / file_name
     if wdl_file.exists():
@@ -498,32 +502,43 @@ def main(argv=None):
         default=None,
         help="Branch of the repository to pull from. Will override the corresponding branch to the --version argument."
     )
+    parser.add_argument(
+        "--spec-dir",
+        default=None,
+        help="Pre-pulled WDL spec repository directory to use"
+    )
     argcomplete.autocomplete(parser)
     args = parser.parse_args(argv)
 
-    spec_dir = f"wdl-{args.version}-spec"
-    if not os.path.exists(spec_dir) or args.force_pull is True:
-        cmd = f"rm -rf {spec_dir}"
-        subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        cmd = f"git clone {args.repo} {spec_dir}"
-        subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    output_root = os.getcwd()
+
+    if args.spec_dir is not None:
+        spec_dir = args.spec_dir
+        os.chdir(spec_dir)
     else:
-        print(f"Spec dir at {spec_dir} already exists. Specify --force-pull to force a pull.")
+        spec_dir = f"wdl-{args.version}-spec"
+        if not os.path.exists(spec_dir) or args.force_pull is True:
+            cmd = f"rm -rf {spec_dir}"
+            subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            cmd = f"git clone {args.repo} {spec_dir}"
+            subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        else:
+            print(f"Spec dir at {spec_dir} already exists. Specify --force-pull to force a pull.")
 
-    os.chdir(spec_dir)
+        os.chdir(spec_dir)
 
-    # may be fragile if WDL changes their branch naming scheme
-    # test fixes are in the 1.1.3 branch as it has not been merged upstream
-    if args.version == "1.1":
-        repo_version = "1.1.3"
-    else:
-        repo_version = args.version
-    repo_branch = args.branch or f"wdl-{repo_version}"
-    cmd = f"git checkout {repo_branch}"
-    print(f"Changing to branch {repo_branch}")
-    subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        # may be fragile if WDL changes their branch naming scheme
+        # test fixes are in the 1.1.3 branch as it has not been merged upstream
+        if args.version == "1.1":
+            repo_version = "1.1.3"
+        else:
+            repo_version = args.version
+        repo_branch = args.branch or f"wdl-{repo_version}"
+        cmd = f"git checkout {repo_branch}"
+        print(f"Changing to branch {repo_branch}")
+        subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
-    os.chdir("..")
+    os.chdir(output_root)
 
     # temp
     cmd = f"rm -rf unit_tests"
