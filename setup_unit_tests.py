@@ -430,7 +430,11 @@ def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, versio
             extra_patch_data = yaml.load(e)
 
     for m in all_m:
-        generate_config_file(m, output_dir, version, all_data_files, data_dir, output_data_dir, config, extra_patch_data)
+        try:
+            generate_config_file(m, output_dir, version, all_data_files, data_dir, output_data_dir, config, extra_patch_data)
+        except Exception as e:
+            raise RuntimeError(f"Could not import test case {m.groups()[0]}") from e
+
 
     if output_type == "json":
         config_file = output_dir / "test_config.json"
