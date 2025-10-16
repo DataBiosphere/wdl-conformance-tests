@@ -73,29 +73,30 @@ def wdl_type_to_string(wdl_type: WDL.Type.Base) -> Union[Dict[str, Any], str]:
     return str(wdl_type)
 
 
-def extract_output_types(wdl_file, fail):
+def extract_output_types(wdl_file: str, fail: bool) -> Dict[str, Union[Dict[str, Any], str]]:
     """
-    Use miniwdl's parser to extract the output types from a wdl file
+    Extract the output types from a wdl file.
 
-    If it fails, it fallback to a simpler regex parser
+    Returns a dict from field name to string type name, or (for structs)
+    sub-dicts of the same structure.
     """
     if fail:
         # since we expect this workflow to fail, there should be no outputs
         return {}
 
+    # Only MiniWDL's parser actually knows how to parse structs, but it might
+    # not work on all test cases when there is syntax change in the WDL spec,
+    # and it doesn't support Object.
+
     try:
         document: WDL.Tree.Document = WDL.load(uri=str(wdl_file))
-    except WDL.Error.InvalidType as e:
-        if "Unknown type Object" in str(e):
-            # one of the tests wants to test if Objects are supported, but miniwdl doesn't support objects
-            # defer to the other more simpler parser
-            # The majority of the time (currently everything except one), the miniwdl parser will be used
-            return extract_output_types_regex(wdl_file)
-        else:
-            raise RuntimeError("Likely unsupported type. Failed to parse WDL file %s!", wdl_file) from e
     except Exception as e:
-        raise RuntimeError(f"Failed to parse WDL file {str(wdl_file)}!") from e
+        # TODO: Should we complain about something MiniWDL can't parse?
+        # Fall back to regex-based parsing (which can't handle structs)
+        return extract_output_types_regex(wdl_file)
 
+    # Otherwise, MiniWDL parsing actually worked.
+    # Find the top-level thing
     target: Union[WDL.Tree.Workflow, WDL.Tree.Task]
 
     if document.workflow:
@@ -103,8 +104,10 @@ def extract_output_types(wdl_file, fail):
     elif len(document.tasks) == 1:
         target = document.tasks[0]
     else:
+        # this in theory shouldn't be hit, but the source repo has a suspicious
+        # --tasks argument passed to miniwdl sometimes
         raise Exception(
-            "Multiple tasks founds with no workflow!")  # this in theory shouldn't be hit, but the source repo has a suspicious --tasks argument passed to miniwdl sometimes
+            "Multiple tasks founds with no workflow!")
 
     var_types = dict()
     if target.outputs is not None:
@@ -114,35 +117,68 @@ def extract_output_types(wdl_file, fail):
     return var_types
 
 
+def parse_block(text: str, start_pos: int) -> Optional[str]:
+    """
+    Given text and a position pointing to an opening brace, extract the
+    content between matching braces.
+
+    Returns the content between the braces (excluding the braces themselves).
+    """
+    if start_pos >= len(text) or text[start_pos] != "{":
+        raise ValueError("There is no open brace at the given position")
+
+    depth = 0
+    cursor = start_pos
+    while cursor < len(text):
+        char = text[cursor]
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+        if depth == 0:
+            # We just closed the initial opening brace
+            return text[start_pos + 1:cursor]
+        cursor += 1
+
+    raise ValueError("No closing brace found!")
+
+
 def extract_output_types_regex(wdl_file) -> Dict[str, str]:
     """
-    Given a WDL file, extract all output variable names and its associated types with a regex. Returns a dictionary of variable name to type.
+    Given a WDL file, extract all output variable names and its associated types with a regex.
+
+    Returns a dictionary of variable name to type.
     Ex:
       File filename = "path/to/file"
     Will get {"filename": "File"}
 
-    Ideally, the parsing should be handled by MiniWDL. This mainly gets around the issue of MiniWDL not supporting objects.
+    If a workflow is in the file, parses the output section of the workflow.
+    Otherwise, parses the output section of the task.
     """
-    # The main issue with using miniwdl's parser is parsing the wdl file is dependent on miniwdl,
-    # so if the spec changes and miniwdl is unable to support it, this test framework won't be able to run.
-    # The simplest way around this (that isn't creating another parser, maybe pyparsing?) is probably something like this;
-    # regex won't work as regular languages are too basic.
-    #
-    # Thus use a simple iterator to detect all variable names instead of miniwdl's parser
-    # To be used if a wdl file has a type that miniwdl doesn't support, ex Object
     regex_var_types = re.compile(regex_var_types_str)
 
     with open(wdl_file, "r") as f:
-        wdl_contents = f.read()
+        wdl_text = f.read()
 
+    for block in ("workflow", "task"):
+        # Find the starting brace of the workflow, or else the task
+        block_match = re.search(block + r"\s+\w+\s*\{", wdl_text)
+        if block_match:
+            break
+
+    # Grab the block contents
+    block_text = parse_block(wdl_text, block_match.end() - 1)
+
+    # Find the output section
+    output_match = re.search(r"output\s*\{", block_text)
+
+    # Grab its contents
+    output_text = parse_block(block_text, output_match.end() - 1)
+
+    # Parse variable declarations from the output section
+    # TODO: this won't work if the entire declaration isn't on the same line
     var_types = {}
-    # can't regex the entire wdl file in one as regex cannot handle nested constructs
-    # so iterate over each line instead
-    # this is a little fragile if the entire declaration isn't on the same line
-    # This also technically grabs the variable names/types for all declarations in the file rather than just the output
-    # todo: deal with when a task and a workflow have two variables (one in the task and one in the workflow) with the same variable name
-    # within the same workflow/task, this is not an issue as multiple declarations with the same variable name is not allowed
-    for line in wdl_contents.split("\n"):
+    for line in output_text.split("\n"):
         line = line.strip()
         if "=" in line:
             match = re.search(regex_var_types, line)
@@ -325,7 +361,7 @@ def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_f
                     output_type = output_var_types[k_base]
                 except KeyError as e:
                     # This happens if the example output mentions a field that doesn't really exist.
-                    raise RuntimeError(f"Expected output contains a \"{k_base}\" field that is not an output of the workflow.")
+                    raise RuntimeError(f"Expected output contains a \"{k_base}\" field that is not an output of the workflow ({', '.join(output_var_types.keys())}).")
                 config_entry["outputs"][k] = {
                     "type": output_type,
                     "value": convert_typed_output_values_from_string(v, output_type, data_dir, get_from(get_from(target_output_data, k), "value"))
