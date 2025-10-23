@@ -385,11 +385,11 @@ def get_specific_tests(conformance_tests, options: Namespace):
     exclude_tags_argument = options.exclude_tags
     exclude_ids_argument = options.exclude_ids
     given_indices = get_test_indices(number_argument)
-    # TODO: Need to use exclude_ids_argument here too!
     exclude_indices = get_test_indices(exclude_number_argument)
     given_tags = get_tags(tag_argument)
     exclude_tags = get_tags(exclude_tags_argument)
     ids_to_test = None if id_argument is None else set(id_argument.split(','))
+    exclude_ids = None if exclude_ids_argument is None else set(exclude_ids_argument.split(','))
     tests = set()
     given_indices = given_indices or []
     for test_number in range(len(conformance_tests)):
@@ -399,6 +399,8 @@ def get_specific_tests(conformance_tests, options: Namespace):
         if exclude_tags is not None and not set(test_tags).isdisjoint(exclude_tags):
             continue
         test_id = conformance_tests[test_number]['id']
+        if exclude_ids is not None and test_id in exclude_ids:
+            continue
         if test_number in given_indices:
             tests.add(test_number)
         if given_tags is None and ids_to_test is None and len(given_indices) == 0:
