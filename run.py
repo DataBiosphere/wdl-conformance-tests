@@ -709,6 +709,7 @@ def add_options(parser) -> None:
     parser.add_argument("--quiet", default=False, action="store_true")
     parser.add_argument("--exclude-numbers", default=None, help="Exclude certain test numbers.")
     parser.add_argument("--exclude-tags", default=None, help="Exclude certain test tags.")
+    parser.add_argument("--exclude-ids", default=None, help="Exclude certain test IDs.")
     parser.add_argument("--conformance-file", default="conformance.yaml",
                         help="Run the given test suite.")
     parser.add_argument("--toil-args", default=None, help="Arguments to pass into toil-wdl-runner. Ex: "

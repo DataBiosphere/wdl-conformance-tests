@@ -383,7 +383,9 @@ def get_specific_tests(conformance_tests, options: Namespace):
     id_argument = options.id
     exclude_number_argument = options.exclude_numbers
     exclude_tags_argument = options.exclude_tags
+    exclude_ids_argument = options.exclude_ids
     given_indices = get_test_indices(number_argument)
+    # TODO: Need to use exclude_ids_argument here too!
     exclude_indices = get_test_indices(exclude_number_argument)
     given_tags = get_tags(tag_argument)
     exclude_tags = get_tags(exclude_tags_argument)
