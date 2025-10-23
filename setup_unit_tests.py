@@ -285,10 +285,10 @@ def recursive_json_apply(json_obj: JSON_PARSEABLE, func: Callable[[Any], Any]) \
 
 
 def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_files: Optional[Set[str]], data_dir: Optional[Path],
-                         output_data_dir: Optional[Path], config: list, extra_patch_data: Optional[Dict[str, Any]]) -> None:
+                         output_data_dir: Optional[Path], extra_patch_data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     # Modified from the WDL test extraction example
     """
-    Given the regex match object, create the corresponding config entry for conformance.yaml. Adds the config entry to the config argument (which is a list)
+    Given the regex match object, create the corresponding config entry for conformance.yaml. Returns the config entry.
 
     Separated from write_test_file as miniwdl's parser requires all imported files to exist,
     and this is not necessarily true if iterating the spec file top to bottom. And we
@@ -395,7 +395,7 @@ def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_f
 
     config_entry["versions"] = [version]
 
-    config.append(config_entry)
+    return config_entry
 
 
 def write_test_files(m: re.Match, output_dir: Path, version: str):
@@ -430,7 +430,7 @@ def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, versio
     if not output_dir.exists():
         output_dir.mkdir(parents=True)
 
-    config = []
+    test_cases = {}
     all_m = []
     with open(spec) as s:
         buf = None
@@ -471,10 +471,24 @@ def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, versio
 
     for m in all_m:
         try:
-            generate_config_file(m, output_dir, version, all_data_files, data_dir, output_data_dir, config, extra_patch_data)
+            config_entry = generate_config_file(m, output_dir, version, all_data_files, data_dir, output_data_dir, extra_patch_data)
+            test_id = config_entry["id"]
+
+            # Detect duplicate test IDs
+            if test_id in test_cases:
+                existing_wdl = test_cases[test_id]["inputs"]["wdl"]
+                new_wdl = config_entry["inputs"]["wdl"]
+                raise RuntimeError(
+                    f"Duplicate test ID '{test_id}' from WDL files '{existing_wdl}' and '{new_wdl}'"
+                )
+
+            test_cases[test_id] = config_entry
         except Exception as e:
             raise RuntimeError(f"Could not import test case {m.groups()[0]}") from e
 
+
+    # Convert dict to list for output
+    config = list(test_cases.values())
 
     if output_type == "json":
         config_file = output_dir / "test_config.json"
