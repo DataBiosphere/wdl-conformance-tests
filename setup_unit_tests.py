@@ -309,11 +309,11 @@ def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_f
 
     is_fail = is_fail or config_entry.get("fail", False)  # failure can also be specified in the json
 
-    config_entry["id"] = target
+    config_entry["id"] = "".join(f.groups())
 
     target_data: Optional[Dict[str, Any]] = None
     for m in extra_patch_data:
-        if m.get("id") == target:
+        if m.get("id") == config_entry["id"]:
             target_data = m
             break
 
