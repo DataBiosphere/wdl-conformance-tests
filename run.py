@@ -285,20 +285,38 @@ class WDLConformanceTestRunner:
             if not os.path.exists(result):
                 return {'status': 'FAILED', 'reason': f"Result directory does not exist!\n"
                                                       f"Expected directory path: {result}!"}
+            if isinstance(expected, str):
+                # The WDL conformance tests will represent an output Directory
+                # as just a string. To check this, we make sure we got a
+                # directory with the right basename and ignore the contents.
 
-            if not isinstance(expected, dict):
-                return {'status': 'FAILED', 'reason': f"Expected value is not a listing!\n"
-                                                      f"Expected result was: {expected}"}
-            listing = expected.get('listing')
-            if not isinstance(listing, list):
-                return {'status': 'FAILED', 'reason': f"Expected listing value is not a list!\n"
-                                                      f"Expected result was: {expected}"}
+                # Toil spits out directory paths with a trailing slash. The
+                # spec doesn't say anything about *how* a Directory path must
+                # be represented in JSON, so accept it. See
+                # <https://github.com/openwdl/wdl/issues/719>
+                result_path = result.rstrip("/")
+                result_basename = os.path.basename(result_path)
+                if result_basename != expected:
+                    return {'status': 'FAILED', 'reason': f"Result directory has wrong basename!\n"
+                                                          f"Expected basename was: {expected}\n"
+                                                          f"Actual basename was: {result_basename}"}
 
-            result_listing = get_listing(result)
-            if not listings_equivalent(result_listing, listing):
-                return {'status': 'FAILED', 'reason': f"Expected listing does not match!\n"
-                                                      f"Expected listing: {expected['listing']}\n"
-                                                      f"Actual listing: {listing}!"}
+            elif isinstance(expected, dict):
+                # Usually we represent a Directory with a while structure with
+                # a listing.
+                listing = expected.get('listing')
+                if not isinstance(listing, list):
+                    return {'status': 'FAILED', 'reason': f"Expected listing value is not a list!\n"
+                                                          f"Expected result was: {expected}"}
+
+                result_listing = get_listing(result)
+                if not listings_equivalent(result_listing, listing):
+                    return {'status': 'FAILED', 'reason': f"Expected listing does not match!\n"
+                                                          f"Expected listing: {expected['listing']}\n"
+                                                          f"Actual listing: {listing}!"}
+            else:
+                return {'status': 'FAILED', 'reason': f"Expected value is not a basename or listing!\n"
+                                                      f"Expected result was: {expected}"}
 
 
         if isinstance(typ, WDLPair):
