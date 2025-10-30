@@ -1,5 +1,5 @@
 # this should have the same structure as the expected yaml configs, ex conformance.yaml
-- id: optional_output
+- id: optional_output_task
   outputs:
     optional_output.example1:
       type: File
