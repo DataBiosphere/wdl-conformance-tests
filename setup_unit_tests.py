@@ -569,30 +569,26 @@ def main(argv=None):
         spec_dir = f"wdl-{args.version}-spec"
         if not os.path.exists(spec_dir) or args.force_pull is True:
             cmd = f"rm -rf {spec_dir}"
-            subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            subprocess.check_call(cmd.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
             cmd = f"git clone {args.repo} {spec_dir}"
-            subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            subprocess.check_call(cmd.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
         else:
             print(f"Spec dir at {spec_dir} already exists. Specify --force-pull to force a pull.")
 
         os.chdir(spec_dir)
 
         # may be fragile if WDL changes their branch naming scheme
-        # test fixes are in the 1.1.3 branch as it has not been merged upstream
-        if args.version == "1.1":
-            repo_version = "1.1.3"
-        else:
-            repo_version = args.version
+        repo_version = args.version
         repo_branch = args.branch or f"wdl-{repo_version}"
         cmd = f"git checkout {repo_branch}"
         print(f"Changing to branch {repo_branch}")
-        subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        subprocess.check_call(cmd.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
     os.chdir(output_root)
 
     # temp
     cmd = f"rm -rf unit_tests"
-    subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    subprocess.check_call(cmd.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
     print("Extracting tests...")
     extract_tests(Path(spec_dir) / Path("SPEC.md"), Path(spec_dir) / Path("tests/data"), Path("unit_tests"), args.version, args.output_type, args.extra_patch_data)
