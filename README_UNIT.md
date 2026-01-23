@@ -49,6 +49,7 @@ There are extra arguments specific to `run_unit.py` that may be useful.
 ```commandline
   --config CONFIG, -c CONFIG
                         Specify the path of the conformance config file.
+  --id ID               Specify WDL tests by ID.
   --reset               Specify whether to run the setup script again.
   --force-pull          Specify whether to use the cached SPEC or to force a pull.The setup script will be run as well.
 ```
