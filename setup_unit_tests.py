@@ -9,7 +9,6 @@ import hashlib
 import subprocess
 import sys
 
-import regex as re
 import os
 import glob
 
@@ -29,6 +28,12 @@ import WDL
 # Use the same parsing regex as https://github.com/openwdl/wdl-tests/blob/c9d59f6b7ef0f8e9f65cde92c9e70182c3afbd58/scripts/extract_tests.py#L10-L13
 TEST_RE = re.compile(
     r"^<details>\s*<summary>\s*Example: (.+?)\s*```wdl(.+?)```\s*</summary>\s*(?:<p>\s*(?:Example input:\s*```json(.*?)```)?\s*(?:Example output:\s*```json(.*?)```)?\s*(?:Test config:\s*```json(.*?)```)?\s*</p>\s*)?</details>$",
+    re.I | re.S,
+)
+# Regex for Resource blocks that contain test data files
+# Format: <details><summary>Resource: filename\n```lang\ncontent\n```\n</summary></details>
+RESOURCE_RE = re.compile(
+    r"^<details>\s*<summary>\s*Resource:\s*(.+?)\s*```\w*\n(.*?)```\s*</summary>\s*</details>$",
     re.I | re.S,
 )
 FILENAME_RE = re.compile(r"(.+?)(_fail)?(_task)?.wdl")
@@ -284,8 +289,8 @@ def recursive_json_apply(json_obj: JSON_PARSEABLE, func: Callable[[Any], Any]) \
         return func(json_obj)
 
 
-def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_files: Optional[Set[str]], data_dir: Optional[Path],
-                         output_data_dir: Optional[Path], config: list, extra_patch_data: Optional[Dict[str, Any]]) -> None:
+def generate_config_file(match: re.Match, output_dir: Path, version: str, all_data_files: Optional[Set[str]], data_dir: Optional[Path],
+                         config: list, extra_patch_data: Optional[Dict[str, Any]]) -> None:
     # Modified from the WDL test extraction example
     """
     Given the regex match object, create the corresponding config entry for conformance.yaml. Adds the config entry to the config argument (which is a list)
@@ -294,7 +299,7 @@ def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_f
     and this is not necessarily true if iterating the spec file top to bottom. And we
     can't use a simple regex as the type of grammar is too basic for things like nested constructs
     """
-    file_name, wdl, input_json, output_json, config_json = m.groups()
+    file_name, wdl, input_json, output_json, config_json = match.groups()
 
     f = FILENAME_RE.match(file_name)
 
@@ -312,21 +317,20 @@ def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_f
     config_entry["id"] = target
 
     target_data: Optional[Dict[str, Any]] = None
-    for m in extra_patch_data:
-        if m.get("id") == target:
-            target_data = m
+    for patch_entry in extra_patch_data:
+        if patch_entry.get("id") == target:
+            target_data = patch_entry
             break
 
     wdl_dir, wdl_base = os.path.split(wdl_file)
 
-    # the spec assumes all input files are the basenames
-    # if we detect a filename in the input, change to a proper relative path
+    # Convert data file paths from being relative to output_dir to being relative to cwd
     input_json_dict = {}
     if input_json is not None:
         def if_file_convert(maybe_file):
             if maybe_file in all_data_files:
-                # this is a file
-                return os.path.join(output_data_dir, maybe_file)  # output_data_dir should already be a relative path dir to the repo TLD
+                # Convert from relative-to-output_dir to relative-to-cwd
+                return os.path.join(output_dir, maybe_file)
             else:
                 return maybe_file
 
@@ -398,13 +402,13 @@ def generate_config_file(m: re.Match, output_dir: Path, version: str, all_data_f
     config.append(config_entry)
 
 
-def write_test_files(m: re.Match, output_dir: Path, version: str):
+def write_test_files(match: re.Match, output_dir: Path, version: str):
     """
     Given the regex match, write the test file into the output directory.
     Checks if the version and the file to be written match. Also ensures that the file
     does not exist beforehand.
     """
-    file_name, wdl, input_json, output_json, config_json = m.groups()
+    file_name, wdl, input_json, output_json, config_json = match.groups()
 
     if file_name is None:
         raise Exception("Missing file name")
@@ -426,12 +430,38 @@ def write_test_files(m: re.Match, output_dir: Path, version: str):
         o.write(wdl)
 
 
+def write_resource_file(match: re.Match, data_dir: Path) -> str:
+    """
+    Given the regex match for a Resource block, write the resource file into the data directory.
+
+    Returns the path of the written resource, relative to data_dir.
+    """
+    file_name, content = match.groups()
+    file_name = file_name.strip()
+
+    resource_file = data_dir / file_name
+    # Create parent directories if the resource is in a subdirectory (e.g., testdir/example.txt)
+    resource_file.parent.mkdir(parents=True, exist_ok=True)
+
+    if resource_file.exists():
+        raise Exception(f"Resource file already exists: {resource_file}")
+
+    with open(resource_file, "w") as o:
+        o.write(content)
+
+    return file_name
+
+
 def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, version: str, output_type: str, extra_patch_data_path: Optional[Path]):
     if not output_dir.exists():
         output_dir.mkdir(parents=True)
 
+    # Output data directory for resource files
+    output_data_dir = output_dir / "data"
+
     config = []
-    all_m = []
+    all_test_matches = []
+    all_resource_matches = []
     with open(spec) as s:
         buf = None
         for line in s:
@@ -442,26 +472,46 @@ def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, versio
                 if "</details>" in line:
                     ex = "".join(buf)
                     buf = None
-                    m = TEST_RE.match(ex)
-                    if m is None:
-                        raise Exception(f"Regex does not match example {ex}")
-                    else:
+                    # Try matching as an Example block first
+                    test_match = TEST_RE.match(ex)
+                    if test_match is not None:
                         try:
-                            all_m.append(m)
-                            write_test_files(m, output_dir, version)
+                            all_test_matches.append(test_match)
+                            write_test_files(test_match, output_dir, version)
                         except Exception as e:
                             raise Exception(
                                 f"Error writing files for example {ex}"
                             ) from e
+                    else:
+                        # Try matching as a Resource block
+                        resource_match = RESOURCE_RE.match(ex)
+                        if resource_match is not None:
+                            all_resource_matches.append(resource_match)
+                        else:
+                            raise Exception(f"Details block does not match Example or Resource format: {ex}")
 
-    all_data_files = None
-    if data_dir is not None:
-        all_data_files = set(os.path.basename(x) for x in glob.glob(str(data_dir / "**"), recursive=True))
+    # Write resource files and build the set of data file names
+    all_data_files: Set[str] = set()
+    if all_resource_matches:
+        # Create data directory for inline resources
+        output_data_dir.mkdir(parents=True, exist_ok=True)
+        for resource_match in all_resource_matches:
+            try:
+                file_name = write_resource_file(resource_match, output_data_dir)
+                # Store path relative to output_dir (e.g., "data/hello.txt")
+                resource_path = output_data_dir / file_name
+                all_data_files.add(os.path.relpath(resource_path, output_dir))
+            except Exception as e:
+                raise Exception(
+                    f"Error writing resource file from {resource_match.groups()}"
+                ) from e
 
-    if data_dir is not None:
-        output_data_dir = output_dir / "data"
-    else:
-        output_data_dir = None
+    # Fall back to external data directory if no inline resources found
+    if not all_data_files and data_dir is not None and data_dir.exists():
+        # Copy external data directory to output first
+        shutil.copytree(data_dir, output_data_dir, symlinks=True, dirs_exist_ok=False)
+        # Store paths relative to output_dir
+        all_data_files = set(os.path.relpath(x, output_dir) for x in glob.glob(str(output_data_dir / "**"), recursive=True) if os.path.isfile(x))
 
     extra_patch_data = None
     if extra_patch_data_path is not None:
@@ -469,11 +519,11 @@ def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, versio
             yaml = YAML()
             extra_patch_data = yaml.load(e)
 
-    for m in all_m:
+    for test_match in all_test_matches:
         try:
-            generate_config_file(m, output_dir, version, all_data_files, data_dir, output_data_dir, config, extra_patch_data)
+            generate_config_file(test_match, output_dir, version, all_data_files, output_data_dir, config, extra_patch_data)
         except Exception as e:
-            raise RuntimeError(f"Could not import test case {m.groups()[0]}") from e
+            raise RuntimeError(f"Could not import test case {test_match.groups()[0]}") from e
 
 
     if output_type == "json":
@@ -485,9 +535,6 @@ def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, versio
         with open(config_file, "w") as o:
             yaml = YAML()
             yaml.dump(config, o)
-
-    if data_dir is not None and data_dir.exists():
-        shutil.copytree(data_dir, output_data_dir, symlinks=True, dirs_exist_ok=False)
 
 
 def main(argv=None):
