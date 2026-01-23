@@ -290,10 +290,10 @@ def recursive_json_apply(json_obj: JSON_PARSEABLE, func: Callable[[Any], Any]) \
 
 
 def generate_config_file(match: re.Match, output_dir: Path, version: str, all_data_files: Optional[Set[str]], data_dir: Optional[Path],
-                         config: list, extra_patch_data: Optional[Dict[str, Any]]) -> None:
+                         extra_patch_data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     # Modified from the WDL test extraction example
     """
-    Given the regex match object, create the corresponding config entry for conformance.yaml. Adds the config entry to the config argument (which is a list)
+    Given the regex match object, create the corresponding config entry for conformance.yaml. Returns the config entry.
 
     Separated from write_test_file as miniwdl's parser requires all imported files to exist,
     and this is not necessarily true if iterating the spec file top to bottom. And we
@@ -314,11 +314,11 @@ def generate_config_file(match: re.Match, output_dir: Path, version: str, all_da
 
     is_fail = is_fail or config_entry.get("fail", False)  # failure can also be specified in the json
 
-    config_entry["id"] = target
+    config_entry["id"] = "".join([part for part in f.groups() if part is not None])
 
     target_data: Optional[Dict[str, Any]] = None
     for patch_entry in extra_patch_data:
-        if patch_entry.get("id") == target:
+        if patch_entry.get("id") == config_entry["id"]:
             target_data = patch_entry
             break
 
@@ -399,7 +399,7 @@ def generate_config_file(match: re.Match, output_dir: Path, version: str, all_da
 
     config_entry["versions"] = [version]
 
-    config.append(config_entry)
+    return config_entry
 
 
 def write_test_files(match: re.Match, output_dir: Path, version: str):
@@ -459,7 +459,7 @@ def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, versio
     # Output data directory for resource files
     output_data_dir = output_dir / "data"
 
-    config = []
+    test_cases = {}
     all_test_matches = []
     all_resource_matches = []
     with open(spec) as s:
@@ -521,10 +521,24 @@ def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, versio
 
     for test_match in all_test_matches:
         try:
-            generate_config_file(test_match, output_dir, version, all_data_files, output_data_dir, config, extra_patch_data)
+            config_entry = generate_config_file(test_match, output_dir, version, all_data_files, output_data_dir, extra_patch_data)
+            test_id = config_entry["id"]
+
+            # Detect duplicate test IDs
+            if test_id in test_cases:
+                existing_wdl = test_cases[test_id]["inputs"]["wdl"]
+                new_wdl = config_entry["inputs"]["wdl"]
+                raise RuntimeError(
+                    f"Duplicate test ID '{test_id}' from WDL files '{existing_wdl}' and '{new_wdl}'"
+                )
+
+            test_cases[test_id] = config_entry
         except Exception as e:
             raise RuntimeError(f"Could not import test case {test_match.groups()[0]}") from e
 
+
+    # Convert dict to list for output
+    config = list(test_cases.values())
 
     if output_type == "json":
         config_file = output_dir / "test_config.json"
@@ -602,30 +616,26 @@ def main(argv=None):
         spec_dir = f"wdl-{args.version}-spec"
         if not os.path.exists(spec_dir) or args.force_pull is True:
             cmd = f"rm -rf {spec_dir}"
-            subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            subprocess.check_call(cmd.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
             cmd = f"git clone {args.repo} {spec_dir}"
-            subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            subprocess.check_call(cmd.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
         else:
             print(f"Spec dir at {spec_dir} already exists. Specify --force-pull to force a pull.")
 
         os.chdir(spec_dir)
 
         # may be fragile if WDL changes their branch naming scheme
-        # test fixes are in the 1.1.3 branch as it has not been merged upstream
-        if args.version == "1.1":
-            repo_version = "1.1.3"
-        else:
-            repo_version = args.version
+        repo_version = args.version
         repo_branch = args.branch or f"wdl-{repo_version}"
         cmd = f"git checkout {repo_branch}"
         print(f"Changing to branch {repo_branch}")
-        subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        subprocess.check_call(cmd.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
     os.chdir(output_root)
 
     # temp
     cmd = f"rm -rf unit_tests"
-    subprocess.run(cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    subprocess.check_call(cmd.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
     print("Extracting tests...")
     extract_tests(Path(spec_dir) / Path("SPEC.md"), Path(spec_dir) / Path("tests/data"), Path("unit_tests"), args.version, args.output_type, args.extra_patch_data)
