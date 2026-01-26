@@ -27,7 +27,7 @@ import WDL
 
 # Use the same parsing regex as https://github.com/openwdl/wdl-tests/blob/c9d59f6b7ef0f8e9f65cde92c9e70182c3afbd58/scripts/extract_tests.py#L10-L13
 TEST_RE = re.compile(
-    r"^<details>\s*<summary>\s*Example: (.+?)\s*```wdl(.+?)```\s*</summary>\s*(?:<p>\s*(?:Example input:\s*```json(.*?)```)?\s*(?:Example output:\s*```json(.*?)```)?\s*(?:Test config:\s*```json(.*?)```)?\s*</p>\s*)?</details>$",
+    r"^<details>\s*<summary>\s*Example: (.+?)\s*```wdl(.+?)```\s*</summary>\s*(?:<p>\s*(?:Example input:\s*```json(.*?)```)?\s*(?:Example output:\s*```json(.*?)```)?\s*(?:Test config:\s*(?:```json(.*?)```)?)?\s*</p>\s*)?</details>$",
     re.I | re.S,
 )
 # Regex for Resource blocks that contain test data files
@@ -48,7 +48,7 @@ VERSION_RE = re.compile(r"version ([\d.]+)")
 #     Int file_array_len = length(select_all(file_array))
 #   }
 # For each declaration, the regex will identify type File with variable name example1, etc
-regex_var_types_str = r"([\w\[\]+?]+)\s(\w+)(?:[\s\S]*?(?= =))"
+regex_var_types_str = r"([\w\[, \]+?]+)\s(\w+)(?:[\s\S]*?(?= =))"
 
 
 def get_from(d: Optional[Dict[Any, Any]], k: str) -> Any:
@@ -241,6 +241,7 @@ def convert_typed_output_values(output_values: Union[None, str, Dict[str, Any], 
                 # See https://github.com/chanzuckerberg/miniwdl/issues/712
                 # Since dictionaries past python 3.6 are ordered, find the corresponding type from the current output's position
                 output_value_type = list(output_type.members.values())[i]
+            # TODO: The get_from calls here and in the later cases look wrong because we're looking up a value *as* a key.
             converted_output[output_key] = convert_typed_output_values(output_value, output_value_type, data_dir, get_from(extra_patch_data, output_value))
         return converted_output
     if isinstance(output_type, WDL.Type.Map):
@@ -251,9 +252,15 @@ def convert_typed_output_values(output_values: Union[None, str, Dict[str, Any], 
             converted_output[new_output_key] = new_output_value
     if isinstance(output_type, WDL.Type.Pair):
         converted_output = dict()
-        # key should be left or right
-        converted_output["left"] = convert_typed_output_values(output_values["left"], output_type.left_type, data_dir, get_from(extra_patch_data, output_values["left"]))
-        converted_output["right"] = convert_typed_output_values(output_values["right"], output_type.right_type, data_dir, get_from(extra_patch_data, output_values["right"]))
+        if isinstance(output_values, dict):
+            # key should be left or right
+            converted_output["left"] = convert_typed_output_values(output_values["left"], output_type.left_type, data_dir, get_from(extra_patch_data, output_values["left"]))
+            converted_output["right"] = convert_typed_output_values(output_values["right"], output_type.right_type, data_dir, get_from(extra_patch_data, output_values["right"]))
+        elif isinstance(output_values, list):
+            # Load a tuple list as a dict
+            # TODO: Does this break the test for asserting JSON representation of pairs?
+            converted_output["left"] = convert_typed_output_values(output_values[0], output_type.left_type, data_dir, get_from(extra_patch_data, output_values[0]))
+            converted_output["right"] = convert_typed_output_values(output_values[1], output_type.right_type, data_dir, get_from(extra_patch_data, output_values[1]))
         return converted_output
     if isinstance(output_type, WDL.Type.Array):
         converted_output = list()
@@ -306,7 +313,10 @@ def generate_config_file(match: re.Match, output_dir: Path, version: str, all_da
     wdl_file = output_dir / file_name
 
     if config_json is not None:
-        config_entry = json.loads(config_json)
+        try:
+            config_entry = json.loads(config_json)
+        except json.decoder.JSONDecodeError as e:
+            raise ValueError(f"Could not interpret config JSON for {file_name}: {config_json}") from e
     else:
         config_entry = {}
 
@@ -333,8 +343,11 @@ def generate_config_file(match: re.Match, output_dir: Path, version: str, all_da
                 return os.path.join(output_dir, maybe_file)
             else:
                 return maybe_file
-
-        for k, v in json.loads(input_json.strip()).items():
+        try:
+            input_json_parsed = json.loads(input_json.strip())
+        except json.decoder.JSONDecodeError as e:
+            raise ValueError(f"Could not interpret input JSON for {file_name}: {input_json}") from e
+        for k, v in input_json_parsed.items():
             input_json_dict[if_file_convert(k)] = recursive_json_apply(v, if_file_convert)
 
     config_entry["inputs"] = {
@@ -344,7 +357,11 @@ def generate_config_file(match: re.Match, output_dir: Path, version: str, all_da
     }
 
     if output_json is not None:
-        config_entry["outputs"] = json.loads(output_json.strip())
+        try:
+            output_json_parsed = json.loads(output_json.strip())
+        except json.decoder.JSONDecodeError as e:
+            raise ValueError(f"Could not interpret output JSON for {file_name}: {output_json}") from e
+        config_entry["outputs"] = dict(output_json_parsed)
     else:
         config_entry["outputs"] = {}
     output_var_types = extract_output_types(wdl_file, bool(is_fail))
@@ -359,7 +376,7 @@ def generate_config_file(match: re.Match, output_dir: Path, version: str, all_da
     else:
         if output_json is not None:
             target_output_data = get_from(target_data, "outputs")
-            for k, v in json.loads(output_json.strip()).items():
+            for k, v in output_json_parsed.items():
                 k_base = k.split(".")[-1]
                 try:
                     output_type = output_var_types[k_base]

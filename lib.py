@@ -536,7 +536,7 @@ def wdl_type_to_miniwdl_class(wdl_type: Union[Dict[str, Any], str]) -> Optional[
         # So replace with a placeholder type so the file will at least parse
         return WDLString
     else:
-        raise NotImplementedError
+        raise NotImplementedError(f"Unimplemented WDL type: {wdl_type}")
         # return None
 
 
@@ -571,6 +571,8 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
     if outer_py_typ is WDLPair:
         inner_type = wdl_inner_type(wdl_type)
 
+        # TODO: Pairs ought to be able to hold complex types with , in them as
+        # left or right!
         key_and_value_type = inner_type.split(',')
         if len(key_and_value_type) < 2:
             # either no inner type provided or not enough type provided for pair
@@ -583,8 +585,9 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
 
     if outer_py_typ is WDLMap:
         inner_type = wdl_inner_type(wdl_type)
-
-        key_and_value_type = inner_type.split(',')
+        
+        # Map keys can't be multi-level types themselves
+        key_and_value_type = inner_type.split(',', 1)
         if len(key_and_value_type) < 2:
             # either no types or too few types provided for map
             return None
