@@ -133,7 +133,7 @@ class WDLConformanceTestRunner:
         with open(conformance_file, 'r') as f:
             self.tests = yaml.load(f)
 
-    def compare_outputs(self, expected: Any, result: Any, typ: WDLBase):
+    def compare_outputs(self, expected: Any, result: Any, typ: WDLBase, context: Optional[list[str]] = None):
         """
         Recursively ensure that the expected output object is the same as the resulting output object
 
@@ -143,6 +143,10 @@ class WDLConformanceTestRunner:
         :param result: result value object from WDL runner
         :param typ: type of output from conformance file
         """
+
+        if context is None:
+            context = []
+
         if typ.optional and expected is None and result is None:
             # an optional result does not need to exist
             return {'status': f'SUCCEEDED'}
@@ -152,35 +156,39 @@ class WDLConformanceTestRunner:
                     # length of output doesn't match
                     return {'status': 'FAILED', 'reason': f"Size of expected and result do not match!\n"
                                                           f"Expected output: {expected}\n"
-                                                          f"Actual output: {result}!"}
+                                                          f"Actual output: {result}\n"
+                                                          f"Context: {', '.join(context)}"}
                 for i in range(len(expected)):
-                    status_result = self.compare_outputs(expected[i], result[i], typ.item_type)
+                    status_result = self.compare_outputs(expected[i], result[i], typ.item_type, context + [f"index {i}"])
                     if status_result['status'] == 'FAILED':
                         return status_result
             except TypeError:
                 return {'status': 'FAILED', 'reason': f"Not an array!\nExpected output: {expected}\n"
-                                                      f"Actual output: {result}"}
+                                                      f"Actual output: {result}\n"
+                                                      f"Context: {', '.join(context)}"}
 
         if isinstance(typ, WDLMap):
             try:
                 if len(expected) != len(result):
                     return {'status': 'FAILED', 'reason': f"Size of expected and result do not match!\n"
                                                           f"Expected output: {expected}\n"
-                                                          f"Actual result was: {result}!"}
+                                                          f"Actual result was: {result}\n"
+                                                          f"Context: {', '.join(context)}"}
                 # compare both the key and values of the map
                 expected_map_keys, result_map_keys = list(expected.keys()), list(result.keys())
                 for i in range(len(expected)):
                     expected_key = expected_map_keys[i]
                     result_key = result_map_keys[i]
-                    status_result = self.compare_outputs(expected_key, result_key, typ.item_type[0])
+                    status_result = self.compare_outputs(expected_key, result_key, typ.item_type[0], context + [f"key index {i}"])
                     if status_result['status'] == 'FAILED':
                         return status_result
-                    status_result = self.compare_outputs(expected[expected_key], result[result_key], typ.item_type[1])
+                    status_result = self.compare_outputs(expected[expected_key], result[result_key], typ.item_type[1], context + [f"at key '{expected_key}'"])
                     if status_result['status'] == 'FAILED':
                         return status_result
             except (KeyError, TypeError):
                 return {'status': 'FAILED', 'reason': f"Not a map or missing keys!\nExpected output: {expected}\n"
-                                                      f"Actual output: {result}"}
+                                                      f"Actual output: {result}\n"
+                                                      f"Context: {', '.join(context)}"}
 
         # WDLStruct also represents WDLObject
         # Objects in conformance will be forced to be typed, same as Structs
@@ -190,21 +198,24 @@ class WDLConformanceTestRunner:
                 if len(expected) < len(nonoptional_result) or len(expected) > len(result):
                     return {'status': 'FAILED', 'reason': f"Size of expected and result are invalid! The outputs likely don't match.\n"
                                                           f"Expected output: {expected}\n"
-                                                          f"Actual output: {result}!"}
+                                                          f"Actual output: {result}\n"
+                                                          f"Context: {', '.join(context)}"}
                 for key in expected.keys():
-                    status_result = self.compare_outputs(expected[key], result[key], typ.members[key])
+                    status_result = self.compare_outputs(expected[key], result[key], typ.members[key], context + [f"at field '{key}'"])
                     if status_result['status'] == 'FAILED':
                         return status_result
             except (KeyError, TypeError):
                 return {'status': 'FAILED', 'reason': f"Not a struct or missing keys!\nExpected output: {expected}\n"
-                                                      f"Actual output: {result}"}
+                                                      f"Actual output: {result}\n"
+                                                      f"Context: {', '.join(context)}"}
 
         if isinstance(typ, (WDLInt, WDLFloat, WDLBool, WDLString)):
             # check that outputs are the same
             if expected != result:
                 return {'status': 'FAILED', 'reason': f"Expected and result do not match!\n"
                                                       f"Expected output: {expected}\n"
-                                                      f"Actual output: {result}!"}
+                                                      f"Actual output: {result}\n"
+                                                      f"Context: {', '.join(context)}"}
             # check that output types are correct
             expected_type = py_type_of_wdl_class(typ)
             if not isinstance(expected, expected_type) or not isinstance(result, expected_type):
@@ -219,14 +230,16 @@ class WDLConformanceTestRunner:
                         expected_type(result)
                     except ValueError:
                         # the string representation does not represent the right type
-                        return {'status': 'FAILED', 'reason': f"Runner output {result} is not type Int from the conformance file."}
+                        return {'status': 'FAILED', 'reason': f"Runner output {result} is not type Int from the conformance file.\n"
+                                                              f"Context: {', '.join(context)}"}
                     # For good measure, ensure the expected result is as well.
                     # TODO: If a test fails because of this it is really a bug in the test definition. (also mirrored below)
                     try:
                         # ensure the stringified version of the conformance output is equivalent to an int
                         expected_type(expected)
                     except ValueError:
-                        return {'status': 'FAILED', 'reason': f"Conformance output and type does not match. Expected output {expected} with expected type Int"}
+                        return {'status': 'FAILED', 'reason': f"Conformance output and type does not match. Expected output {expected} with expected type Int.\n"
+                                                              f"Context: {', '.join(context)}"}
 
                 elif isinstance(typ, WDLFloat):
                     # Ensure the actual result is parseable as the correct type
@@ -235,31 +248,38 @@ class WDLConformanceTestRunner:
                         expected_type(result)
                     except ValueError:
                         # the string representation does not represent the right type
-                        return {'status': 'FAILED', 'reason': f"Runner output {result} is not type Float from the conformance file."}
+                        return {'status': 'FAILED', 'reason': f"Runner output {result} is not type Float from the conformance file.\n"
+                                                              f"Context: {', '.join(context)}"}
                     # For good measure, ensure the expected result is as well.
                     try:
                         # ensure the stringified version of the conformance output is equivalent to an float
                         expected_type(expected)
                     except ValueError:
-                        return {'status': 'FAILED', 'reason': f"Conformance output and type does not match. Expected output {expected} with expected type Float"}
+                        return {'status': 'FAILED', 'reason': f"Conformance output and type does not match. Expected output {expected} with expected type Float.\n"
+                                                              f"Context: {', '.join(context)}"}
                 else:
                     if not isinstance(expected, expected_type):
-                        return {'status': 'FAILED', 'reason': f"Incorrect types! Runner output {expected} is not of type {str(typ)}\n"}
+                        return {'status': 'FAILED', 'reason': f"Incorrect types! Runner output {expected} is not of type {str(typ)}\n"
+                                                              f"Context: {', '.join(context)}"}
                     elif not isinstance(result, expected_type):
-                        return {'status': 'FAILED', 'reason': f"Incorrect types! Runner output {result} is not of type {str(typ)}\n"}
+                        return {'status': 'FAILED', 'reason': f"Incorrect types! Runner output {result} is not of type {str(typ)}\n"
+                                                              f"Context: {', '.join(context)}"}
 
         if isinstance(typ, WDLFile):
             # check file path exists
             if not os.path.exists(result):
                 return {'status': 'FAILED', 'reason': f"Result file does not exist!\n"
-                                                      f"Expected file path: {result}!"}
+                                                      f"Expected file path: {result}\n"
+                                                      f"Context: {', '.join(context)}"}
 
             if not isinstance(expected, dict):
                 return {'status': 'FAILED', 'reason': f"Expected value is not a regex or md5sum!\n"
-                                                      f"Expected result was: {expected}"}
+                                                      f"Expected result was: {expected}\n"
+                                                      f"Context: {', '.join(context)}"}
             regex = expected.get('regex')
             if regex == "":
-                return {'status': 'FAILED', 'reason': f"Expected regex is empty!"}
+                return {'status': 'FAILED', 'reason': f"Expected regex is empty!\n"
+                                                      f"Context: {', '.join(context)}"}
             if regex is not None:
                 # get regex
                 re_c = re.compile(regex)
@@ -269,7 +289,8 @@ class WDLConformanceTestRunner:
                     if not re_c.search(text):
                         return {'status': 'FAILED', 'reason': f"Regex did not match!\n"
                                                               f"Regex: {regex}\n"
-                                                              f"Value: {text}"}
+                                                              f"Value: {text}\n"
+                                                              f"Context: {', '.join(context)}"}
             else:
                 # get md5sum
                 with open(result, "rb") as f:
@@ -278,13 +299,15 @@ class WDLConformanceTestRunner:
                 if md5sum != expected['md5sum']:
                     return {'status': 'FAILED', 'reason': f"Expected file does not match!\n"
                                                           f"Expected md5sum: {expected['md5sum']}\n"
-                                                          f"Actual md5sum: {md5sum}!"}
+                                                          f"Actual md5sum: {md5sum}\n"
+                                                          f"Context: {', '.join(context)}"}
 
         if isinstance(typ, WDLDirectory):
             # check directory path exists
             if not os.path.exists(result):
                 return {'status': 'FAILED', 'reason': f"Result directory does not exist!\n"
-                                                      f"Expected directory path: {result}!"}
+                                                      f"Expected directory path: {result}\n"
+                                                      f"Context: {', '.join(context)}"}
             if isinstance(expected, str):
                 # The WDL conformance tests will represent an output Directory
                 # as just a string. To check this, we make sure we got a
@@ -299,7 +322,8 @@ class WDLConformanceTestRunner:
                 if result_basename != expected:
                     return {'status': 'FAILED', 'reason': f"Result directory has wrong basename!\n"
                                                           f"Expected basename was: {expected}\n"
-                                                          f"Actual basename was: {result_basename}"}
+                                                          f"Actual basename was: {result_basename}\n"
+                                                          f"Context: {', '.join(context)}"}
 
             elif isinstance(expected, dict):
                 # Usually we represent a Directory with a while structure with
@@ -307,30 +331,36 @@ class WDLConformanceTestRunner:
                 listing = expected.get('listing')
                 if not isinstance(listing, list):
                     return {'status': 'FAILED', 'reason': f"Expected listing value is not a list!\n"
-                                                          f"Expected result was: {expected}"}
+                                                          f"Expected result was: {expected}\n"
+                                                          f"Context: {', '.join(context)}"}
 
                 result_listing = get_listing(result)
                 if not listings_equivalent(result_listing, listing):
                     return {'status': 'FAILED', 'reason': f"Expected listing does not match!\n"
                                                           f"Expected listing: {expected['listing']}\n"
-                                                          f"Actual listing: {listing}!"}
+                                                          f"Actual listing: {listing}\n"
+                                                          f"Context: {', '.join(context)}"}
             else:
                 return {'status': 'FAILED', 'reason': f"Expected value is not a basename or listing!\n"
-                                                      f"Expected result was: {expected}"}
+                                                      f"Expected result was: {expected}\n"
+                                                      f"Context: {', '.join(context)}"}
 
 
         if isinstance(typ, WDLPair):
             try:
                 if len(expected) != 2:
                     return {'status': 'FAILED', 'reason': f"Expected value is not a pair!\n"
-                                                          f"Expected output: {expected}"}
+                                                          f"Expected output: {expected}\n"
+                                                          f"Context: {', '.join(context)}"}
                 if expected['left'] != result['left'] or expected['right'] != result['right']:
                     return {'status': 'FAILED', 'reason': f"Expected and result do not match!\n"
                                                           f"Expected output: {expected}\n"
-                                                          f"Actual result was: {result}!"}
+                                                          f"Actual result was: {result}\n"
+                                                          f"Context: {', '.join(context)}"}
             except (KeyError, TypeError):
                 return {'status': 'FAILED', 'reason': f"Not a pair or missing keys!\nExpected output: {expected}\n"
-                                                      f"Actual output: {result}"}
+                                                      f"Actual output: {result}\n"
+                                                      f"Context: {', '.join(context)}"}
         return {'status': f'SUCCEEDED'}
 
     def run_verify(self, expected: dict, results_file: str, ret_code: int) -> dict:
@@ -383,7 +413,8 @@ class WDLConformanceTestRunner:
             # The old format excluded outputs by final name component, but the new format excludes them by full name.
             # We support both.
             test_result_outputs = {k: v for k, v in test_results.get('outputs', {}).items() if k not in excluded and k.split(".")[-1] not in excluded}
-
+            # If a test specifies a value for an excluded output, ignore it
+            expected = {k: v for k, v in expected.items() if k not in excluded and k.split(".")[-1] not in excluded}
         else:
             test_result_outputs = test_results.get('outputs', {})
         if len(test_result_outputs) != len(expected):
@@ -406,7 +437,7 @@ class WDLConformanceTestRunner:
 
             if 'value' not in expected[identifier]:
                 return {'status': 'FAILED', 'reason': f"Test has no expected output of key 'value'!"}
-            result = self.compare_outputs(expected[identifier]['value'], output, python_type)
+            result = self.compare_outputs(expected[identifier]['value'], output, python_type, [f"Output '{identifier}'"])
             if result['status'] == 'FAILED':
                 return result
         return result

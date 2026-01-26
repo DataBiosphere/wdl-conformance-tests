@@ -223,6 +223,7 @@ def convert_typed_output_values(output_values: Union[None, str, Dict[str, Any], 
             if get_from(extra_patch_data, "regex") is not None:
                 return {'regex': extra_patch_data.get("regex")}
             # The above methods should be used, else this is a fallback. This isn't guaranteed to find the right file if multiple same filenames exist under data_dir
+            # Some tests even have output files with the same name as trest data files but which are expected to have different contents. 
             if path.endswith(output_values) and os.path.exists(path):
                 with open(path, "rb") as f:
                     md5sum = hashlib.md5(f.read()).hexdigest()
