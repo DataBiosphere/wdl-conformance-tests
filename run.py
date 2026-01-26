@@ -339,7 +339,7 @@ class WDLConformanceTestRunner:
         the conformance test
         """
         outputs = expected['outputs']
-        exclude_outputs = expected.get('exclude_output')
+        exclude_outputs = expected.get('exclude_outputs')
 
         if expected.get("fail"):
             # workflow is expected to fail
@@ -380,14 +380,16 @@ class WDLConformanceTestRunner:
             exclude_outputs = [exclude_outputs] if not isinstance(exclude_outputs, list) else exclude_outputs
             # remove the outputs that we are not allowed to compare
             excluded = set(exclude_outputs)
-            test_result_outputs = {k: v for k, v in test_results.get('outputs', {}).items() if k.split(".")[-1] not in excluded}
+            # The old format excluded outputs by final name component, but the new format excludes them by full name.
+            # We support both.
+            test_result_outputs = {k: v for k, v in test_results.get('outputs', {}).items() if k not in excluded and k.split(".")[-1] not in excluded}
 
         else:
             test_result_outputs = test_results.get('outputs', {})
         if len(test_result_outputs) != len(expected):
             return {'status': 'FAILED',
                     'reason': f"'outputs' section expected {len(expected)} results ({list(expected.keys())}), got "
-                              f"{len(test_result_outputs)} instead ({list(test_result_outputs.keys())}) with exit code {ret_code}"}
+                              f"{len(test_result_outputs)} instead ({list(test_result_outputs.keys())}) excluding {exclude_outputs} with exit code {ret_code}"}
 
         result = {'status': f'SUCCEEDED', 'reason': None}
 
@@ -671,18 +673,18 @@ class WDLConformanceTestRunner:
         )
 
         # identify the failing tests
-        failed_ids = [str(response['number']) for response in test_responses if
+        failed_list = [f"{response['number']} ({response['id']})" for response in test_responses if
                       response['status'] in {'FAILED'}]
-        warn_ids = [str(response['number']) for response in test_responses if
+        warn_list = [f"{response['number']} ({response['id']})" for response in test_responses if
                     response['status'] in {'WARNING'}]
-        if len(failed_ids) > 0:
-            print(f"\tFailures: {','.join(failed_ids)}")
+        if len(failed_list) > 0:
+            print(f"\tFailures: {','.join(failed_list)}")
         else:
             print("\tNo failures!")
-        if len(warn_ids) > 0:
-            print(f"\tWarnings: {','.join(warn_ids)}")
+        if len(warn_list) > 0:
+            print(f"\tWarnings: {','.join(warn_list)}")
 
-        if len(failed_ids) > 0:
+        if len(failed_list) > 0:
             return test_responses, False
         else:
             return test_responses, True

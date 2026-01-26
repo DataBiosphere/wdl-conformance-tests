@@ -430,7 +430,7 @@ def verify_return_code(expected_ret_code: Union[int, List[int], str], got_ret_co
         if got_ret_code == rc:
             return success
     return {'status': 'FAILED',
-            'reason': f"Workflow did not return the correct return code! Got: {got_ret_code}. Expected: {','.join(expected_ret_code)}."}
+            'reason': f"Workflow did not return the correct return code! Got: {got_ret_code}. Expected: {','.join((str(c) for c in expected_ret_code))}."}
 
 
 def verify_failure(ret_code: int) -> dict:
