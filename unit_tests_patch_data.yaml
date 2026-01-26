@@ -10,6 +10,14 @@
       - md5sum: c4ca4238a0b923820dcc509a6f75849b
       -
 
+- id: primitive_literals
+  outputs:
+    primitive_literals.x:
+      # This file has the same name as an example input file that ends in a
+      # newline, but does not end in a newline.
+      type: File
+      value: { md5sum: 5d41402abc4b2a76b9719d911017c592 }
+
 - id: multi_mount_points
   dependencies:
   - docker # for some reason singularity defaults to 64MB on / with findmnt
