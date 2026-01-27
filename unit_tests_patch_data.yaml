@@ -18,6 +18,13 @@
       type: File
       value: { md5sum: 5d41402abc4b2a76b9719d911017c592 }
 
+# TODO: This test exists in both 1.1 and 1.2 but has slightly different outputs in each.
+- id: file_sizes_task
+  outputs:
+    file_sizes.created_file:
+      type: File
+      value: { md5sum: 78f2ea36739260c976a0ebfa8c502d5e }
+
 - id: multi_mount_points
   dependencies:
   - docker # for some reason singularity defaults to 64MB on / with findmnt
