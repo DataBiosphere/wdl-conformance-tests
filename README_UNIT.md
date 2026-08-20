@@ -39,9 +39,6 @@ Other arguments by default are none.
 
 The script will pull the github repository for the specific version of WDL at `wdl-spec-[version]`. The unit tests and configuration file will be extracted into the `unit_tests/` folder. The configuration file will be at `unit_tests/test_config.yaml`, which is used for the `run_unit.py` script.
 
-Before running the test suite, the shell script `unit_tests_script.sh` may need to be executed. This shell script creates several directories that the specification tests will require to exist.
-To remove these directories and anything else that the script may create, call `make clean-unit-setup`.
-
 ### Running Tests
 Then, use the script `run_unit.py` to actually run the tests according to the configuration file. If the default setup was performed,
 the script can be used as if using `run.py`.
@@ -52,6 +49,7 @@ There are extra arguments specific to `run_unit.py` that may be useful.
 ```commandline
   --config CONFIG, -c CONFIG
                         Specify the path of the conformance config file.
+  --id ID               Specify WDL tests by ID.
   --reset               Specify whether to run the setup script again.
   --force-pull          Specify whether to use the cached SPEC or to force a pull.The setup script will be run as well.
 ```

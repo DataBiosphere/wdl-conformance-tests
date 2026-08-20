@@ -383,11 +383,13 @@ def get_specific_tests(conformance_tests, options: Namespace):
     id_argument = options.id
     exclude_number_argument = options.exclude_numbers
     exclude_tags_argument = options.exclude_tags
+    exclude_ids_argument = options.exclude_ids
     given_indices = get_test_indices(number_argument)
     exclude_indices = get_test_indices(exclude_number_argument)
     given_tags = get_tags(tag_argument)
     exclude_tags = get_tags(exclude_tags_argument)
     ids_to_test = None if id_argument is None else set(id_argument.split(','))
+    exclude_ids = None if exclude_ids_argument is None else set(exclude_ids_argument.split(','))
     tests = set()
     given_indices = given_indices or []
     for test_number in range(len(conformance_tests)):
@@ -397,6 +399,8 @@ def get_specific_tests(conformance_tests, options: Namespace):
         if exclude_tags is not None and not set(test_tags).isdisjoint(exclude_tags):
             continue
         test_id = conformance_tests[test_number]['id']
+        if exclude_ids is not None and test_id in exclude_ids:
+            continue
         if test_number in given_indices:
             tests.add(test_number)
         if given_tags is None and ids_to_test is None and len(given_indices) == 0:
@@ -426,7 +430,7 @@ def verify_return_code(expected_ret_code: Union[int, List[int], str], got_ret_co
         if got_ret_code == rc:
             return success
     return {'status': 'FAILED',
-            'reason': f"Workflow did not return the correct return code! Got: {got_ret_code}. Expected: {','.join(expected_ret_code)}."}
+            'reason': f"Workflow did not return the correct return code! Got: {got_ret_code}. Expected: {','.join((str(c) for c in expected_ret_code))}."}
 
 
 def verify_failure(ret_code: int) -> dict:
@@ -532,7 +536,7 @@ def wdl_type_to_miniwdl_class(wdl_type: Union[Dict[str, Any], str]) -> Optional[
         # So replace with a placeholder type so the file will at least parse
         return WDLString
     else:
-        raise NotImplementedError(f"No MiniWDL class known for {wdl_type}")
+        raise NotImplementedError(f"Unimplemented WDL type: {wdl_type}")
         # return None
 
 
@@ -566,8 +570,9 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
 
     if outer_py_typ is WDLPair:
         inner_type = wdl_inner_type(wdl_type)
-        
-        # TODO: Assumes neither type is compoind
+
+        # TODO: Pairs ought to be able to hold complex types with , in them as
+        # left or right!
         key_and_value_type = inner_type.split(',')
         if len(key_and_value_type) < 2:
             # either no inner type provided or not enough type provided for pair
@@ -581,7 +586,7 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
     if outer_py_typ is WDLMap:
         inner_type = wdl_inner_type(wdl_type)
         
-        # Assume the key type can't be compound
+        # Map keys can't be multi-level types themselves
         key_and_value_type = inner_type.split(',', 1)
         if len(key_and_value_type) < 2:
             # either no types or too few types provided for map

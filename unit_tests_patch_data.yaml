@@ -1,5 +1,5 @@
 # this should have the same structure as the expected yaml configs, ex conformance.yaml
-- id: optional_output
+- id: optional_output_task
   outputs:
     optional_output.example1:
       type: File
@@ -9,6 +9,21 @@
       value:
       - md5sum: c4ca4238a0b923820dcc509a6f75849b
       -
+
+- id: primitive_literals
+  outputs:
+    primitive_literals.x:
+      # This file has the same name as an example input file that ends in a
+      # newline, but does not end in a newline.
+      type: File
+      value: { md5sum: 5d41402abc4b2a76b9719d911017c592 }
+
+# TODO: This test exists in both 1.1 and 1.2 but has slightly different outputs in each.
+- id: file_sizes_task
+  outputs:
+    file_sizes.created_file:
+      type: File
+      value: { md5sum: 78f2ea36739260c976a0ebfa8c502d5e }
 
 - id: multi_mount_points
   dependencies:
