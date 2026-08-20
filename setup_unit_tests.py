@@ -31,6 +31,10 @@ TEST_RE = re.compile(
     r"^<details>\s*<summary>\s*Example: (.+?)\s*```wdl(.+?)```\s*</summary>\s*(?:<p>\s*(?:Example input:\s*```json(.*?)```)?\s*(?:Example output:\s*```json(.*?)```)?\s*(?:Test config:\s*(?:```json(.*?)```)?)?\s*</p>\s*)?</details>$",
     re.I | re.S,
 )
+RESOURCE_RE = re.compile(
+    r"^<details>\s*<summary>\s*Resource: (.+?)\s*```(?:\S*\n)(.+?)```\s*</summary>\s*</details>$",
+    re.I | re.S,
+)
 FILENAME_RE = re.compile(r"(.+?)(_fail)?(_task)?.wdl")
 VERSION_RE = re.compile(r"version ([\d.]+)")
 
@@ -41,9 +45,10 @@ VERSION_RE = re.compile(r"version ([\d.]+)")
 #     File? example2 = "example2.txt"
 #     Array[File?] file_array = ["example1.txt", "example2.txt"]
 #     Int file_array_len = length(select_all(file_array))
+#     Map[String, Pair[Int, File?]] nested = {}
 #   }
 # For each declaration, the regex will identify type File with variable name example1, etc
-regex_var_types_str = r"([\w\[\]+?]+)\s(\w+)(?:[\s\S]*?(?= =))"
+regex_var_types_str = r"([\w\[, \]+?]+)\s(\w+)(?:[\s\S]*?(?= =))"
 
 
 def get_from(d: Optional[Dict[Any, Any]], k: str) -> Any:
@@ -246,9 +251,13 @@ def convert_typed_output_values(output_values: Union[None, str, Dict[str, Any], 
             converted_output[new_output_key] = new_output_value
     if isinstance(output_type, WDL.Type.Pair):
         converted_output = dict()
-        # key should be left or right
-        converted_output["left"] = convert_typed_output_values(output_values["left"], output_type.left_type, data_dir, get_from(extra_patch_data, output_values["left"]))
-        converted_output["right"] = convert_typed_output_values(output_values["right"], output_type.right_type, data_dir, get_from(extra_patch_data, output_values["right"]))
+        if isinstance(output_values, list) and len(output_values) == 2:
+            # We're looking at a list representation of a pair. Convert to dict representation.
+            output_values = {"left": output_values[0], "right": output_values[1]}
+        if isinstance(output_values, dict):
+            # key should be left or right
+            converted_output["left"] = convert_typed_output_values(output_values["left"], output_type.left_type, data_dir, get_from(extra_patch_data, output_values["left"]))
+            converted_output["right"] = convert_typed_output_values(output_values["right"], output_type.right_type, data_dir, get_from(extra_patch_data, output_values["right"]))
         return converted_output
     if isinstance(output_type, WDL.Type.Array):
         converted_output = list()
@@ -431,7 +440,8 @@ def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, versio
         output_dir.mkdir(parents=True)
 
     config = []
-    all_m = []
+    resources = {}
+    test_matches = []
     with open(spec) as s:
         buf = None
         for line in s:
@@ -444,10 +454,21 @@ def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, versio
                     buf = None
                     m = TEST_RE.match(ex)
                     if m is None:
-                        raise Exception(f"Regex does not match example {ex}")
+                        m = RESOURCE_RE.match(ex)
+                        if m is None:
+                            raise Exception(f"Regex does not match example {ex}")
+                        else:
+                            # Handle resource
+                            try:
+                                resources[m.group(1)] = m.group(2)
+                            except Exception as e:
+                                raise Exception(
+                                    f"Parsing error for resource {ex}"
+                                ) from e
                     else:
+                        # Handle test
                         try:
-                            all_m.append(m)
+                            test_matches.append(m)
                             write_test_files(m, output_dir, version)
                         except Exception as e:
                             raise Exception(
@@ -458,10 +479,20 @@ def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, versio
     if data_dir is not None:
         all_data_files = set(os.path.basename(x) for x in glob.glob(str(data_dir / "**"), recursive=True))
 
-    if data_dir is not None:
-        output_data_dir = output_dir / "data"
+    if (data_dir is not None) or resources:
+        output_data_dir = (output_dir / "data").resolve()
+        os.makedirs(output_data_dir, exist_ok=True)
     else:
         output_data_dir = None
+
+    for name, data in resources.items():
+        destination = (output_data_dir / name).resolve()
+        if not destination.is_relative_to(output_data_dir):
+            raise RuntimeError(f"Disallowed resource path: {name} gives {destination} not in {output_data_dir}")
+        destination_dir = destination.parent
+        os.makedirs(destination_dir, exist_ok=True)
+        with open(destination, "w") as f:
+            f.write(data)
 
     extra_patch_data = None
     if extra_patch_data_path is not None:
@@ -469,7 +500,7 @@ def extract_tests(spec: Path, data_dir: Optional[Path], output_dir: Path, versio
             yaml = YAML()
             extra_patch_data = yaml.load(e)
 
-    for m in all_m:
+    for m in test_matches:
         try:
             generate_config_file(m, output_dir, version, all_data_files, data_dir, output_data_dir, config, extra_patch_data)
         except Exception as e:

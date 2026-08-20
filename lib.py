@@ -469,11 +469,11 @@ def wdl_inner_type(wdl_type):
     """
     Get the interior type of a WDL type. So "Array[String]" gives "String".
     """
-    if '[' in wdl_type:
-        remaining = '['.join(wdl_type.split('[')[1:])  # get remaining string starting from open bracket
-        end_idx = len(remaining) - remaining[::-1].index(']') - 1  # find index of closing bracket
-        # remove outer type postfix quantifiers
-        return remaining[:end_idx]
+    if '[' in wdl_type and ']' in wdl_type:
+        open_index = wdl_type.index('[')
+        close_index = wdl_type.rindex(']')
+        result = wdl_type[open_index + 1:close_index]
+        return result
     else:
         return wdl_type
 
@@ -532,7 +532,7 @@ def wdl_type_to_miniwdl_class(wdl_type: Union[Dict[str, Any], str]) -> Optional[
         # So replace with a placeholder type so the file will at least parse
         return WDLString
     else:
-        raise NotImplementedError
+        raise NotImplementedError(f"No MiniWDL class known for {wdl_type}")
         # return None
 
 
@@ -566,7 +566,8 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
 
     if outer_py_typ is WDLPair:
         inner_type = wdl_inner_type(wdl_type)
-
+        
+        # TODO: Assumes neither type is compoind
         key_and_value_type = inner_type.split(',')
         if len(key_and_value_type) < 2:
             # either no inner type provided or not enough type provided for pair
@@ -579,8 +580,9 @@ def convert_type(wdl_type: Any) -> Optional[WDLBase]:
 
     if outer_py_typ is WDLMap:
         inner_type = wdl_inner_type(wdl_type)
-
-        key_and_value_type = inner_type.split(',')
+        
+        # Assume the key type can't be compound
+        key_and_value_type = inner_type.split(',', 1)
         if len(key_and_value_type) < 2:
             # either no types or too few types provided for map
             return None
