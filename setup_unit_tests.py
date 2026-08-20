@@ -25,7 +25,7 @@ from lib import convert_type
 
 import WDL
 
-# Use the same parsing regex as https://github.com/openwdl/wdl-tests/blob/c9d59f6b7ef0f8e9f65cde92c9e70182c3afbd58/scripts/extract_tests.py#L10-L13
+# Use a parsing regex derived from the one at https://github.com/openwdl/wdl-tests/blob/c9d59f6b7ef0f8e9f65cde92c9e70182c3afbd58/scripts/extract_tests.py#L10-L13
 TEST_RE = re.compile(
     r"^<details>\s*<summary>\s*Example: (.+?)\s*```wdl(.+?)```\s*</summary>\s*(?:<p>\s*(?:Example input:\s*```json(.*?)```)?\s*(?:Example output:\s*```json(.*?)```)?\s*(?:Test config:\s*(?:```json(.*?)```)?)?\s*</p>\s*)?</details>$",
     re.I | re.S,
@@ -46,6 +46,7 @@ VERSION_RE = re.compile(r"version ([\d.]+)")
 #     File? example2 = "example2.txt"
 #     Array[File?] file_array = ["example1.txt", "example2.txt"]
 #     Int file_array_len = length(select_all(file_array))
+#     Map[String, Pair[Int, File?]] nested = {}
 #   }
 # For each declaration, the regex will identify type File with variable name example1, etc
 regex_var_types_str = r"([\w\[, \]+?]+)\s(\w+)(?:[\s\S]*?(?= =))"

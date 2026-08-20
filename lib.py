@@ -473,11 +473,11 @@ def wdl_inner_type(wdl_type):
     """
     Get the interior type of a WDL type. So "Array[String]" gives "String".
     """
-    if '[' in wdl_type:
-        remaining = '['.join(wdl_type.split('[')[1:])  # get remaining string starting from open bracket
-        end_idx = len(remaining) - remaining[::-1].index(']') - 1  # find index of closing bracket
-        # remove outer type postfix quantifiers
-        return remaining[:end_idx]
+    if '[' in wdl_type and ']' in wdl_type:
+        open_index = wdl_type.index('[')
+        close_index = wdl_type.rindex(']')
+        result = wdl_type[open_index + 1:close_index]
+        return result
     else:
         return wdl_type
 
